@@ -1,0 +1,386 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Banner from '@/components/layout/Banner';
+import Header from '@/components/layout/Header';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserOrders, getUserAddresses, updateUserAddress } from '@/lib/firestore';
+import { IIT_BOMBAY_HOSTELS } from '@/lib/hostels';
+import { Order, Address } from '@/types';
+import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+type SidebarTab = 'orders' | 'addresses';
+
+const STATUS_COLORS: Record<string, string> = {
+    Delivered: 'text-green-600',
+    Paid: 'text-blue-600',
+    Placed: 'text-green-600',
+    Pending: 'text-yellow-600',
+    Cancelled: 'text-red-500',
+};
+
+const STATUS_DOT: Record<string, string> = {
+    Delivered: 'bg-green-500',
+    Placed: 'bg-green-500',
+    Paid: 'bg-blue-500',
+    Pending: 'bg-yellow-500',
+    Cancelled: 'bg-red-400',
+};
+
+function formatDate(date: Date): string {
+    return new Intl.DateTimeFormat('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    }).format(new Date(date));
+}
+
+type AddressWithFields = Address & { hostel?: string; room?: string };
+
+export default function AccountPage() {
+    const router = useRouter();
+    const { user, phoneNumber, signOut, loading, openAuthModal } = useAuth();
+    const [activeTab, setActiveTab] = useState<SidebarTab>('orders');
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [addresses, setAddresses] = useState<AddressWithFields[]>([]);
+    const [dataLoading, setDataLoading] = useState(false);
+
+    // ── Edit address state ───────────────────────────────────────────────────
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editHostel, setEditHostel] = useState('');
+    const [editRoom, setEditRoom] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    // Redirect if not authenticated
+    useEffect(() => {
+        if (!loading && !user) {
+            openAuthModal();
+            router.push('/');
+        }
+    }, [user, loading, router, openAuthModal]);
+
+    // Load orders / addresses based on Phone Number (not UID)
+    useEffect(() => {
+        if (!phoneNumber) return;
+        setDataLoading(true);
+        const loader =
+            activeTab === 'orders'
+                ? getUserOrders(phoneNumber)
+                : getUserAddresses(phoneNumber);
+
+        loader
+            .then((data: Order[] | AddressWithFields[]) => {
+                if (activeTab === 'orders') setOrders(data as Order[]);
+                else setAddresses(data as AddressWithFields[]);
+            })
+            .catch(() => { })
+            .finally(() => setDataLoading(false));
+    }, [phoneNumber, activeTab]);
+
+    const openEdit = (addr: AddressWithFields) => {
+        setEditName(addr.name);
+        setEditHostel(addr.hostel ?? '');
+        setEditRoom(addr.room ?? '');
+        setIsEditing(true);
+    };
+
+    const cancelEdit = () => setIsEditing(false);
+
+    const saveEdit = async () => {
+        if (!phoneNumber) return;
+        if (!editName.trim() || !editHostel || !editRoom.trim()) {
+            toast.error('Please fill in all fields');
+            return;
+        }
+        setSaving(true);
+        try {
+            await updateUserAddress(phoneNumber, editName.trim(), editHostel, editRoom.trim());
+            // Refresh addresses
+            const updated = await getUserAddresses(phoneNumber);
+            setAddresses(updated as AddressWithFields[]);
+            setIsEditing(false);
+            toast.success('Address updated! ✅');
+        } catch {
+            toast.error('Failed to update address');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSignOut = async () => {
+        await signOut();
+        toast.success('Signed out successfully');
+        router.push('/');
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="w-8 h-8 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (!user) return null;
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <Banner />
+            <Header />
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
+                    <p className="text-gray-500 text-sm">{user.phoneNumber}</p>
+                </div>
+
+                <div className="flex gap-6">
+                    {/* Sidebar */}
+                    <aside className="w-60 flex-shrink-0">
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <button
+                                onClick={() => setActiveTab('orders')}
+                                className={`w-full flex items-center gap-3 px-5 py-4 text-sm font-medium border-l-4 transition-all ${activeTab === 'orders'
+                                    ? 'border-red-500 bg-red-50 text-red-600'
+                                    : 'border-transparent text-gray-700 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <ListOrdered size={18} />
+                                My orders
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('addresses')}
+                                className={`w-full flex items-center gap-3 px-5 py-4 text-sm font-medium border-l-4 transition-all ${activeTab === 'addresses'
+                                    ? 'border-red-500 bg-red-50 text-red-600'
+                                    : 'border-transparent text-gray-700 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <MapPin size={18} />
+                                My addresses
+                            </button>
+                            <button
+                                onClick={handleSignOut}
+                                className="w-full flex items-center gap-3 px-5 py-4 text-sm font-medium text-gray-700 hover:bg-gray-50 border-l-4 border-transparent transition-all"
+                            >
+                                <LogOut size={18} />
+                                Sign out
+                            </button>
+                        </div>
+                    </aside>
+
+                    {/* Content */}
+                    <main className="flex-1">
+                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm min-h-72">
+
+                            {/* ── MY ORDERS ── */}
+                            {activeTab === 'orders' && (
+                                <div className="p-6">
+                                    <div className="flex items-center justify-between mb-5">
+                                        <p className="text-sm font-medium text-gray-600">Showing all orders</p>
+                                        <button className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                                            <Filter size={14} />
+                                            FILTER
+                                        </button>
+                                    </div>
+
+                                    {dataLoading ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <div className="w-8 h-8 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
+                                        </div>
+                                    ) : orders.length === 0 ? (
+                                        <div className="text-center py-16">
+                                            <div className="text-4xl mb-3">📦</div>
+                                            <p className="text-gray-500 font-medium">No orders yet</p>
+                                            <button
+                                                onClick={() => router.push('/categories')}
+                                                className="mt-4 text-red-500 font-semibold text-sm hover:text-red-600"
+                                            >
+                                                Order something now →
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {orders.map((order) => {
+                                                const isActive = ['Placed', 'Pending', 'Preparing'].includes(order.status);
+                                                return (
+                                                    <div
+                                                        key={order.id}
+                                                        onClick={() => router.push(`/order/${order.id}`)}
+                                                        className="border border-gray-100 rounded-xl p-4 hover:border-red-200 hover:shadow-sm transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <div className="w-9 h-9 rounded overflow-hidden bg-orange-100 flex-shrink-0">
+                                                                <img
+                                                                    src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=80&q=80"
+                                                                    alt="Aroma Dhaba"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                            <span className="text-sm font-semibold text-red-500">
+                                                                Aroma Dhaba, IIT Bombay
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-700">
+                                                                    Order #{order.orderToken ?? order.id.slice(-7).toUpperCase()}
+                                                                </p>
+                                                                <p className="text-xs text-gray-400 mt-0.5">
+                                                                    {order.items.reduce((s, i) => s + i.quantity, 0)} items &nbsp;·&nbsp;
+                                                                    {formatDate(order.orderDate)}
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-base font-bold text-gray-900">₹{order.grandTotal}</p>
+                                                        </div>
+                                                        <div className="mt-3 flex items-center justify-between">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className={`w-2 h-2 rounded-full ${STATUS_DOT[order.status] ?? 'bg-gray-400'}`} />
+                                                                <span className={`text-sm font-medium ${STATUS_COLORS[order.status] ?? 'text-gray-600'}`}>
+                                                                    {order.status}
+                                                                </span>
+                                                            </div>
+                                                            {isActive && (
+                                                                <span className="text-xs font-bold text-red-500 group-hover:underline">
+                                                                    Track →
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ── MY ADDRESSES ── */}
+                            {activeTab === 'addresses' && (
+                                <div className="p-6">
+                                    <div className="flex items-center justify-between mb-5">
+                                        <p className="text-sm font-medium text-gray-600">Saved addresses</p>
+                                    </div>
+
+                                    {dataLoading ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <div className="w-8 h-8 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
+                                        </div>
+                                    ) : addresses.length === 0 ? (
+                                        <div className="text-center py-16">
+                                            <div className="text-4xl mb-3">📍</div>
+                                            <p className="text-gray-500 font-medium">No saved addresses</p>
+                                            <p className="text-xs text-gray-400 mt-1">Your hostel & room are saved when you place an order</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {addresses.map((addr) => (
+                                                <div key={addr.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                                                    {/* ── View mode ── */}
+                                                    {!isEditing ? (
+                                                        <div className="p-5">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="space-y-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <MapPin size={15} className="text-red-400 flex-shrink-0" />
+                                                                        <p className="font-semibold text-gray-900">{addr.name}</p>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-500 pl-6">{addr.mobile}</p>
+                                                                    <p className="text-sm font-medium text-gray-700 pl-6 mt-1">
+                                                                        {addr.hostelDetails}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-400 pl-6">{addr.city} — {addr.pincode}</p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => openEdit(addr)}
+                                                                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-all font-medium"
+                                                                >
+                                                                    <Pencil size={13} />
+                                                                    Edit
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        /* ── Edit mode ── */
+                                                        <div className="p-5 bg-gray-50">
+                                                            <p className="text-sm font-semibold text-gray-800 mb-4">Edit Delivery Address</p>
+                                                            <div className="space-y-3">
+                                                                {/* Name */}
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Name <span className="text-red-500">*</span></label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editName}
+                                                                        onChange={(e) => setEditName(e.target.value)}
+                                                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
+                                                                        placeholder="Your name"
+                                                                    />
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-3">
+                                                                    {/* Hostel */}
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-600 mb-1">Hostel <span className="text-red-500">*</span></label>
+                                                                        <select
+                                                                            value={editHostel}
+                                                                            onChange={(e) => setEditHostel(e.target.value)}
+                                                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
+                                                                        >
+                                                                            <option value="">Select hostel</option>
+                                                                            {IIT_BOMBAY_HOSTELS.map((h: string) => (
+                                                                                <option key={h} value={h}>{h}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                    {/* Room */}
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-600 mb-1">Room No. <span className="text-red-500">*</span></label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={editRoom}
+                                                                            onChange={(e) => setEditRoom(e.target.value.replace(/\D/g, ''))}
+                                                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
+                                                                            placeholder="e.g. 102"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                {/* Action buttons */}
+                                                                <div className="flex gap-2 pt-1">
+                                                                    <button
+                                                                        onClick={saveEdit}
+                                                                        disabled={saving}
+                                                                        className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                                                    >
+                                                                        {saving
+                                                                            ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                                                            : <Check size={14} />
+                                                                        }
+                                                                        {saving ? 'Saving...' : 'Save Changes'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={cancelEdit}
+                                                                        disabled={saving}
+                                                                        className="flex items-center gap-1.5 border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    );
+}

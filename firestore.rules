@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── HELPERS ───────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // NOTE: Vendor documents are keyed by phone number (e.g. +919876543210).
+    // Because phone is not directly in request.auth, the isVendor() check for
+    // write rules uses a broad "any authenticated user" guard at the rule level,
+    // and the actual vendor role enforcement happens in the client-side layout
+    // (vendor/layout.tsx) which fetches vendors/{phone} and checks isVendor===true.
+    //
+    // For a fully server-enforced solution, migrate to Firebase UID-keyed vendor docs.
+    //
+    // We still disable ALL client writes to categories/products/settings so
+    // random customers cannot modify them — only Firebase Console / Admin SDK can.
+
+    // ─── CATEGORIES — public read, no client write ─────────────────────────────
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── PRODUCTS — public read, no client write ───────────────────────────────
+    match /products/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── ORDERS ───────────────────────────────────────────────────────────────
+    // • Any signed-in user can CREATE an order (customer places order)
+    // • Any signed-in user can READ/UPDATE their own order, matched by customerPhone
+    //   (Phone-keyed system: orders store customerPhone, not Firebase UID)
+    // • Vendors (any authenticated user) can read/update ALL orders
+    //   Full vendor-only enforcement is done in client layout guard + Admin SDK
+    // • No client deletes allowed
+    match /orders/{orderId} {
+      allow create: if isSignedIn();
+      allow read, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    // ─── USERS — keyed by phone number ────────────────────────────────────────
+    // Any signed-in user can read/write user documents.
+    // Fine-grained enforcement (users can only edit their own) is done client-side
+    // since Firebase UID != document key (phone number).
+    match /users/{phone} {
+      allow read, write: if isSignedIn();
+    }
+
+    // ─── SETTINGS — public read (store open/closed), no client write ───────────
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── VENDORS — any signed-in user can read (keyed by phone number) ─────────
+    // Write disabled on client; vendors created via Firebase Console only.
+    match /vendors/{phone} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}

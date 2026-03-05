@@ -1,0 +1,11 @@
+{
+    "version": 2,
+    "regions": [
+        "bom1"
+    ],
+    "functions": {
+        "src/app/api/orders/route.ts": {
+            "maxDuration": 10
+        }
+    }
+}
