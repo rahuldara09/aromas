@@ -21,8 +21,10 @@ function getProgressStep(status: OrderStatus): number {
     switch (status) {
         case 'Placed':
         case 'Pending':
+        case 'payment_success':
             return 1;
         case 'Preparing':
+        case 'payment_processing':
             return 2;
         case 'Completed':
         case 'Dispatched':

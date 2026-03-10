@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         const orderData = orderSnap.data();
 
         // 2. Prevent Double Processing
-        if (orderData?.payment_status === 'payment_success' || orderData?.status === 'payment_success' || orderData?.status === 'Placed') {
+        if (orderData?.payment_status === 'success' || orderData?.status === 'payment_success' || orderData?.status === 'Placed') {
             console.log(`[webhook] Ignoring duplicate webhook for ${verification.orderId}`);
             return NextResponse.redirect(new URL(`/order/${verification.orderId}`, req.url));
         }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         if (orderData && Math.abs(orderData.grandTotal - verification.amount) > 1) {
             console.error(`[webhook] Amount mismatch for ${verification.orderId}. Expected ${orderData.grandTotal}, got ${verification.amount}`);
             await orderRef.update({
-                payment_status: 'payment_failed',
+                payment_status: 'failed',
                 status: 'payment_failed'
             });
             return NextResponse.redirect(new URL(`/order/${verification.orderId}?error=amount_mismatch`, req.url));
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         // 5. Update Order Status
         if (verification.success) {
             await orderRef.update({
-                payment_status: 'payment_success',
+                payment_status: 'success',
                 status: 'payment_success', // The order status model specifies this
                 payment_transaction_id: verification.transactionId,
                 payment_amount: verification.amount,
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
             console.log(`[webhook] Order ${verification.orderId} payment successful & verified.`);
         } else {
             await orderRef.update({
-                payment_status: 'payment_failed',
+                payment_status: 'failed',
                 status: 'payment_failed',
                 payment_transaction_id: verification.transactionId,
                 updatedAt: FieldValue.serverTimestamp()
