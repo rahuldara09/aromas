@@ -21,7 +21,7 @@ function getProgressStep(status: OrderStatus): number {
     switch (status) {
         case 'Placed':
         case 'Pending':
-        case 'payment_success':
+        case 'success':
             return 1;
         case 'Preparing':
         case 'payment_processing':
@@ -136,7 +136,7 @@ export default function OrderTrackingPage() {
     }
 
     const progressStep = getProgressStep(order.status);
-    const isCancelled = order.status === 'Cancelled' || order.status === 'payment_failed';
+    const isCancelled = order.status === 'Cancelled' || order.status === 'failed';
     const isDelivered = progressStep === 3;
     const etaMinutes = order.etaMinutes ?? 15;
     const expectedReadyTime = order.expectedReadyTime ? new Date(order.expectedReadyTime) : new Date(new Date(order.orderDate).getTime() + etaMinutes * 60000);
@@ -144,8 +144,8 @@ export default function OrderTrackingPage() {
 
     // Payment states
     const isPaymentPending = order.payment_status === 'pending' || order.payment_status === 'processing' || order.status === 'pending_payment' || order.status === 'payment_processing';
-    const isPaymentFailed = order.payment_status === 'failed' || order.status === 'payment_failed' || errorParam;
-    const isPaymentSuccess = order.payment_status === 'success' || order.status === 'payment_success';
+    const isPaymentFailed = order.payment_status === 'failed' || order.status === 'failed' || errorParam;
+    const isPaymentSuccess = order.payment_status === 'success' || order.status === 'success';
 
     return (
         <div className="min-h-screen bg-gray-50">

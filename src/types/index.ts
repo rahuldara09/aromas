@@ -44,8 +44,8 @@ export interface OrderItem {
 export type OrderStatus =
   | 'pending_payment'
   | 'payment_processing'
-  | 'payment_success'
-  | 'payment_failed'
+  | 'success'
+  | 'failed'
   | 'Placed'
   | 'Pending'
   | 'Preparing'

@@ -73,7 +73,7 @@ export function listenToLiveOrders(callback: (orders: Order[]) => void) {
             // Show if it's a successful payment, a POS order, or an old legacy order
             o.payment_status === 'success' ||
             o.orderType === 'pos' ||
-            (!o.payment_status && o.status !== 'pending_payment' && o.status !== 'payment_failed')
+            (!o.payment_status && o.status !== 'pending_payment' && o.status !== 'failed')
         );
         callback(orders);
     });

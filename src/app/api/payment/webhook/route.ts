@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         const orderData = orderSnap.data();
 
         // 2. Prevent Double Processing
-        if (orderData?.payment_status === 'success' || orderData?.status === 'payment_success' || orderData?.status === 'Placed') {
+        if (orderData?.payment_status === 'success' || orderData?.status === 'success' || orderData?.status === 'Placed') {
             console.log(`[webhook] Ignoring duplicate webhook for ${verification.orderId}`);
             return NextResponse.redirect(new URL(`/order/${verification.orderId}`, req.url));
         }
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
             console.error(`[webhook] Amount mismatch for ${verification.orderId}. Expected ${orderData.grandTotal}, got ${verification.amount}`);
             await orderRef.update({
                 payment_status: 'failed',
-                status: 'payment_failed'
+                status: 'failed'
             });
             return NextResponse.redirect(new URL(`/order/${verification.orderId}?error=amount_mismatch`, req.url));
         }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         if (verification.success) {
             await orderRef.update({
                 payment_status: 'success',
-                status: 'payment_success', // The order status model specifies this
+                status: 'success', // The order status model specifies this
                 payment_transaction_id: verification.transactionId,
                 payment_amount: verification.amount,
                 payment_verified_at: FieldValue.serverTimestamp(),
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         } else {
             await orderRef.update({
                 payment_status: 'failed',
-                status: 'payment_failed',
+                status: 'failed',
                 payment_transaction_id: verification.transactionId,
                 updatedAt: FieldValue.serverTimestamp()
             });

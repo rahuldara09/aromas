@@ -25,7 +25,7 @@ export async function GET() {
 
         staleOrdersSnap.forEach(doc => {
             batch.update(doc.ref, {
-                status: 'payment_failed',
+                status: 'failed',
                 payment_status: 'failed',
                 updatedAt: FieldValue.serverTimestamp(),
                 timeout_cancelled_at: FieldValue.serverTimestamp(),
@@ -36,7 +36,7 @@ export async function GET() {
 
         await batch.commit();
 
-        console.log(`[cron/cleanup] Marked ${results.length} orders as payment_failed due to timeout.`);
+        console.log(`[cron/cleanup] Marked ${results.length} orders as failed due to timeout.`);
 
         return NextResponse.json({
             success: true,
