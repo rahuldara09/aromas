@@ -12,7 +12,8 @@ import {
     RotateCw,
     MapPin,
     Receipt,
-    ArrowLeft
+    ArrowLeft,
+    XCircle
 } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,8 +56,8 @@ function ProgressStep({ step, label, icon, current, done }: {
     return (
         <div className="flex flex-col items-center gap-2 relative z-10">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${done ? 'bg-red-500 text-white shadow-lg shadow-red-200' :
-                    current ? 'bg-red-50 border-2 border-red-400 text-red-500 shadow-md' :
-                        'bg-gray-100 text-gray-400'
+                current ? 'bg-red-50 border-2 border-red-400 text-red-500 shadow-md' :
+                    'bg-gray-100 text-gray-400'
                 }`}>
                 {done ? <CheckCircle2 size={22} /> : icon}
             </div>
@@ -76,6 +77,8 @@ function ProgressStep({ step, label, icon, current, done }: {
 export default function OrderTrackingPage() {
     const { orderId } = useParams<{ orderId: string }>();
     const router = useRouter();
+    const [searchParams] = useState(() => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
+    const errorParam = searchParams.get('error');
 
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
@@ -131,11 +134,16 @@ export default function OrderTrackingPage() {
     }
 
     const progressStep = getProgressStep(order.status);
-    const isCancelled = order.status === 'Cancelled';
+    const isCancelled = order.status === 'Cancelled' || order.status === 'payment_failed';
     const isDelivered = progressStep === 3;
     const etaMinutes = order.etaMinutes ?? 15;
     const expectedReadyTime = order.expectedReadyTime ? new Date(order.expectedReadyTime) : new Date(new Date(order.orderDate).getTime() + etaMinutes * 60000);
     const orderToken = order.orderToken ?? '---';
+
+    // Payment states
+    const isPaymentPending = order.payment_status === 'pending' || order.payment_status === 'processing' || order.status === 'pending_payment' || order.status === 'payment_processing';
+    const isPaymentFailed = order.payment_status === 'failed' || order.status === 'payment_failed' || errorParam;
+    const isPaymentSuccess = order.payment_status === 'success' || order.status === 'payment_success';
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -163,10 +171,10 @@ export default function OrderTrackingPage() {
 
                 {/* ── Hero Block ─────────────────────────────────────────── */}
                 <div className={`rounded-2xl p-8 text-center shadow-sm border transition-all ${isCancelled
-                        ? 'bg-red-50 border-red-100'
-                        : isDelivered
-                            ? 'bg-emerald-50 border-emerald-100'
-                            : 'bg-white border-gray-100'
+                    ? 'bg-red-50 border-red-100'
+                    : isDelivered
+                        ? 'bg-emerald-50 border-emerald-100'
+                        : 'bg-white border-gray-100'
                     }`}>
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Your Order</p>
                     <div className={`text-8xl font-black tracking-tighter mb-1 ${isCancelled ? 'text-red-400' : isDelivered ? 'text-emerald-500' : 'text-gray-900'
@@ -176,8 +184,27 @@ export default function OrderTrackingPage() {
 
                     {isCancelled ? (
                         <div className="mt-4">
-                            <p className="text-xl font-bold text-red-500">Order Cancelled</p>
-                            <p className="text-sm text-gray-500 mt-1">This order was cancelled.</p>
+                            <p className="text-xl font-bold text-red-500">{isPaymentFailed ? 'Payment Failed' : 'Order Cancelled'}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {isPaymentFailed
+                                    ? (errorParam === 'amount_mismatch' ? 'Amount verification failed. Transaction cancelled.' : 'Your transaction could not be completed.')
+                                    : 'This order was cancelled.'}
+                            </p>
+                            {isPaymentFailed && (
+                                <button onClick={() => router.push('/checkout')} className="mt-4 py-2 px-6 bg-red-500 text-white font-bold rounded-xl shadow-sm hover:bg-red-600 transition-colors">
+                                    Try Payment Again
+                                </button>
+                            )}
+                        </div>
+                    ) : isPaymentPending ? (
+                        <div className="mt-4">
+                            <div className="flex justify-center mb-3">
+                                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                                    <Clock size={24} />
+                                </div>
+                            </div>
+                            <p className="text-xl font-bold text-gray-900">Payment Processing</p>
+                            <p className="text-sm text-gray-500 mt-1">Please wait while we confirm your payment.<br />This screen will update automatically.</p>
                         </div>
                     ) : isDelivered ? (
                         <div className="mt-4">
@@ -186,8 +213,11 @@ export default function OrderTrackingPage() {
                         </div>
                     ) : (
                         <div className="mt-4">
+                            {isPaymentSuccess && progressStep === 1 && (
+                                <p className="text-sm font-bold text-emerald-500 mb-2 bg-emerald-50 rounded-lg inline-block px-3 py-1">Payment Successful</p>
+                            )}
                             <p className="text-2xl font-extrabold text-gray-900">
-                                {progressStep === 1 ? '⏳ Waiting to be accepted' : '🍳 Being Prepared'}
+                                {progressStep === 1 ? '🎉 Order Confirmed!' : '🍳 Being Prepared'}
                             </p>
                             <div className="mt-3 inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-full px-5 py-2.5">
                                 <Clock size={16} />
@@ -244,9 +274,9 @@ export default function OrderTrackingPage() {
                     {/* Status label */}
                     <div className="mt-6 text-center">
                         <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border ${isCancelled ? 'bg-red-50 text-red-600 border-red-100' :
-                                isDelivered ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                    progressStep === 2 ? 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse' :
-                                        'bg-blue-50 text-blue-600 border-blue-100'
+                            isDelivered ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                progressStep === 2 ? 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse' :
+                                    'bg-blue-50 text-blue-600 border-blue-100'
                             }`}>
                             <span className="w-2 h-2 rounded-full bg-current" />
                             {order.status}

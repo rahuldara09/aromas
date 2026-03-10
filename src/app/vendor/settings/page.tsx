@@ -1,9 +1,6 @@
 'use client';
 
 import { useVendor } from '@/contexts/VendorContext';
-import { toggleProductAvailability } from '@/lib/vendor';
-import { Product } from '@/types';
-import toast from 'react-hot-toast';
 import { Settings as SettingsIcon, User, BellRing, Shield, Store, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';

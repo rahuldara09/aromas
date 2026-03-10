@@ -133,15 +133,40 @@ export default function AccountPage() {
         <div className="min-h-screen bg-gray-50">
             <Banner />
             <Header />
-            <div className="max-w-6xl mx-auto px-4 py-8">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
-                    <p className="text-gray-500 text-sm">{user.phoneNumber}</p>
+            <div className="max-w-6xl mx-auto px-4 py-6">
+                <div className="flex items-center justify-between mb-5">
+                    <h1 className="text-xl font-bold text-gray-900">My Account</h1>
+                    <p className="text-gray-500 text-xs">{user.phoneNumber}</p>
                 </div>
 
-                <div className="flex gap-6">
-                    {/* Sidebar */}
-                    <aside className="w-60 flex-shrink-0">
+                {/* ── MOBILE: horizontal tab bar ───────────────────────────── */}
+                <div className="md:hidden flex border-b border-gray-200 mb-4">
+                    <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'orders' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
+                            }`}
+                    >
+                        <ListOrdered size={16} /> My Orders
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('addresses')}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'addresses' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
+                            }`}
+                    >
+                        <MapPin size={16} /> Addresses
+                    </button>
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 ml-auto"
+                    >
+                        <LogOut size={16} /> Sign out
+                    </button>
+                </div>
+
+                {/* ── DESKTOP + MOBILE content layout ─────────────────────── */}
+                <div className="flex flex-col md:flex-row gap-6">
+                    {/* Sidebar — DESKTOP only */}
+                    <aside className="hidden md:block w-60 flex-shrink-0">
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                             <button
                                 onClick={() => setActiveTab('orders')}
@@ -174,7 +199,7 @@ export default function AccountPage() {
                     </aside>
 
                     {/* Content */}
-                    <main className="flex-1">
+                    <main className="flex-1 min-w-0">
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm min-h-72">
 
                             {/* ── MY ORDERS ── */}

@@ -22,8 +22,8 @@ export default function OrderSummaryPanel({
     showContinue = true,
 }: OrderSummaryPanelProps) {
     return (
-        <div className="w-72 flex-shrink-0">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden sticky top-20">
+        <div className="w-full md:w-72 flex-shrink-0">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden md:sticky md:top-20">
                 {/* Coupons */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                     <div className="flex items-center gap-2">

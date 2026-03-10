@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createOrder, upsertUserProfile, getUserByPhone } from '@/lib/firestore';
 import { listenToStoreStatus } from '@/lib/vendor';
 import { IIT_BOMBAY_HOSTELS } from '@/lib/hostels';
+import PayUForm from '@/components/checkout/PayUForm';
 import toast from 'react-hot-toast';
 import { Trash2, CreditCard, ChevronDown, CheckCircle2 } from 'lucide-react';
 
@@ -36,6 +37,7 @@ export default function CheckoutPage() {
 
     const [step, setStep] = useState<Step>(1);
     const [paymentLoading, setPaymentLoading] = useState(false);
+    const [paymentSession, setPaymentSession] = useState<{ url: string; payload: Record<string, string> } | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [isStoreOpen, setIsStoreOpen] = useState(true);
 
@@ -139,7 +141,7 @@ export default function CheckoutPage() {
         setStep(4);
     };
 
-    // ─── Step 4: Place Order directly in Firestore (no payment gateway) ───────
+    // ─── Step 4: Initiate Payment Session ───────
     const handlePlaceOrder = async () => {
         if (!user) return;
         setPaymentLoading(true);
@@ -153,43 +155,59 @@ export default function CheckoutPage() {
                 imageURL: i.product.imageURL ?? '',
             }));
 
-            // Direct Firestore write — payment gateway bypassed
-            const orderId = await createOrder(
-                phoneNumber ?? '',
-                orderItems,
-                subtotal,
-                dukanFee,
-                deliveryFee,
-                grandTotal,
-                {
-                    name: infoData.name.trim(),
-                    mobile: phoneNumber ?? '',
-                    hostelNumber: infoData.hostelNumber,
-                    roomNumber: infoData.roomNumber.trim(),
-                    deliveryType: infoData.deliveryType,
-                }
-            );
+            // POST to Payment API
+            const token = await user.getIdToken();
+            const res = await fetch('/api/payment/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    customerPhone: phoneNumber ?? '',
+                    items: orderItems,
+                    itemTotal: subtotal,
+                    dukanFee,
+                    deliveryFee,
+                    grandTotal,
+                    deliveryAddress: {
+                        name: infoData.name.trim(),
+                        mobile: phoneNumber ?? '',
+                        hostelNumber: infoData.hostelNumber,
+                        roomNumber: infoData.roomNumber.trim(),
+                        deliveryType: infoData.deliveryType,
+                    }
+                })
+            });
 
-            // orderId logged inside createOrder with green ✅ for easy Console verification
+            const data = await res.json();
 
-            // Update totalOrders count in user document
-            await upsertUserProfile(
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to initiate payment');
+            }
+
+            // Update user profile in background
+            upsertUserProfile(
                 phoneNumber ?? '',
                 infoData.name.trim(),
                 infoData.hostelNumber,
                 infoData.roomNumber.trim(),
-                false
-            );
+                true // isPlacingOrder
+            ).catch(err => console.error('[Checkout] Background profile update failed:', err));
 
+            // Set session to render the PayU form redirect
+            toast.loading('Redirecting to payment gateway...');
+            setPaymentSession({
+                url: data.session.paymentUrl,
+                payload: data.session.payload
+            });
+
+            // Clear cart early since order is technically placed as pending_payment
             clearCart();
-            toast.success('Order placed! 🎉');
 
-            // Redirect to the Order Tracking page
-            router.push(`/order/${orderId}`);
-        } catch (err) {
-            console.error('[Order] Failed to create order:', err);
-            toast.error('Failed to place order. Please try again.');
-        } finally {
+        } catch (error: any) {
+            console.error('[Checkout] Payment initialization failed:', error);
+            toast.error(error.message || 'Failed to start payment. Please try again.');
             setPaymentLoading(false);
         }
     };
@@ -198,6 +216,18 @@ export default function CheckoutPage() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            </div>
+        );
+    }
+
+    // If payment session exists, render the redirect form
+    if (paymentSession) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+                <Header />
+                <main className="flex-1 max-w-lg mx-auto w-full pt-24 px-4">
+                    <PayUForm paymentUrl={paymentSession.url} payload={paymentSession.payload} />
+                </main>
             </div>
         );
     }
@@ -221,7 +251,7 @@ export default function CheckoutPage() {
 
             <Header variant="checkout" checkoutStep={step} />
 
-            <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 flex gap-6 items-start">
+            <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 flex flex-col md:flex-row gap-6 items-start">
                 {/* Left: Step content */}
                 <div className="flex-1">
 
@@ -432,26 +462,33 @@ export default function CheckoutPage() {
                                     </div>
 
                                     {/* Payment note */}
-                                    <div className="flex items-center gap-2 text-xs text-gray-400 mb-5 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-                                        <CreditCard size={14} className="text-blue-400 flex-shrink-0" />
-                                        <span>Cash / UPI on delivery — collected by canteen staff</span>
+                                    <div className="p-4 bg-gray-100 rounded-xl flex items-start gap-4 mb-5">
+                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm text-lg">
+                                            🔒
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-800 text-sm mb-1">Secure Payment</p>
+                                            <p className="text-gray-500 font-medium leading-relaxed text-xs">
+                                                You will be securely redirected to PayU. Order is placed upon successful payment.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {/* Place Order CTA */}
                                     <button
                                         onClick={handlePlaceOrder}
-                                        disabled={paymentLoading}
-                                        className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl text-base transition-colors flex items-center justify-center gap-2"
+                                        disabled={paymentLoading || !isStoreOpen}
+                                        className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl text-base transition-colors flex items-center justify-center gap-2"
                                     >
                                         {paymentLoading ? (
                                             <>
                                                 <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                                                Placing Order...
+                                                Initiating Payment...
                                             </>
                                         ) : (
                                             <>
-                                                <CheckCircle2 size={18} />
-                                                Place Order · ₹{grandTotal}
+                                                <CreditCard size={18} />
+                                                Proceed to Pay · ₹{grandTotal}
                                             </>
                                         )}
                                     </button>

@@ -6,12 +6,9 @@ import {
     orderBy,
     onSnapshot,
     updateDoc,
-    setDoc,
     getDoc,
     addDoc,
-    deleteDoc,
     writeBatch,
-    Timestamp
 } from 'firebase/firestore';
 import { Order, OrderStatus, Product } from '@/types';
 
@@ -36,10 +33,22 @@ export function listenToStoreStatus(callback: (isOpen: boolean) => void) {
     });
 }
 
-export async function toggleStoreStatus(isOpen: boolean): Promise<void> {
-    const docRef = doc(db, 'settings', 'storeSettings');
-    await setDoc(docRef, { isOpen, updatedAt: Timestamp.now() }, { merge: true });
+export async function toggleStoreStatus(isOpen: boolean, idToken: string, phone: string): Promise<void> {
+    const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'x-vendor-phone': phone,
+        },
+        body: JSON.stringify({ isOpen }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error ?? 'Failed to toggle store');
+    }
 }
+
 
 /**
  * ─── REAL-TIME ORDERS ─────────────────────────────────────────────────────────
@@ -60,7 +69,13 @@ export function listenToLiveOrders(callback: (orders: Order[]) => void) {
                 ...data,
                 orderDate: data.orderDate?.toDate?.() ?? new Date(),
             } as Order;
-        });
+        }).filter(o =>
+            // Show if it's a successful payment, a POS order, or an old legacy order
+            o.payment_status === 'payment_success' ||
+            o.payment_status === 'success' ||
+            o.orderType === 'pos' ||
+            (!o.payment_status && o.status !== 'pending_payment' && o.status !== 'payment_failed')
+        );
         callback(orders);
     });
 }
@@ -111,6 +126,7 @@ export async function createPOSOrder(
 
 /**
  * Listen to all products in real-time (bypasses mock-data fallback).
+ * Reads are still allowed by Firestore security rules — no token needed.
  */
 export function listenToProducts(callback: (products: import('@/types').Product[]) => void) {
     return onSnapshot(collection(db, 'products'), (snapshot) => {
@@ -122,32 +138,81 @@ export function listenToProducts(callback: (products: import('@/types').Product[
     });
 }
 
-/**
- * Quickly toggle product availability (Out of Stock / In Stock)
- */
-export async function toggleProductAvailability(productId: string, isAvailable: boolean): Promise<void> {
-    const productRef = doc(db, 'products', productId);
-    await updateDoc(productRef, { isAvailable });
+// ─── Internal helper ────────────────────────────────────────────────────────
+//
+// All write operations go through /api/products (Admin SDK) because the
+// Firestore security rules intentionally block direct client writes:
+//   match /products/{id} { allow write: if false; }
+//
+// The auth flow uses anonymous Firebase sessions — the token has no
+// phone_number claim, so we send the phone in a separate header.
+
+async function callProductsApi(
+    method: 'POST' | 'PUT' | 'DELETE',
+    idToken: string,
+    phone: string,
+    body: Record<string, unknown>
+): Promise<Response> {
+    const res = await fetch('/api/products', {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'x-vendor-phone': phone,
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: res.statusText }));
+        console.error(`[vendor API] ${method} /api/products → HTTP ${res.status}`, errData);
+        throw new Error(errData.error ?? `API error ${res.status}`);
+    }
+    return res;
 }
 
 /**
- * Add a new product to the catalog
+ * Toggle product availability (Out of Stock / In Stock)
  */
-export async function addProduct(data: Omit<Product, 'id'>): Promise<string> {
-    const newProductData = {
-        ...data,
-        isAvailable: data.isAvailable ?? true,
-    };
-    const docRef = await addDoc(collection(db, 'products'), newProductData);
-    return docRef.id;
+export async function toggleProductAvailability(
+    productId: string,
+    isAvailable: boolean,
+    idToken: string,
+    phone: string
+): Promise<void> {
+    await callProductsApi('PUT', idToken, phone, { id: productId, isAvailable });
 }
 
 /**
- * Delete a product from the catalog
+ * Add a new product to the catalog.
+ * Returns the new Firestore document ID.
  */
-export async function deleteProduct(productId: string): Promise<void> {
-    const productRef = doc(db, 'products', productId);
-    await deleteDoc(productRef);
+export async function addProduct(
+    data: Omit<Product, 'id'>,
+    idToken: string,
+    phone: string
+): Promise<string> {
+    const res = await callProductsApi('POST', idToken, phone, data);
+    const json = await res.json();
+    return json.id as string;
+}
+
+/**
+ * Update an existing product (partial update).
+ */
+export async function updateProduct(
+    productId: string,
+    data: Partial<Omit<Product, 'id'>>,
+    idToken: string,
+    phone: string
+): Promise<void> {
+    await callProductsApi('PUT', idToken, phone, { id: productId, ...data });
+}
+
+/**
+ * Delete a product from the catalog.
+ */
+export async function deleteProduct(productId: string, idToken: string, phone: string): Promise<void> {
+    await callProductsApi('DELETE', idToken, phone, { id: productId });
 }
 
 /**

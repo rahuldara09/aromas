@@ -25,9 +25,9 @@ const securityHeaders = [
       // Google Fonts files
       "font-src 'self' https://fonts.gstatic.com",
       // Images: self, data URIs, Unsplash, Firebase Storage
-      "img-src 'self' blob: data: https://images.unsplash.com https://firebasestorage.googleapis.com",
-      // API connections: Firebase, Google APIs
-      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com",
+      "img-src 'self' blob: data: https://images.unsplash.com https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com https://pub-*.r2.dev https:",
+      // API connections: Firebase, Google APIs, Upstash Redis
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.upstash.io",
       // Allow Web Workers for Firebase SDK
       "worker-src blob:",
     ].join('; '),
@@ -59,6 +59,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: 'pub-*.r2.dev' },
     ],
   },
 };

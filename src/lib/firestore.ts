@@ -21,13 +21,49 @@ function isFirebaseConfigured(): boolean {
     return !!projectId && !projectId.includes('your_project_id');
 }
 
+/**
+ * Normalize an image URL from Firestore:
+ * – Returns the url as-is if it starts with http(s).
+ * – Returns '' for blank, undefined, null, or non-URL values.
+ * This ensures the UI never receives malformed URLs that cause broken-image icons.
+ */
+function sanitizeImageURL(url: unknown): string {
+    if (!url || typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (!trimmed.startsWith('http')) return '';
+    return trimmed;
+}
+
+const LOCAL_CATEGORY_IMAGES: Record<string, string> = {
+    'biryani': '/categories/biryani.jpeg',
+    'chaat': '/categories/chaat.jpeg',
+    'chinese-dry': '/categories/chinese-dry.jpeg',
+    'chinese-rice': '/categories/chinese-rice.jpeg',
+    'cold-drinks': '/categories/cold-drinks.jpeg',
+    'frankie': '/categories/frankie.jpeg',
+    'indian-rice': '/categories/indian-rice.jpg',
+    'non-veg-gravy': '/categories/non-veg-gravy.jpeg',
+    'noodles': '/categories/noodles.jpeg',
+    'paratha-roti': '/categories/paratha-roti.jpeg',
+    'sandwich': '/categories/sandwich.jpeg',
+    'shawrma': '/categories/shawrma.jpeg',
+    'veg-gravy': '/categories/veg-gravy.jpeg',
+};
+
 // ─── Categories ────────────────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<Category[]> {
     if (!isFirebaseConfigured()) return MOCK_CATEGORIES;
     try {
         const snap = await getDocs(collection(db, 'categories'));
-        const results = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category));
+        const results = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+                id: d.id,
+                ...data,
+                imageURL: LOCAL_CATEGORY_IMAGES[d.id] || sanitizeImageURL(data.imageURL),
+            } as Category;
+        });
         return results.length > 0 ? results : MOCK_CATEGORIES;
     } catch {
         return MOCK_CATEGORIES;
@@ -40,7 +76,14 @@ export async function getAllProducts(): Promise<Product[]> {
     if (!isFirebaseConfigured()) return MOCK_PRODUCTS;
     try {
         const snap = await getDocs(collection(db, 'products'));
-        const results = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+        const results = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+                id: d.id,
+                ...data,
+                imageURL: sanitizeImageURL(data.imageURL),
+            } as Product;
+        });
         return results.length > 0 ? results : MOCK_PRODUCTS;
     } catch {
         return MOCK_PRODUCTS;
@@ -52,7 +95,14 @@ export async function getProductsByCategory(categoryId: string): Promise<Product
     try {
         const q = query(collection(db, 'products'), where('categoryId', '==', categoryId));
         const snap = await getDocs(q);
-        return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+        return snap.docs.map((d) => {
+            const data = d.data();
+            return {
+                id: d.id,
+                ...data,
+                imageURL: sanitizeImageURL(data.imageURL),
+            } as Product;
+        });
     } catch {
         return MOCK_PRODUCTS.filter((p) => p.categoryId === categoryId);
     }
@@ -382,18 +432,18 @@ export async function upsertUserProfile(
 // ─── Mock Data (used when Firebase is not configured) ──────────────────────────
 
 export const MOCK_CATEGORIES: Category[] = [
-    { id: 'sandwich', name: 'Sandwich', imageURL: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400', productCount: 4 },
-    { id: 'cold-drinks', name: 'Cold Drinks', imageURL: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400', productCount: 14 },
-    { id: 'chaat', name: 'Chaat', imageURL: 'https://images.unsplash.com/photo-1567337710282-00832b415979?w=400', productCount: 2 },
-    { id: 'shawrma', name: 'Shawrma', imageURL: 'https://images.unsplash.com/photo-1561043433-aaf687c4cf04?w=400', productCount: 3 },
-    { id: 'non-veg-gravy', name: 'Non Veg Gravy', imageURL: 'https://images.unsplash.com/photo-1644516890903-ff62b3d2dda7?w=400', productCount: 10 },
-    { id: 'veg-gravy', name: 'Veg Gravy', imageURL: 'https://images.unsplash.com/photo-1645177628172-a94c1f96e6db?w=400', productCount: 18 },
-    { id: 'biryani', name: 'Biryani', imageURL: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400', productCount: 6 },
-    { id: 'chinese-rice', name: 'Chinese Rice', imageURL: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400', productCount: 15 },
-    { id: 'noodles', name: 'Noodles', imageURL: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400', productCount: 9 },
-    { id: 'paratha-roti', name: 'Paratha / Roti', imageURL: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400', productCount: 8 },
-    { id: 'chinese-dry', name: 'Chinese Dry Item', imageURL: 'https://images.unsplash.com/photo-1637806930600-37fa8892059f?w=400', productCount: 8 },
-    { id: 'frankie', name: 'Frankie', imageURL: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400', productCount: 12 },
+    { id: 'sandwich', name: 'Sandwich', imageURL: LOCAL_CATEGORY_IMAGES['sandwich'] || '', productCount: 4 },
+    { id: 'cold-drinks', name: 'Cold Drinks', imageURL: LOCAL_CATEGORY_IMAGES['cold-drinks'] || '', productCount: 14 },
+    { id: 'chaat', name: 'Chaat', imageURL: LOCAL_CATEGORY_IMAGES['chaat'] || '', productCount: 2 },
+    { id: 'shawrma', name: 'Shawrma', imageURL: LOCAL_CATEGORY_IMAGES['shawrma'] || '', productCount: 3 },
+    { id: 'non-veg-gravy', name: 'Non Veg Gravy', imageURL: LOCAL_CATEGORY_IMAGES['non-veg-gravy'] || '', productCount: 10 },
+    { id: 'veg-gravy', name: 'Veg Gravy', imageURL: LOCAL_CATEGORY_IMAGES['veg-gravy'] || '', productCount: 18 },
+    { id: 'biryani', name: 'Biryani', imageURL: LOCAL_CATEGORY_IMAGES['biryani'] || '', productCount: 6 },
+    { id: 'chinese-rice', name: 'Chinese Rice', imageURL: LOCAL_CATEGORY_IMAGES['chinese-rice'] || '', productCount: 15 },
+    { id: 'noodles', name: 'Noodles', imageURL: LOCAL_CATEGORY_IMAGES['noodles'] || '', productCount: 9 },
+    { id: 'paratha-roti', name: 'Paratha / Roti', imageURL: LOCAL_CATEGORY_IMAGES['paratha-roti'] || '', productCount: 8 },
+    { id: 'chinese-dry', name: 'Chinese Dry Item', imageURL: LOCAL_CATEGORY_IMAGES['chinese-dry'] || '', productCount: 8 },
+    { id: 'frankie', name: 'Frankie', imageURL: LOCAL_CATEGORY_IMAGES['frankie'] || '', productCount: 12 },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [

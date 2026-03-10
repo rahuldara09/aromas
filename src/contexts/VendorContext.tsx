@@ -30,7 +30,7 @@ interface VendorContextValue {
 const VendorContext = createContext<VendorContextValue | null>(null);
 
 export function VendorProvider({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
+    const { user, phoneNumber } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [isStoreOpen, setIsStoreOpen] = useState(false);
@@ -163,13 +163,15 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
         const newVal = !isStoreOpen;
         setIsStoreOpen(newVal);
         try {
-            await toggleStoreStatus(newVal);
+            const idToken = await user!.getIdToken();
+            await toggleStoreStatus(newVal, idToken, phoneNumber ?? '');
             toast.success(newVal ? 'Store is OPEN' : 'Store is CLOSED', { style: { borderRadius: '14px', fontWeight: 600 } });
         } catch {
             setIsStoreOpen(!newVal);
             toast.error('Failed to toggle store');
         }
     };
+
 
     return (
         <VendorContext.Provider value={{ orders, products, isStoreOpen, toggleStore, unlockAudio, playDispatchSound }}>

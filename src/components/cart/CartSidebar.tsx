@@ -12,6 +12,7 @@ export default function CartSidebar() {
     const grandTotal = useCartStore((s) => s.grandTotal());
 
     const [isMounted, setIsMounted] = useState(false);
+    const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -48,8 +49,15 @@ export default function CartSidebar() {
                             {items.map((item) => (
                                 <div key={item.product.id} className="flex items-center gap-2 px-3 py-2">
                                     <div className="w-9 h-9 rounded bg-gray-100 overflow-hidden flex-shrink-0">
-                                        {item.product.imageURL ? (
-                                            <img src={item.product.imageURL} alt={item.product.name} className="w-full h-full object-cover" />
+                                        {item.product.imageURL && !imgErrors[item.product.id] ? (
+                                            <img
+                                                src={item.product.imageURL}
+                                                alt={item.product.name}
+                                                className="w-full h-full object-cover"
+                                                onError={() =>
+                                                    setImgErrors((prev) => ({ ...prev, [item.product.id]: true }))
+                                                }
+                                            />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">🍽</div>
                                         )}

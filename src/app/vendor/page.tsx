@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useVendor } from '@/contexts/VendorContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toggleProductAvailability } from '@/lib/vendor';
 import { Product } from '@/types';
 import toast from 'react-hot-toast';
@@ -30,6 +31,7 @@ import {
 
 export default function VendorDashboardHome() {
     const { orders, products } = useVendor();
+    const { user, phoneNumber } = useAuth();
     const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
     // ─── DERIVED METRICS ───────────────────────────────────────────────
@@ -79,7 +81,8 @@ export default function VendorDashboardHome() {
 
     const handleToggleProduct = async (product: Product) => {
         try {
-            await toggleProductAvailability(product.id, true);
+            const idToken = await user!.getIdToken();
+            await toggleProductAvailability(product.id, true, idToken, phoneNumber ?? '');
             toast.success(`${product.name} is back in stock!`);
         } catch {
             toast.error('Failed to update stock');
@@ -116,7 +119,7 @@ export default function VendorDashboardHome() {
 
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 pb-20">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8 pb-20">
             {/* ═══ TOP ROW: KPI CARDS ═══ */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
@@ -151,7 +154,7 @@ export default function VendorDashboardHome() {
             {/* ═══ MIDDLE ROW: CHARTS & ALERTS ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Chart Widget */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 flex flex-col min-h-[380px] transition-colors">
+                <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6 flex flex-col min-h-[280px] lg:min-h-[380px] transition-colors">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">Revenue & Orders over Time</h3>
@@ -173,7 +176,7 @@ export default function VendorDashboardHome() {
                         </div>
                     </div>
 
-                    <div className="flex-1 w-full h-[280px]">
+                    <div className="flex-1 w-full h-[220px] sm:h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
                             {chartType === 'bar' ? (
                                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

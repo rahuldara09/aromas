@@ -1,23 +1,39 @@
+'use client';
+
 import Link from 'next/link';
 import { Category } from '@/types';
+import { useState } from 'react';
+
+// Fallback used when a category image URL is broken or missing
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80';
 
 interface CategoryCardProps {
     category: Category;
 }
 
 export default function CategoryCard({ category }: CategoryCardProps) {
+    const [imgError, setImgError] = useState(false);
+
+    const showImage = !!(category.imageURL && !imgError);
+    const imgSrc = category.imageURL || FALLBACK_IMAGE;
+
     return (
         <Link href={`/menu?category=${category.id}`}>
             <div className="relative overflow-hidden rounded-2xl aspect-[4/3] group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
                 {/* Background image */}
-                {category.imageURL ? (
+                {showImage ? (
                     <img
-                        src={category.imageURL}
+                        src={imgSrc}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={() => setImgError(true)}
+                    />
+                ) : (
+                    <img
+                        src={FALLBACK_IMAGE}
                         alt={category.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-200 to-red-300" />
                 )}
 
                 {/* Overlay */}

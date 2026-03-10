@@ -1,18 +1,21 @@
 'use client';
 
 import { useVendor } from '@/contexts/VendorContext';
-import { toggleProductAvailability, addProduct, deleteProduct } from '@/lib/vendor';
+import { useAuth } from '@/contexts/AuthContext';
+import { toggleProductAvailability, addProduct, deleteProduct, updateProduct } from '@/lib/vendor';
 import { Product } from '@/types';
 import toast from 'react-hot-toast';
-import { Menu as MenuIcon, Search, Plus, X, Trash2 } from 'lucide-react';
+import { Menu as MenuIcon, Search, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function VendorMenu() {
     const { products } = useVendor();
+    const { user, phoneNumber } = useAuth();
     const [search, setSearch] = useState('');
 
     // Modal state
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [newItemName, setNewItemName] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemCategory, setNewItemCategory] = useState('');
@@ -21,14 +24,15 @@ export default function VendorMenu() {
 
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        // @ts-ignore - Temporary hack for custom category until db is updated
-        p.category?.toLowerCase().includes(search.toLowerCase())
+        (p as any).category?.toLowerCase().includes(search.toLowerCase()) ||
+        p.categoryId.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleToggleProduct = async (product: Product) => {
         const newValue = !(product.isAvailable ?? true);
         try {
-            await toggleProductAvailability(product.id, newValue);
+            const idToken = await user!.getIdToken();
+            await toggleProductAvailability(product.id, newValue, idToken, phoneNumber ?? '');
             if (newValue) {
                 toast.success(`${product.name} marked In-Stock`);
             } else {
@@ -42,11 +46,21 @@ export default function VendorMenu() {
     const handleDeleteProduct = async (product: Product) => {
         if (!confirm(`Are you sure you want to delete ${product.name}?`)) return;
         try {
-            await deleteProduct(product.id);
+            const idToken = await user!.getIdToken();
+            await deleteProduct(product.id, idToken, phoneNumber ?? '');
             toast.success(`${product.name} deleted`);
         } catch {
             toast.error('Failed to delete item');
         }
+    };
+
+    const handleEditClick = (product: Product) => {
+        setEditingProduct(product);
+        setNewItemName(product.name);
+        setNewItemPrice(product.price.toString());
+        setNewItemCategory((product as any).category || product.categoryId);
+        setNewItemImage(product.imageURL);
+        setIsAddModalOpen(true);
     };
 
     const handleAddSubmit = async (e: React.FormEvent) => {
@@ -58,28 +72,39 @@ export default function VendorMenu() {
 
         setIsSubmitting(true);
         try {
-            await addProduct({
+            const idToken = await user!.getIdToken();
+            const data = {
                 name: newItemName,
                 price: parseFloat(newItemPrice),
-                categoryId: newItemCategory.toLowerCase().replace(/\s+/g, '-'), // Basic slug logic
-                // @ts-ignore - temporary hack to store category string directly on document
+                categoryId: newItemCategory.toLowerCase().replace(/\s+/g, '-'),
                 category: newItemCategory,
                 imageURL: newItemImage || '',
-                isAvailable: true,
-            });
-            toast.success('Item added successfully!');
-            setIsAddModalOpen(false);
-            // Reset form
-            setNewItemName('');
-            setNewItemPrice('');
-            setNewItemCategory('');
-            setNewItemImage('');
+            };
+
+            if (editingProduct) {
+                await updateProduct(editingProduct.id, data, idToken, phoneNumber ?? '');
+                toast.success('Item updated successfully!');
+            } else {
+                await addProduct({ ...data, isAvailable: true }, idToken, phoneNumber ?? '');
+                toast.success('Item added successfully!');
+            }
+
+            closeModal();
         } catch (error) {
-            toast.error('Failed to add item');
+            toast.error(editingProduct ? 'Failed to update item' : 'Failed to add item');
             console.error(error);
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const closeModal = () => {
+        setIsAddModalOpen(false);
+        setEditingProduct(null);
+        setNewItemName('');
+        setNewItemPrice('');
+        setNewItemCategory('');
+        setNewItemImage('');
     };
 
     return (
@@ -172,13 +197,22 @@ export default function VendorMenu() {
                                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-[4px]'}`} />
                                         </button>
 
-                                        <button
-                                            onClick={() => handleDeleteProduct(product)}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                                            title="Delete Item"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => handleEditClick(product)}
+                                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
+                                                title="Edit Item"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteProduct(product)}
+                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                                                title="Delete Item"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -192,9 +226,11 @@ export default function VendorMenu() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
                         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                            <h3 className="font-extrabold text-lg text-gray-900 dark:text-white">Add New Menu Item</h3>
+                            <h3 className="font-extrabold text-lg text-gray-900 dark:text-white">
+                                {editingProduct ? 'Edit Menu Item' : 'Add New Menu Item'}
+                            </h3>
                             <button
-                                onClick={() => setIsAddModalOpen(false)}
+                                onClick={closeModal}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
                             >
                                 <X size={20} />
@@ -255,7 +291,7 @@ export default function VendorMenu() {
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setIsAddModalOpen(false)}
+                                    onClick={closeModal}
                                     className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                                 >
                                     Cancel
@@ -265,7 +301,7 @@ export default function VendorMenu() {
                                     disabled={isSubmitting}
                                     className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:opacity-50 transition-colors"
                                 >
-                                    {isSubmitting ? 'Saving...' : 'Add Item'}
+                                    {isSubmitting ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Item'}
                                 </button>
                             </div>
                         </form>

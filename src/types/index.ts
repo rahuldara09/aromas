@@ -41,7 +41,20 @@ export interface OrderItem {
   imageURL: string;
 }
 
-export type OrderStatus = 'Placed' | 'Pending' | 'Preparing' | 'Completed' | 'Paid' | 'Delivered' | 'Dispatched' | 'Cancelled';
+export type OrderStatus =
+  | 'pending_payment'
+  | 'payment_processing'
+  | 'payment_success'
+  | 'payment_failed'
+  | 'Placed'
+  | 'Pending'
+  | 'Preparing'
+  | 'Completed'
+  | 'Paid'
+  | 'Delivered'
+  | 'Dispatched'
+  | 'Cancelled'
+  | 'refunded';
 
 export interface Order {
   id: string;
@@ -68,6 +81,23 @@ export interface Order {
     roomNumber: string;
     deliveryType: 'Delivery' | 'Takeaway';
   };
+  payment_status?: 'pending' | 'processing' | 'success' | 'failed' | 'refunded';
+  payment_provider?: string;
+  payment_transaction_id?: string;
+  payment_amount?: number;
+  payment_verified_at?: Date;
+}
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  provider: string; // 'payu', 'razorpay', etc.
+  transaction_id: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'success' | 'failed' | 'refunded';
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface User {

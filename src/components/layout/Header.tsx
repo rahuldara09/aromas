@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Grid3X3, ShoppingCart, User, Search } from 'lucide-react';
+import { Grid3X3, ShoppingCart, User, Search, X } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -36,6 +36,15 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
     useEffect(() => { setMounted(true); }, []);
     const displayCount = mounted ? totalItems : 0;
     // ──────────────────────────────────────────────────────────────────────────
+
+    // ── Mobile search toggle ───────────────────────────────────────────────────
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const mobileInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (mobileSearchOpen) {
+            setTimeout(() => mobileInputRef.current?.focus(), 100);
+        }
+    }, [mobileSearchOpen]);
 
     // ── Search State ──────────────────────────────────────────────────────────
     const [searchQuery, setSearchQuery] = useState('');
@@ -166,7 +175,110 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
 
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+            {/* ── MOBILE: compact header row ───────────────────────────────── */}
+            <div className="md:hidden px-4 h-14 flex items-center justify-between gap-3">
+                {/* Logo */}
+                <Link href="/">
+                    <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
+                </Link>
+
+                {/* Right icons */}
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setMobileSearchOpen(o => !o)}
+                        className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Search"
+                    >
+                        {mobileSearchOpen ? <X size={20} className="text-gray-700" /> : <Search size={20} className="text-gray-700" />}
+                    </button>
+                    <Link href="/checkout" className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors" aria-label="Cart">
+                        {displayCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-black rounded-full min-w-[16px] h-[16px] px-0.5 flex items-center justify-center">
+                                {displayCount}
+                            </span>
+                        )}
+                        <ShoppingCart size={20} className="text-gray-700" />
+                    </Link>
+                    <button
+                        onClick={user ? () => router.push('/account') : openAuthModal}
+                        className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Account"
+                    >
+                        <User size={20} className="text-gray-700" />
+                    </button>
+                </div>
+            </div>
+
+            {/* ── MOBILE: Expandable search bar ───────────────────────────── */}
+            {mobileSearchOpen && (
+                <div className="md:hidden px-3 pb-2.5">
+                    <div ref={searchRef} className="relative w-full">
+                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                        <input
+                            ref={mobileInputRef}
+                            type="text"
+                            placeholder="Search for products..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => { if (searchQuery) setShowDropdown(true); }}
+                            onKeyDown={handleKeyDown}
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all placeholder:text-gray-400"
+                        />
+                        {showDropdown && searchQuery && (
+                            <div className="absolute top-[110%] left-0 w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 flex flex-col pt-1 pb-2">
+                                {isSearching ? (
+                                    <div className="px-4 py-6 text-center text-sm text-gray-500">Searching...</div>
+                                ) : searchResults.length > 0 ? (
+                                    <div className="flex flex-col max-h-[60vh] overflow-y-auto">
+                                        {searchResults.map((product, idx) => {
+                                            const isSelected = idx === selectedIndex;
+                                            const cartItem = items.find(i => i.product.id === product.id);
+                                            const qty = cartItem ? cartItem.quantity : 0;
+                                            return (
+                                                <div
+                                                    key={product.id}
+                                                    onMouseEnter={() => setSelectedIndex(idx)}
+                                                    className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl transition-colors cursor-pointer ${isSelected ? 'bg-red-50' : 'hover:bg-gray-50'}`}
+                                                    onClick={qty === 0 ? () => handleAddToCart(product) : undefined}
+                                                >
+                                                    <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                                                        {product.imageURL ? (
+                                                            <img src={product.imageURL} alt={product.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-gray-400 text-[10px]">🍽</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col flex-1 min-w-0">
+                                                        <span className={`text-sm font-semibold truncate ${isSelected ? 'text-red-900' : 'text-gray-900'}`}>{product.name}</span>
+                                                        <span className="text-xs text-gray-500 capitalize">{product.categoryId?.replace(/-/g, ' ')}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="text-sm font-black text-gray-900">₹{product.price}</span>
+                                                        {qty > 0 ? (
+                                                            <div className="flex items-center gap-1 border border-gray-200 rounded-lg px-1.5 py-0.5">
+                                                                <button onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, qty - 1); }} className="w-5 h-5 flex items-center justify-center text-red-500 font-bold">-</button>
+                                                                <span className="text-xs font-bold w-3 text-center">{qty}</span>
+                                                                <button onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, qty + 1); }} className="w-5 h-5 flex items-center justify-center text-red-500 font-bold">+</button>
+                                                            </div>
+                                                        ) : (
+                                                            <button onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }} className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700">+ADD</button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="px-4 py-8 text-center text-sm text-gray-500">No items found</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── DESKTOP: original full header ──────────────────────────── */}
+            <div className="hidden md:grid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 grid-cols-[auto_1fr_auto] items-center gap-4">
                 {variant === 'checkout' ? (
                     <>
                         {/* Logo */}
@@ -347,3 +459,4 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
         </header>
     );
 }
+
