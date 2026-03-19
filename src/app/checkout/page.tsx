@@ -180,7 +180,14 @@ export default function CheckoutPage() {
                 })
             });
 
-            const data = await res.json();
+            const textData = await res.text();
+            let data;
+            try {
+                data = JSON.parse(textData);
+            } catch (e) {
+                console.error('[Checkout] API returned non-JSON:', textData);
+                throw new Error(`Server error (${res.status}). Make sure Vercel environment variables are correct!`);
+            }
 
             if (!res.ok) {
                 throw new Error(data.error || 'Failed to initiate payment');
