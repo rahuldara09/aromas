@@ -104,7 +104,8 @@ export default function CheckoutPage() {
             toast.error('Your cart is empty!');
             return;
         }
-        if (!user) {
+        if (!user || !phoneNumber) {
+            toast.error('You must log in with your phone number first!');
             openAuthModal();
             return;
         }
@@ -143,7 +144,11 @@ export default function CheckoutPage() {
 
     // ─── Step 4: Initiate Payment Session ───────
     const handlePlaceOrder = async () => {
-        if (!user) return;
+        if (!user || !phoneNumber) {
+            toast.error('You must log in with your phone number first!');
+            openAuthModal();
+            return;
+        }
         setPaymentLoading(true);
 
         try {
