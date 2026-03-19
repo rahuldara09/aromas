@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
         // Update the order with the generated transaction ID
         await orderRef.update({
-            payment_provider: 'payu', // Or derive from service if dynamic
+            payment_provider: 'cashfree', // Or derive from service if dynamic
             payment_transaction_id: session.transactionId,
         });
 

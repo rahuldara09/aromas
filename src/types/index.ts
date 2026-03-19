@@ -82,16 +82,27 @@ export interface Order {
     deliveryType: 'Delivery' | 'Takeaway';
   };
   payment_status?: 'pending' | 'processing' | 'success' | 'failed' | 'refunded';
-  payment_provider?: string;
+  payment_provider?: string | 'cashfree' | 'payu';
   payment_transaction_id?: string;
   payment_amount?: number;
   payment_verified_at?: Date;
+  timeline?: {
+    placed?: Date;
+    accepted?: Date;
+    preparing?: Date;
+    dispatched?: Date;
+    completed?: Date;
+    cancelled?: Date;
+  };
+  prep_time?: number; // In minutes
+  cancel_reason?: string;
+  cancelled_by?: string;
 }
 
 export interface Payment {
   id: string;
   order_id: string;
-  provider: string; // 'payu', 'razorpay', etc.
+  provider: string | 'cashfree' | 'payu'; // 'payu', 'cashfree', 'razorpay', etc.
   transaction_id: string;
   amount: number;
   currency: string;

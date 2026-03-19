@@ -81,10 +81,52 @@ export function listenToLiveOrders(callback: (orders: Order[]) => void) {
 
 /**
  * Update the status of an order (e.g., Placed -> Preparing -> Completed)
+ * Automatically tracks timeline transitions and calculates prep_time.
  */
-export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+export async function updateOrderStatus(
+    orderId: string,
+    status: OrderStatus,
+    cancelReason?: string,
+    cancelledBy?: string
+): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, { status });
+    
+    // Convert friendly status string to strict timeline key
+    const tKey = status.toLowerCase() === 'placed' ? 'placed' 
+        : status.toLowerCase() === 'pending' ? 'accepted'
+        : status.toLowerCase() === 'preparing' ? 'preparing'
+        : status.toLowerCase() === 'completed' ? 'completed'
+        : status.toLowerCase() === 'dispatched' ? 'dispatched'
+        : status.toLowerCase() === 'delivered' ? 'completed'
+        : status.toLowerCase() === 'cancelled' ? 'cancelled'
+        : null;
+
+    const updates: Record<string, any> = { status };
+    
+    if (tKey) {
+        updates[`timeline.${tKey}`] = new Date();
+    }
+
+    if (status === 'Cancelled' && cancelReason) {
+        updates['cancel_reason'] = cancelReason;
+        if (cancelledBy) updates['cancelled_by'] = cancelledBy;
+    }
+
+    // Attempt to calculate prep_time if finishing
+    if (status === 'Completed' || status === 'Dispatched') {
+        try {
+            const snap = await getDoc(orderRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                const start = data.timeline?.preparing?.toDate?.() || data.orderDate?.toDate?.();
+                if (start) {
+                    updates.prep_time = Math.max(1, Math.floor((Date.now() - start.getTime()) / 60_000));
+                }
+            }
+        } catch (e) { console.error('Failed to calc prep_time:', e); }
+    }
+
+    await updateDoc(orderRef, updates);
 }
 
 /**
@@ -96,6 +138,7 @@ export async function createPOSOrder(
     grandTotal: number,
     paymentMethod: 'Cash' | 'UPI'
 ): Promise<string> {
+    const now = new Date();
     const newOrder: Omit<Order, 'id'> = {
         userId: 'pos-user',
         orderType: 'pos',
@@ -104,8 +147,13 @@ export async function createPOSOrder(
         dukanFee: 0,
         deliveryFee: 0,
         grandTotal,
-        orderDate: new Date(),
+        orderDate: now,
         status: 'Preparing', // Bypasses 'Placed' / 'Pending'
+        timeline: {
+            placed: now,
+            accepted: now,
+            preparing: now
+        },
         deliveryAddress: {
             name: `Walk-in (${paymentMethod})`,
             mobile: '',

@@ -4,20 +4,16 @@ import { paymentService } from '@/services/payment/paymentService';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(req: NextRequest) {
-    let rawBody;
-    const contentType = req.headers.get('content-type') || '';
-
+    let rawBody = '';
+    
     try {
-        // PayU sends form-urlencoded data on success/failure
-        if (contentType.includes('application/x-www-form-urlencoded')) {
-            const formData = await req.formData();
-            rawBody = Object.fromEntries(formData);
-        } else {
-            rawBody = await req.json();
-        }
+        rawBody = await req.text(); // Cashfree requires exact raw body for signature match
     } catch {
         return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 });
     }
+
+    const signature = req.headers.get('x-webhook-signature') || '';
+    const timestamp = req.headers.get('x-webhook-timestamp') || '';
 
     try {
         console.log(`[webhook] Received payload for order.`);
@@ -25,7 +21,11 @@ export async function POST(req: NextRequest) {
         // 1. Verify Payment via Service Provider
         let verification;
         try {
-            verification = await paymentService.verifyPayment(rawBody);
+            verification = await paymentService.verifyPayment({
+                rawBody,
+                signature,
+                timestamp
+            });
         } catch (err: any) {
             console.error('[webhook] Signature verification failed:', err.message);
             // Return an error for S2S or redirect with error
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         // 4. Record Payment in Database
         const paymentData = {
             order_id: verification.orderId,
-            provider: 'payu',
+            provider: 'cashfree',
             transaction_id: verification.transactionId,
             amount: verification.amount,
             currency: verification.currency,
@@ -78,13 +78,13 @@ export async function POST(req: NextRequest) {
         if (verification.success) {
             await orderRef.update({
                 payment_status: 'success',
-                status: 'success', // The order status model specifies this
+                status: 'Placed', // Vendor dashboard tracks "Placed" orders
                 payment_transaction_id: verification.transactionId,
                 payment_amount: verification.amount,
                 payment_verified_at: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp()
             });
-            console.log(`[webhook] Order ${verification.orderId} payment successful & verified.`);
+            console.log(`[webhook] Order ${verification.orderId} payment successful & verified. Marked as Placed.`);
         } else {
             await orderRef.update({
                 payment_status: 'failed',
@@ -92,11 +92,11 @@ export async function POST(req: NextRequest) {
                 payment_transaction_id: verification.transactionId,
                 updatedAt: FieldValue.serverTimestamp()
             });
-            console.error(`[webhook] Order ${verification.orderId} payment failed according to PayU. Status: ${verification.providerRawStatus}`);
+            // Return 200 OK for webhook instead of redirecting (since Cashfree expects 200)
+            console.error(`[webhook] Order ${verification.orderId} payment failed according to provider. Status: ${verification.providerRawStatus}`);
         }
 
-        // Redirect user back to the order tracking page. 
-        return NextResponse.redirect(new URL(`/order/${verification.orderId}`, req.url));
+        return NextResponse.json({ status: 'OK' }, { status: 200 });
 
     } catch (err: any) {
         console.error('[webhook] Processing failed:', err.message);

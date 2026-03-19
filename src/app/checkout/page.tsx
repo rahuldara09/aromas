@@ -10,7 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createOrder, upsertUserProfile, getUserByPhone } from '@/lib/firestore';
 import { listenToStoreStatus } from '@/lib/vendor';
 import { IIT_BOMBAY_HOSTELS } from '@/lib/hostels';
-import PayUForm from '@/components/checkout/PayUForm';
+import { load } from '@cashfreepayments/cashfree-js';
+// import PayUForm from '@/components/checkout/PayUForm';
 import toast from 'react-hot-toast';
 import { Trash2, CreditCard, ChevronDown, CheckCircle2 } from 'lucide-react';
 
@@ -37,7 +38,6 @@ export default function CheckoutPage() {
 
     const [step, setStep] = useState<Step>(1);
     const [paymentLoading, setPaymentLoading] = useState(false);
-    const [paymentSession, setPaymentSession] = useState<{ url: string; payload: Record<string, string> } | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [isStoreOpen, setIsStoreOpen] = useState(true);
 
@@ -195,15 +195,22 @@ export default function CheckoutPage() {
                 true // isPlacingOrder
             ).catch(err => console.error('[Checkout] Background profile update failed:', err));
 
-            // Set session to render the PayU form redirect
-            toast.loading('Redirecting to payment gateway...');
-            setPaymentSession({
-                url: data.session.paymentUrl,
-                payload: data.session.payload
-            });
-
+            // Set session to render Cashfree checkout
+            toast.loading('Redirecting to payment gateway...', { id: 'cf-loading' });
+            
             // Clear cart early since order is technically placed as pending_payment
             clearCart();
+            
+            const cashfree = await load({
+                mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox',
+            });
+
+            toast.dismiss('cf-loading');
+
+            cashfree.checkout({
+                paymentSessionId: data.session.payload.payment_session_id,
+                redirectTarget: '_self' // Redirects the entire page to Cashfree
+            });
 
         } catch (error: any) {
             console.error('[Checkout] Payment initialization failed:', error);
@@ -216,18 +223,6 @@ export default function CheckoutPage() {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-            </div>
-        );
-    }
-
-    // If payment session exists, render the redirect form
-    if (paymentSession) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Header />
-                <main className="flex-1 max-w-lg mx-auto w-full pt-24 px-4">
-                    <PayUForm paymentUrl={paymentSession.url} payload={paymentSession.payload} />
-                </main>
             </div>
         );
     }
@@ -469,7 +464,7 @@ export default function CheckoutPage() {
                                         <div>
                                             <p className="font-bold text-gray-800 text-sm mb-1">Secure Payment</p>
                                             <p className="text-gray-500 font-medium leading-relaxed text-xs">
-                                                You will be securely redirected to PayU. Order is placed upon successful payment.
+                                                You will be securely redirected to Cashfree Payments. Order is placed upon successful payment.
                                             </p>
                                         </div>
                                     </div>

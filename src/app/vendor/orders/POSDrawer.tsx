@@ -63,8 +63,6 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
         setIsSubmitting(true);
         try {
             await createPOSOrder(cartItems, totalAmount, totalAmount, paymentMethod);
-            toast.success('POS Order Created', { icon: '✅', style: { borderRadius: '14px', fontWeight: 600 } });
-
             // reset & close
             setCart({});
             setSearchQuery('');
@@ -97,23 +95,23 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] xl:w-[450px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 flex flex-col pt-16"
+                        className="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] xl:w-[450px] bg-white  border-l border-gray-200  shadow-2xl z-50 flex flex-col pt-16"
                     >
                         {/* Header */}
-                        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                        <div className="px-5 py-4 border-b border-gray-100  flex items-center justify-between shrink-0">
                             <div>
-                                <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">POS Walk-In</h2>
+                                <h2 className="text-xl font-black text-gray-900  tracking-tight">POS Walk-In</h2>
                                 <p className="text-xs font-semibold text-gray-500">Quick order entry</p>
                             </div>
-                            <button onClick={onClose} className="p-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors">
-                                <X size={20} className="text-gray-600 dark:text-gray-300" />
+                            <button onClick={onClose} className="p-2 bg-gray-50 hover:bg-gray-100  :bg-gray-700 rounded-full transition-colors">
+                                <X size={20} className="text-gray-600 " />
                             </button>
                         </div>
 
                         {/* Search & Menu */}
-                        <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-gray-50 dark:bg-gray-950">
+                        <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-gray-50 ">
                             {/* Search */}
-                            <div className="p-4 shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+                            <div className="p-4 shrink-0 bg-white  border-b border-gray-100 ">
                                 <div className="relative">
                                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input
@@ -121,7 +119,7 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
                                         placeholder="Search menu items..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 text-sm font-medium transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50  border border-gray-200  rounded-xl focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 text-sm font-medium transition-all"
                                     />
                                 </div>
                             </div>
@@ -132,26 +130,26 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
                                     {filteredProducts.map(product => {
                                         const qty = cart[product.id] || 0;
                                         return (
-                                            <div key={product.id} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
+                                            <div key={product.id} className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white  border border-gray-200  rounded-xl shadow-sm">
                                                 <div className="flex-1 min-w-0 pr-4">
-                                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{product.name}</h3>
-                                                    <p className="text-sm font-extrabold text-gray-600 dark:text-gray-300 mt-0.5">₹{product.price}</p>
+                                                    <h3 className="text-sm font-bold text-gray-900  truncate">{product.name}</h3>
+                                                    <p className="text-sm font-extrabold text-gray-600  mt-0.5">₹{product.price}</p>
                                                 </div>
-                                                <div className="shrink-0 mt-3 sm:mt-0 flex items-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shrink-0">
+                                                <div className="shrink-0 mt-3 sm:mt-0 flex items-center bg-gray-50  border border-gray-200  rounded-lg overflow-hidden shrink-0">
                                                     {qty > 0 ? (
                                                         <>
-                                                            <button onClick={() => removeFromCart(product.id)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                                            <button onClick={() => removeFromCart(product.id)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-gray-200 :bg-gray-700 transition-colors">
                                                                 <Minus size={14} strokeWidth={3} />
                                                             </button>
-                                                            <span className="w-6 text-center text-sm font-bold text-gray-900 dark:text-white">{qty}</span>
-                                                            <button onClick={() => addToCart(product)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                                            <span className="w-6 text-center text-sm font-bold text-gray-900 ">{qty}</span>
+                                                            <button onClick={() => addToCart(product)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-gray-200 :bg-gray-700 transition-colors">
                                                                 <Plus size={14} strokeWidth={3} />
                                                             </button>
                                                         </>
                                                     ) : (
                                                         <button
                                                             onClick={() => addToCart(product)}
-                                                            className="px-4 h-8 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-xs hover:bg-red-100 transition-colors w-full sm:w-auto"
+                                                            className="px-4 h-8 bg-red-50  text-red-600  font-bold text-xs hover:bg-red-100 transition-colors w-full sm:w-auto"
                                                         >
                                                             ADD
                                                         </button>
@@ -165,21 +163,21 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
                         </div>
 
                         {/* Sticky Footer Cart Area */}
-                        <div className="shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                        <div className="shrink-0 bg-white  border-t border-gray-200  p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                             <div className="flex justify-between items-center mb-4">
-                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Total Amount</span>
-                                <span className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">₹{totalAmount}</span>
+                                <span className="text-sm font-bold text-gray-500 ">Total Amount</span>
+                                <span className="text-2xl font-black text-gray-900  tracking-tight">₹{totalAmount}</span>
                             </div>
 
                             {/* Payment Toggle */}
-                            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg mb-4">
+                            <div className="flex p-1 bg-gray-100  rounded-lg mb-4">
                                 {(["Cash", "UPI"] as const).map(method => (
                                     <button
                                         key={method}
                                         onClick={() => setPaymentMethod(method)}
                                         className={`flex-1 py-1.5 text-sm font-bold rounded-md transition-colors ${paymentMethod === method
-                                                ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white'
-                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                                ? 'bg-white  shadow-sm text-gray-900 '
+                                                : 'text-gray-500 hover:text-gray-700 :text-gray-300'
                                             }`}
                                     >
                                         {method}
@@ -192,7 +190,7 @@ export default function POSDrawer({ isOpen, onClose }: POSDrawerProps) {
                                 disabled={!hasItems || isSubmitting}
                                 className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-lg transition-all ${hasItems && !isSubmitting
                                         ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-lg shadow-red-500/20'
-                                        : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                        : 'bg-gray-200  text-gray-400  cursor-not-allowed'
                                     }`}
                             >
                                 {isSubmitting ? (

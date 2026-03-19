@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useVendor } from '@/contexts/VendorContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,128 +124,183 @@ export default function VendorDashboardHome() {
             {/* ═══ TOP ROW: KPI CARDS ═══ */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
-                    title="Total Sales"
+                    title="Revenue"
                     value={`₹${todaySales.toLocaleString('en-IN')}`}
-                    icon={<IndianRupee className="text-emerald-500" size={24} />}
+                    icon={<IndianRupee size={20} className="stroke-[2.5]" />}
                     trend="+12%"
                     trendUp={true}
+                    iconBgClass="bg-[#e6efe1] text-emerald-700"
+                    sparklineColor="#10b981"
                 />
                 <KPICard
                     title="Delivered Orders"
                     value={deliveredOrders.length}
-                    icon={<PackageCheck className="text-blue-500" size={24} />}
+                    icon={<PackageCheck size={20} className="stroke-[2.5]" />}
                     trend="+5%"
                     trendUp={true}
+                    iconBgClass="bg-[#ecf2ff] text-blue-600"
+                    sparklineColor="#3b82f6"
                 />
                 <KPICard
                     title="Active Orders"
                     value={activeOrders.length}
-                    icon={<BarChart3 className="text-amber-500" size={24} />}
+                    icon={<BarChart3 size={20} className="stroke-[2.5]" />}
+                    trend="-6%"
+                    trendUp={false}
+                    iconBgClass="bg-[#fff4e5] text-amber-600"
+                    sparklineColor="#f59e0b"
                 />
                 <KPICard
                     title="Avg Wait Time"
                     value={`${avgWaitTime} mins`}
-                    icon={<Clock className={avgWaitTime > 15 ? "text-red-500" : "text-emerald-500"} size={24} />}
+                    icon={<Clock size={20} className="stroke-[2.5]" />}
                     trend={avgWaitTime > 15 ? "+3m" : "-1m"}
                     trendUp={avgWaitTime > 15 ? false : true}
-                    valueColor={avgWaitTime > 15 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}
+                    iconBgClass="bg-[#e6efe1] text-emerald-700"
+                    sparklineColor="#10b981"
                 />
             </div>
 
             {/* ═══ MIDDLE ROW: CHARTS & ALERTS ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Chart Widget */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6 flex flex-col min-h-[280px] lg:min-h-[380px] transition-colors">
-                    <div className="flex items-center justify-between mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                {/* 1. CHART WIDGET */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-5 sm:p-6 flex flex-col min-h-[380px]">
+                    <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">Revenue & Orders over Time</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5">Today's hourly performance</p>
+                            <h3 className="text-[17px] font-extrabold text-gray-900 tracking-tight">Revenue & Orders over Time</h3>
+                            <p className="text-[13px] text-gray-500 font-medium mt-1">Today's hourly performance</p>
                         </div>
-                        <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg transition-colors">
+                        <div className="flex bg-gray-50 p-1 rounded-lg border border-gray-100">
                             <button
                                 onClick={() => setChartType('bar')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${chartType === 'bar' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${chartType === 'bar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Bar
                             </button>
                             <button
                                 onClick={() => setChartType('line')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${chartType === 'line' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${chartType === 'line' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Line
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex-1 w-full h-[220px] sm:h-[280px]">
+                    <div className="flex-1 w-full h-[240px] sm:h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             {chartType === 'bar' ? (
                                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} dy={10} />
-                                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} />
-                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} />
+                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
+                                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
+                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
                                     <Tooltip
                                         cursor={{ fill: '#f9fafb' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }}
                                     />
-                                    <Bar yAxisId="left" dataKey="orders" name="Orders" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                                    <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} opacity={0.6} />
+                                    <Bar yAxisId="left" dataKey="orders" name="Orders" fill="#cfdee2" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                                    <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#1a4a38" radius={[4, 4, 0, 0]} maxBarSize={32} opacity={0.9} />
                                 </BarChart>
                             ) : (
                                 <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} dy={10} />
-                                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} />
-                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 600 }} />
+                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} dy={10} />
+                                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
+                                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }} />
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                        contentStyle={{ borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }}
                                     />
-                                    <Line yAxisId="left" type="monotone" dataKey="orders" name="Orders" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                                    <Line yAxisId="right" type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} opacity={0.6} />
+                                    <Line yAxisId="left" type="monotone" dataKey="orders" name="Orders" stroke="#cfdee2" strokeWidth={3} dot={{ r: 4, fill: '#cfdee2', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                                    <Line yAxisId="right" type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#1a4a38" strokeWidth={3} dot={{ r: 4, fill: '#1a4a38', strokeWidth: 2, stroke: '#fff' }} opacity={0.9} />
                                 </LineChart>
                             )}
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Low Stock Alerts */}
-                <div className="bg-white rounded-2xl border border-rose-200 shadow-[0_4px_24px_-12px_rgba(225,29,72,0.15)] flex flex-col overflow-hidden relative min-h-[380px]">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-400 to-red-500" />
-                    <div className="px-6 py-5 border-b border-rose-50 flex items-center justify-between bg-rose-50/30">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
-                                <AlertCircle size={20} className="animate-pulse" />
+                {/* 2. CHECK DIRECT WEBSITE */}
+                <div className="col-span-1 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-5 sm:p-6 flex flex-col justify-between min-h-[380px]">
+                    <div>
+                        <h3 className="text-[17px] font-extrabold text-gray-900 tracking-tight text-center mb-6">Check Direct Website</h3>
+                        
+                        {/* Mini Website Frame */}
+                        <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-6 flex flex-col" style={{ height: '180px' }}>
+                            <div className="bg-gray-100 px-3 py-1.5 flex items-center gap-1.5 border-b border-gray-200">
+                                <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                                <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                                <div className="mx-auto bg-white border border-gray-200 rounded-md px-3 py-0.5 text-[8px] text-gray-400 font-mono">
+                                    aroma-food-store.com
+                                </div>
                             </div>
-                            <h3 className="text-lg font-extrabold text-gray-900 tracking-tight">Out of Stock</h3>
+                            <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 p-3 relative overflow-hidden">
+                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[6px] text-white">1</div>
+                                <div className="w-full h-10 bg-[#1a4a38] rounded flex items-center px-3 mb-2">
+                                    <span className="text-white text-[10px] font-bold">Aroma Food Store</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="h-16 bg-white rounded shadow-sm"></div>
+                                    <div className="h-16 bg-white rounded shadow-sm"></div>
+                                </div>
+                            </div>
                         </div>
-                        <span className="bg-rose-100 text-rose-700 font-black text-xs px-2.5 py-1 rounded-full">
-                            {lowStockProducts.length} Items
-                        </span>
+                    </div>
+                    
+                    <button className="w-full py-3.5 bg-[#1a4a38] hover:bg-[#123628] text-white font-bold text-sm rounded-xl transition-colors shadow-sm">
+                        Open Direct Website<br/>
+                        <span className="text-xs font-normal opacity-90">(Aroma Food Store)</span>
+                    </button>
+                </div>
+
+                {/* 3. STOCK STATUS (PEACH BLOCK) */}
+                <div className="col-span-1 rounded-2xl border border-[#f4e2d2] bg-[#fff5ea] flex flex-col overflow-hidden relative min-h-[380px]">
+                    <div className="px-6 py-5 flex items-center justify-between border-b border-[#f4e2d2]/50">
+                        <h3 className="text-[17px] font-extrabold text-gray-900 tracking-tight">Stock Status</h3>
+                        {lowStockProducts.length === 0 ? (
+                            <span className="bg-[#e6efe1] text-emerald-800 font-extrabold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide border border-emerald-200/50">
+                                0 Items
+                            </span>
+                        ) : (
+                            <span className="bg-red-100 text-red-700 font-extrabold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wide border border-red-200">
+                                {lowStockProducts.length} Items Out
+                            </span>
+                        )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 scrollbar-thin divide-y divide-gray-50">
+                    <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
                         {lowStockProducts.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center opacity-60 text-center p-6">
-                                <CheckCircle2 size={40} className="text-emerald-500 mb-3" />
-                                <p className="font-bold text-gray-800">All items are in stock!</p>
-                                <p className="text-xs text-gray-500 mt-1">Your inventory is looking healthy.</p>
+                            <div className="h-full flex flex-col items-center justify-center text-center px-6 pt-4 pb-12">
+                                <div className="w-16 h-16 rounded-full bg-white border-2 border-[#1a4a38] flex items-center justify-center mb-5 shadow-sm">
+                                    <CheckCircle2 size={32} className="text-[#1a4a38]" />
+                                </div>
+                                <h4 className="text-[17px] font-black text-gray-900 leading-tight mb-2">All {products.length || 0} menu items are<br/>in stock!</h4>
+                                <p className="text-sm text-gray-600 mb-8">Manage inventory.</p>
+                                
+                                <div className="w-full space-y-3">
+                                    <Link href="/vendor/menu" className="w-full block py-2.5 bg-white border border-[#1a4a38] text-[#1a4a38] hover:bg-[#1a4a38] hover:text-white font-bold text-sm rounded-lg transition-colors shadow-sm text-center">
+                                        Inventory Manager
+                                    </Link>
+                                    <Link href="/vendor/menu" className="w-full block py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-sm rounded-lg transition-colors shadow-sm text-center">
+                                        Set Low Stock Alerts
+                                    </Link>
+                                </div>
                             </div>
                         ) : (
                             lowStockProducts.map(product => (
-                                <div key={product.id} className="p-4 flex items-center justify-between hover:bg-gray-50 rounded-xl transition-colors">
+                                <div key={product.id} className="p-4 mx-2 my-2 bg-white flex items-center justify-between rounded-xl shadow-sm border border-rose-100 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden grayscale opacity-60 flex-shrink-0">
+                                        <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden grayscale opacity-80 flex-shrink-0">
                                             {product.imageURL ? <img src={product.imageURL} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xl">🍽</div>}
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm text-gray-900 line-through decoration-rose-300">{product.name}</p>
-                                            <p className="text-xs font-semibold text-rose-500 mt-0.5">Currently unavailable</p>
+                                            <p className="text-[11px] font-bold text-rose-500 mt-0.5">Out of stock</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleToggleProduct(product)}
-                                        className="text-xs font-extrabold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors border border-emerald-100"
+                                        className="text-[11px] font-extrabold text-[#1a4a38] bg-[#e6efe1] hover:bg-[#cbe6c1] px-2.5 py-1.5 rounded-lg transition-colors"
                                     >
                                         Mark In-Stock
                                     </button>
@@ -333,29 +389,55 @@ export default function VendorDashboardHome() {
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────
-function KPICard({ title, value, icon, trend, trendUp, valueColor = "text-gray-900 dark:text-white" }: { title: string, value: string | number, icon: React.ReactNode, trend?: string, trendUp?: boolean, valueColor?: string }) {
+function KPICard({ 
+    title, 
+    value, 
+    icon, 
+    trend, 
+    trendUp, 
+    iconBgClass = "bg-[#e6efe1] text-emerald-700",
+    sparklineColor = "#10b981"
+}: { 
+    title: string; 
+    value: string | number; 
+    icon: React.ReactNode; 
+    trend?: string; 
+    trendUp?: boolean; 
+    iconBgClass?: string;
+    sparklineColor?: string;
+}) {
     return (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-[0_2px_12px_-6px_rgba(0,0,0,0.05)] p-5 hover:shadow-md dark:shadow-none transition-all relative overflow-hidden group">
-            {/* Subtle brand border on top line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500/10 dark:via-red-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-5 relative overflow-hidden flex flex-col justify-between min-h-[160px]">
             <div className="flex justify-between items-start">
                 <div>
-                    <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">{title}</h4>
-                    <p className={`text-3xl font-black mt-2 tracking-tight ${valueColor}`}>{value}</p>
+                    <h4 className="text-[13px] font-bold text-gray-800">{title}</h4>
+                    <p className="text-3xl font-black mt-1 tracking-tight text-gray-900">{value}</p>
                 </div>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-600 dark:text-gray-300 transition-colors">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgClass}`}>
                     {icon}
                 </div>
             </div>
 
+            {/* Simulated Sparkline */}
+            <div className="mt-4 mb-2 opacity-80" aria-hidden="true">
+                <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none">
+                    <path 
+                        d={trendUp ? "M0,20 Q10,20 20,15 T40,10 T60,18 T80,5 T100,2" : "M0,5 Q10,5 20,10 T40,15 T60,8 T80,20 T100,22"} 
+                        fill="none" 
+                        stroke={sparklineColor} 
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                    />
+                </svg>
+            </div>
+
             {trend && (
-                <div className="mt-4 flex items-center gap-1.5 border-t border-gray-50 dark:border-gray-800 pt-3 transition-colors">
-                    <span className={`flex items-center text-xs font-bold px-1.5 py-0.5 rounded-md ${trendUp ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400'}`}>
-                        {trendUp ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
+                <div className="flex items-center gap-1.5 mt-auto">
+                    <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ${trendUp ? 'bg-[#e6efe1] text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                        {trendUp ? <TrendingUp size={10} className="mr-1 stroke-[3]" /> : <TrendingDown size={10} className="mr-1 stroke-[3]" />}
                         {trend}
                     </span>
-                    <span className="text-xs font-medium text-gray-400 dark:text-gray-500">vs yesterday</span>
+                    <span className="text-[10px] font-medium text-gray-400">vs yesterday</span>
                 </div>
             )}
         </div>
