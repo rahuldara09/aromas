@@ -20,7 +20,7 @@ export interface PaymentProvider {
      * Initializes a payment session with the provider.
      * Returns a transactionId and payload to redirect/submit to the payment gateway.
      */
-    createPaymentSession(order: Order): Promise<PaymentSession>;
+    createPaymentSession(order: Order, baseUrl?: string): Promise<PaymentSession>;
 
     /**
      * Verifies the webhook or callback from the payment provider.

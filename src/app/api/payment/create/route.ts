@@ -92,7 +92,11 @@ export async function POST(req: NextRequest) {
         } as unknown as Order;
 
         // 4. Generate Payment Session via Provider
-        const session = await paymentService.createPaymentSession(orderInfo);
+        const protocol = req.headers.get('x-forwarded-proto') || (req.url.startsWith('https') ? 'https' : 'http');
+        const host = req.headers.get('host') || req.nextUrl.host;
+        const dynamicBaseUrl = `${protocol}://${host}`;
+
+        const session = await paymentService.createPaymentSession(orderInfo, dynamicBaseUrl);
 
         // Update the order with the generated transaction ID
         await orderRef.update({

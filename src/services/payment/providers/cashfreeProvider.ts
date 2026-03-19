@@ -18,7 +18,7 @@ export class CashfreeProvider implements PaymentProvider {
             : 'https://sandbox.cashfree.com/pg/orders';
     }
 
-    async createPaymentSession(order: Order): Promise<PaymentSession> {
+    async createPaymentSession(order: Order, baseUrl?: string): Promise<PaymentSession> {
         // Cashfree Order ID must be alphanumeric and between 3 and 40 characters
         const orderId = `CF_${order.id}_${Date.now()}`.slice(0, 40);
 
@@ -36,10 +36,9 @@ export class CashfreeProvider implements PaymentProvider {
                 customer_phone: customerPhone.replace(/\D/g, '').slice(-10) // 10 digit phone
             },
             order_meta: {
-                // Ensure the URLs are valid. We don't strictly need return_url if using seamless modal,
-                // but it's good practice.
-                return_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?cf_id={order_id}`,
-                notify_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/payment/webhook`
+                // Determine absolute base URL for callbacks depending on environment
+                return_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?cf_id={order_id}`,
+                notify_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/payment/webhook`
             },
             order_tags: {
                 internal_order_id: order.id
