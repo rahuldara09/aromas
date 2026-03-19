@@ -29,13 +29,17 @@ function getRatelimiter(maxRequests: number, windowSeconds: number): Ratelimit |
     // Re-use cached instance when possible
     if (_ratelimit) return _ratelimit;
 
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    const rawUrl = process.env.UPSTASH_REDIS_REST_URL;
+    const rawToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-    if (!url || !token) {
+    if (!rawUrl || !rawToken) {
         // Local dev without Upstash — bypass rate limiting gracefully
         return null;
     }
+
+    // Clean up Vercel copy-paste accidents (trailing empty lines and literal quotes)
+    const url = rawUrl.replace(/^"|"$/g, '').trim();
+    const token = rawToken.replace(/^"|"$/g, '').trim();
 
     _ratelimit = new Ratelimit({
         redis: new Redis({ url, token }),
