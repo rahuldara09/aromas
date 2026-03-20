@@ -8,39 +8,37 @@ export class CashfreeProvider implements PaymentProvider {
     private baseUrl: string;
     private environment: string;
 
-    constructor() {
-        this.appId = process.env.CASHFREE_APP_ID || '';
+    constructor() {        this.appId = process.env.CASHFREE_APP_ID || '';
         this.secretKey = process.env.CASHFREE_SECRET_KEY || '';
         this.environment = (process.env.CASHFREE_ENVIRONMENT || 'SANDBOX').toUpperCase();
         
         this.baseUrl = this.environment === 'PRODUCTION' 
-            ? 'https://api.cashfree.com/pg/orders' 
-            : 'https://sandbox.cashfree.com/pg/orders';
+            ? 'https://api.cashfree.com/pg/links' 
+            : 'https://sandbox.cashfree.com/pg/links';
     }
 
     async createPaymentSession(order: Order, baseUrl?: string): Promise<PaymentSession> {
-        // Cashfree Order ID must be alphanumeric and between 3 and 40 characters
-        const orderId = `CF_${order.id}_${Date.now()}`.slice(0, 40);
+        // Cashfree internal link ID must be alphanumeric
+        const linkId = `CF_${order.id}_${Date.now()}`.slice(0, 40);
 
         const customerPhone = order.customerPhone || order.deliveryAddress?.mobile || '9999999999';
         const customerName = order.deliveryAddress?.name || 'Customer';
 
         const payload = {
-            order_id: orderId,
-            order_amount: order.grandTotal,
-            order_currency: 'INR',
+            link_id: linkId,
+            link_amount: order.grandTotal,
+            link_currency: 'INR',
+            link_purpose: `Order #${order.orderToken || order.id}`,
             customer_details: {
-                customer_id: order.userId || 'guest',
+                customer_phone: customerPhone.replace(/\D/g, '').slice(-10), // 10 digit phone
                 customer_name: customerName,
-                customer_email: 'customer@aromadhaba.com', 
-                customer_phone: customerPhone.replace(/\D/g, '').slice(-10) // 10 digit phone
+                customer_email: 'customer@aromadhaba.com'
             },
-            order_meta: {
-                // Determine absolute base URL for callbacks depending on environment
-                return_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?cf_id={order_id}`,
+            link_meta: {
+                return_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?cf_id={link_id}`,
                 notify_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/payment/webhook`
             },
-            order_tags: {
+            link_notes: {
                 internal_order_id: order.id
             }
         };
@@ -60,16 +58,16 @@ export class CashfreeProvider implements PaymentProvider {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('[Cashfree] Create Order Error:', data);
-            throw new Error(`Cashfree order creation failed: ${data.message || response.statusText}`);
+            console.error('[Cashfree] Create Link Error:', data);
+            throw new Error(`Cashfree link creation failed: ${data.message || response.statusText}`);
         }
 
         return {
-            transactionId: orderId, // Our generated order ID for Cashfree
-            paymentUrl: data.payment_session_id, // For Cashfree, the paymentUrl field will carry the session ID
+            transactionId: linkId, // Our generated link ID for Cashfree
+            paymentUrl: data.link_url, // Direct hosted checkout page URL
             payload: {
-                payment_session_id: data.payment_session_id,
-                order_id: data.order_id
+                link_id: data.link_id,
+                link_url: data.link_url
             }
         };
     }
@@ -93,23 +91,29 @@ export class CashfreeProvider implements PaymentProvider {
             throw new Error('Invalid Cashfree webhook signature');
         }
 
+        // Parse the webhook payload safely
         const parsedBody = JSON.parse(rawBody);
         const webhookData = parsedBody.data;
-        const orderIdObj = webhookData.order;
+
+        // Determine if it's an Order webhook or a Link webhook
+        // We use Link webhooks so data.link and data.payment will be present
+        const orderIdObj = webhookData.order || webhookData.link;
         const paymentObj = webhookData.payment;
 
-        // Ensure we handle only PAYMENT_SUCCESS or PAYMENT_FAILED events
-        // (Cashfree sends 'PAYMENT_SUCCESS_WEBHOOK' etc.)
+        // Ensure we handle PAYMENT_SUCCESS_WEBHOOK or PAYMENT_FAILED_WEBHOOK
         const isSuccess = parsedBody.type === 'PAYMENT_SUCCESS_WEBHOOK' && paymentObj.payment_status === 'SUCCESS';
         
-        // Recover our internal order ID from order_tags
-        const internalOrderId = orderIdObj.order_tags?.internal_order_id;
+        // Recover our internal order ID from link_notes (or order_tags)
+        const internalOrderId = orderIdObj.link_notes?.internal_order_id || orderIdObj.order_tags?.internal_order_id;
+
+        const returnedId = orderIdObj.link_id || orderIdObj.order_id || '';
+        const fallbackOrderId = returnedId.includes('_') ? returnedId.split('_')[1] : returnedId;
 
         return {
             success: isSuccess,
-            orderId: internalOrderId || orderIdObj.order_id.split('_')[1], // fallback to string split
-            transactionId: paymentObj.cf_payment_id ? String(paymentObj.cf_payment_id) : orderIdObj.order_id,
-            amount: parseFloat(paymentObj.payment_amount || orderIdObj.order_amount),
+            orderId: internalOrderId || fallbackOrderId, 
+            transactionId: paymentObj.cf_payment_id ? String(paymentObj.cf_payment_id) : returnedId,
+            amount: parseFloat(paymentObj.payment_amount || orderIdObj.link_amount || orderIdObj.order_amount),
             currency: paymentObj.payment_currency || 'INR',
             providerRawStatus: paymentObj.payment_status || parsedBody.type,
         };
