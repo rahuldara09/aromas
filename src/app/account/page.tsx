@@ -54,7 +54,7 @@ type AddressWithFields = Address & { hostel?: string; room?: string };
 
 export default function AccountPage() {
     const router = useRouter();
-    const { user, phoneNumber, signOut, loading, openAuthModal } = useAuth();
+    const { user, phoneNumber, userProfile, signOut, loading, openAuthModal } = useAuth();
     const [activeTab, setActiveTab] = useState<SidebarTab>('orders');
     const [orders, setOrders] = useState<Order[]>([]);
     const [addresses, setAddresses] = useState<AddressWithFields[]>([]);
@@ -139,8 +139,14 @@ export default function AccountPage() {
             <Header />
             <div className="max-w-6xl mx-auto px-4 py-6">
                 <div className="flex items-center justify-between mb-5">
-                    <h1 className="text-xl font-bold text-gray-900">My Account</h1>
-                    {isLoggedIn && <p className="text-gray-500 text-xs">{user?.phoneNumber}</p>}
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900">
+                            {isLoggedIn && userProfile?.name
+                                ? `Hello, ${userProfile.name} 👋`
+                                : 'My Account'}
+                        </h1>
+                        {isLoggedIn && <p className="text-gray-400 text-xs mt-0.5">{user?.phoneNumber}</p>}
+                    </div>
                 </div>
 
                 {/* ── MOBILE: horizontal tab bar ───────────────────────────── */}

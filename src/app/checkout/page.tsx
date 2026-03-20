@@ -213,16 +213,15 @@ export default function CheckoutPage() {
             // Clear cart early since order is technically placed as pending_payment
             clearCart();
             
-            const cashfree = await load({
-                mode: process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION' ? 'production' : 'sandbox',
-            });
-
-            toast.dismiss('cf-loading');
-
-            cashfree.checkout({
-                paymentSessionId: data.session.payload.payment_session_id,
-                redirectTarget: '_self' // Redirects the entire page to Cashfree
-            });
+            // Clear cart early since order is technically placed as pending_payment
+            clearCart();
+            
+            const isProd = process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT === 'PRODUCTION';
+            const checkoutDomain = isProd ? 'https://checkout.cashfree.com/v1/checkout' : 'https://checkout.sandbox.cashfree.com/v1/checkout';
+            
+            // Direct redirect to Cashfree Hosted Page (bypasses JS SDK iframe/popup blockers on iOS Safari)
+            const paymentUrl = `${checkoutDomain}?session_id=${data.session.payload.payment_session_id}`;
+            window.location.href = paymentUrl;
 
         } catch (error: any) {
             console.error('[Checkout] Payment initialization failed:', error);
