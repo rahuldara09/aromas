@@ -13,7 +13,7 @@ type ModalStep = 'phone' | 'confirm' | 'profile';
 
 export default function AuthModal() {
     const router = useRouter();
-    const { isAuthModalOpen, closeAuthModal, user, setUserProfile, setPhoneNumber } = useAuth();
+    const { isAuthModalOpen, closeAuthModal, user, phoneNumber: ctxPhone, setUserProfile, setPhoneNumber } = useAuth();
     const [step, setStep] = useState<ModalStep>('phone');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
@@ -25,10 +25,11 @@ export default function AuthModal() {
     const [room, setRoom] = useState('');
     const profileValid = name.trim() !== '' && hostel !== '' && room.trim() !== '';
 
-    // Close on user login (not during profile step)
+    // Close on user login — require BOTH Firebase user AND phone number,
+    // otherwise stale anonymous sessions auto-close the modal before the user can enter their number.
     useEffect(() => {
-        if (user && step !== 'profile') closeAuthModal();
-    }, [user, step, closeAuthModal]);
+        if (user && ctxPhone && step !== 'profile') closeAuthModal();
+    }, [user, ctxPhone, step, closeAuthModal]);
 
     // Reset on close
     useEffect(() => {
