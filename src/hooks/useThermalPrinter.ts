@@ -2,79 +2,204 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Order } from '@/types';
+import { formatReceipt } from '@/lib/receiptFormatter';
 
-// Try HTTPS first (needed when site is on HTTPS), fall back to HTTP
-const PRINT_URLS = [
-    'https://localhost:9443',
-    'http://localhost:9100',
-];
+// Global QZ Tray type
+declare global {
+    interface Window {
+        qz: any;
+    }
+}
 
-const HEALTH_CHECK_INTERVAL = 5000;
+const DEFAULT_PRINTER = 'Printer_POS_80';
 
 export function useThermalPrinter() {
     const [isConnected, setIsConnected] = useState(false);
     const [printerName, setPrinterName] = useState<string | null>(null);
-    const activeUrlRef = useRef<string | null>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const connectingRef = useRef(false);
 
-    // ─── HEALTH CHECK POLL ────────────────────────────────────────────
-    useEffect(() => {
-        const checkStatus = async () => {
-            // Try each URL until one works
-            for (const baseUrl of PRINT_URLS) {
-                try {
-                    const res = await fetch(`${baseUrl}/status`, {
-                        signal: AbortSignal.timeout(2000),
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        setIsConnected(data.connected ?? true);
-                        setPrinterName(data.printerName || 'Print Server');
-                        activeUrlRef.current = baseUrl;
-                        return; // Found a working URL
-                    }
-                } catch {
-                    // Try next URL
-                }
-            }
-            // None worked
+    // ─── CONNECT TO QZ TRAY ───────────────────────────────────────────
+    const connect = useCallback(async () => {
+        if (typeof window === 'undefined' || !window.qz) return;
+        if (connectingRef.current) return;
+
+        const qz = window.qz;
+
+        // Skip if already connected
+        if (qz.websocket.isActive()) {
+            setIsConnected(true);
+            return;
+        }
+
+        connectingRef.current = true;
+
+        // ── Certificate: allow unsigned for development ──
+        qz.security.setCertificatePromise(() =>
+            Promise.resolve(
+                '-----BEGIN CERTIFICATE-----\n' +
+                'MIIBkTCB+wIJAM2C5drVksMXMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnFp\n' +
+                'dHJheTAeFw0yMzAxMDEwMDAwMDBaFw0yNTAxMDEwMDAwMDBaMBExDzANBgNVBAMM\n' +
+                'BnFpdHJheTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC3q2dFiYHJW4bXx3YDzVJp\n' +
+                'Xr6v3Kx7Fn7GdxnXzKFJrE0d/JrE0d/JrE0d/JrE0d/JrE0d/JrE0dAgMBAAEw\n' +
+                'DQYJKoZIhvcNAQELBQADQQBPlKLH\n' +
+                '-----END CERTIFICATE-----',
+            ),
+        );
+
+        // ── Signing: return empty promise (unsigned mode) ──
+        qz.security.setSignatureAlgorithm('SHA512');
+        qz.security.setSignaturePromise(() => (hash: string) =>
+            Promise.resolve(''),
+        );
+
+        try {
+            await qz.websocket.connect();
+            setIsConnected(true);
+            console.log('✅ QZ Tray connected');
+
+            // ── Discover printers ──
+            await discoverPrinter();
+        } catch (err: any) {
+            console.error('❌ QZ Tray connection failed:', err?.message || err);
             setIsConnected(false);
-            setPrinterName(null);
-            activeUrlRef.current = null;
+        } finally {
+            connectingRef.current = false;
+        }
+    }, []);
+
+    // ─── DISCOVER PRINTER ─────────────────────────────────────────────
+    const discoverPrinter = useCallback(async () => {
+        if (!window.qz?.websocket?.isActive()) return;
+
+        const qz = window.qz;
+        try {
+            const printers: string[] = await qz.printers.find();
+            console.log('🖨️ Available printers:', printers);
+
+            // Try to find POS printer by name
+            const target =
+                printers.find((p) => p === DEFAULT_PRINTER) ||
+                printers.find(
+                    (p) =>
+                        p.toLowerCase().includes('pos') ||
+                        p.toLowerCase().includes('thermal') ||
+                        p.toLowerCase().includes('receipt') ||
+                        p.toLowerCase().includes('80mm') ||
+                        p.toLowerCase().includes('epson'),
+                );
+
+            if (target) {
+                setPrinterName(target);
+                console.log(`✅ Using printer: ${target}`);
+            } else if (printers.length > 0) {
+                // Fallback to default system printer
+                try {
+                    const def = await qz.printers.getDefault();
+                    setPrinterName(def);
+                    console.log(`✅ Using default printer: ${def}`);
+                } catch {
+                    setPrinterName(printers[0]);
+                    console.log(`✅ Using first printer: ${printers[0]}`);
+                }
+            } else {
+                console.warn('⚠️ No printers found');
+                setPrinterName(null);
+            }
+        } catch (err) {
+            console.error('Printer discovery failed:', err);
+        }
+    }, []);
+
+    // ─── INITIALIZE ON MOUNT ──────────────────────────────────────────
+    useEffect(() => {
+        let mounted = true;
+
+        const init = () => {
+            if (!mounted) return;
+            if (typeof window !== 'undefined' && window.qz) {
+                connect();
+            }
         };
 
-        checkStatus();
-        intervalRef.current = setInterval(checkStatus, HEALTH_CHECK_INTERVAL);
+        // QZ Tray script may not be loaded yet — retry a few times
+        const timer = setTimeout(init, 1500);
+        const timer2 = setTimeout(init, 3000);
+        const timer3 = setTimeout(init, 5000);
 
         return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
+            mounted = false;
+            clearTimeout(timer);
+            clearTimeout(timer2);
+            clearTimeout(timer3);
         };
-    }, []);
+    }, [connect]);
+
+    // ─── RECONNECT ON DISCONNECT ──────────────────────────────────────
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.qz) return;
+
+        const handleClose = () => {
+            console.log('⚠️ QZ Tray disconnected');
+            setIsConnected(false);
+            setPrinterName(null);
+
+            // Auto-reconnect after 3 seconds
+            setTimeout(() => {
+                connect();
+            }, 3000);
+        };
+
+        try {
+            window.qz.websocket.setClosedCallbacks(handleClose);
+        } catch {}
+
+        return () => {
+            try {
+                window.qz.websocket.setClosedCallbacks(() => {});
+            } catch {}
+        };
+    }, [connect]);
 
     // ─── PRINT KOT ───────────────────────────────────────────────────
-    const printKOT = useCallback(async (order: Order, tokenNum: string) => {
-        const baseUrl = activeUrlRef.current;
-        if (!baseUrl) {
-            throw new Error('Print server not reachable');
-        }
+    const printKOT = useCallback(
+        async (order: Order, tokenNum: string) => {
+            if (!window.qz?.websocket?.isActive()) {
+                throw new Error('QZ Tray is not connected. Please start QZ Tray.');
+            }
+            if (!printerName) {
+                throw new Error('No printer found. Check printer connection.');
+            }
 
-        const res = await fetch(`${baseUrl}/print`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order, token: tokenNum }),
-        });
+            setIsPrinting(true);
 
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ error: 'Print failed' }));
-            throw new Error(err.error || 'Print failed');
-        }
+            try {
+                const qz = window.qz;
 
-        return true;
-    }, []);
+                // Generate ESC/POS receipt data
+                const receiptData = formatReceipt(order, tokenNum);
+
+                // Create printer config
+                const config = qz.configs.create(printerName, {
+                    encoding: 'UTF-8',
+                });
+
+                // Print silently
+                await qz.print(config, receiptData);
+                console.log(`🖨️ Printed receipt #${tokenNum}`);
+
+                return true;
+            } finally {
+                setIsPrinting(false);
+            }
+        },
+        [printerName],
+    );
 
     return {
         isConnected,
         printerName,
-        printKOT
+        printKOT,
+        isPrinting,
     };
 }

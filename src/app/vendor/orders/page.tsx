@@ -65,7 +65,7 @@ export default function VendorKanban() {
     const [preparingSearchToken, setPreparingSearchToken] = useState('');
     const [dispatchSearchToken, setDispatchSearchToken] = useState('');
     const [kitchenYellMode, setKitchenYellMode] = useState(false);
-    const { isConnected: isPrinterConnected, printKOT: printReceipt } = useThermalPrinter();
+    const { isConnected: isPrinterConnected, printKOT: printReceipt, isPrinting } = useThermalPrinter();
 
     // ── MOBILE TAB STATE & FEEDBACK ────────────────────────────────
     const [mobileTab, setMobileTab] = useState<'new' | 'preparing' | 'dispatch' | 'pos'>('new');
@@ -92,12 +92,12 @@ export default function VendorKanban() {
 
     const handleAcceptAndPrint = useCallback(async (order: Order, token: string) => {
         try {
-            // Always attempt print via print server (it logs to console if no hardware printer)
             await printReceipt(order, token);
             await updateOrderStatus(order.id, 'Preparing');
             toast.success(`#${token} accepted`, { style: { borderRadius: '14px', fontWeight: 600 } });
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            toast.error(err?.message || 'Failed to print');
             // Still accept the order even if printing fails
             try {
                 await updateOrderStatus(order.id, 'Preparing');
@@ -515,7 +515,14 @@ export default function VendorKanban() {
                                                     <OrderCard order={order} token={tok} onViewDetails={() => setSelectedOrderDetails(order)}>
                                                         <div className="flex gap-2 mt-2">
                                                             <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="flex-1 py-3 rounded-xl text-gray-500 hover:bg-gray-100 font-bold text-sm ring-1 ring-inset ring-gray-300 transition-colors min-h-[44px]">Reject</button>
-                                                            <button onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold text-sm py-3 rounded-xl shadow-sm transition-colors min-h-[44px]"><Printer size={16} />Accept & Print</button>
+                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl shadow-sm transition-colors min-h-[44px]">
+                                                                {isPrinting ? (
+                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                ) : (
+                                                                    <Printer size={16} />
+                                                                )}
+                                                                {isPrinting ? 'Printing...' : 'Accept & Print'}
+                                                            </button>
                                                         </div>
                                                     </OrderCard>
                                                 </div>
@@ -693,7 +700,7 @@ export default function VendorKanban() {
                                             {!isPrinterConnected && (
                                                 <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-start gap-2 font-semibold">
                                                     <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
-                                                    <span>Print server offline. Run <strong>node print-server/server.js</strong> to enable silent printing.</span>
+                                                    <span>QZ Tray is not connected. <strong>Please open QZ Tray</strong> to enable silent printing.</span>
                                                 </div>
                                             )}
                                             <div className="relative w-full flex-1">
@@ -712,7 +719,14 @@ export default function VendorKanban() {
                                                                     {isFront && (
                                                                         <div className="flex gap-2">
                                                                             <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 font-bold text-xs ring-1 ring-inset ring-gray-300 transition-colors">Reject</button>
-                                                                            <button onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold text-xs py-2 rounded-lg shadow-sm transition-colors"><Printer size={14} />Accept & Print</button>
+                                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold text-xs py-2 rounded-lg shadow-sm transition-colors">
+                                                                                {isPrinting ? (
+                                                                                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                                ) : (
+                                                                                    <Printer size={14} />
+                                                                                )}
+                                                                                {isPrinting ? 'Printing...' : 'Accept & Print'}
+                                                                            </button>
                                                                         </div>
                                                                     )}
                                                                 </OrderCard>

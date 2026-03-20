@@ -30,12 +30,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Script from 'next/script';
 import { Order } from '@/types';
 
 // ─── MAIN LAYOUT WRAPPER ─────────────────────────────────────────
 export default function VendorLayout({ children }: { children: React.ReactNode }) {
     return (
         <VendorProvider>
+            <Script src="/qz-tray.js" strategy="beforeInteractive" />
             <VendorLayoutInner>{children}</VendorLayoutInner>
         </VendorProvider>
     );
@@ -405,7 +407,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
 
                         {/* Printer Status */}
-                        <div className="flex items-center" title={isPrinterConnected ? 'Thermal Printer Connected' : 'Print Server Offline'}>
+                        <div className="flex items-center" title={isPrinterConnected ? 'Thermal Printer Connected' : 'QZ Tray Offline'}>
                             {isPrinterConnected ? (
                                 <div className="p-2 text-emerald-500 bg-emerald-50 rounded-xl transition-colors">
                                     <Printer size={18} />
