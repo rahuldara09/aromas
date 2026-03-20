@@ -962,18 +962,18 @@ export default function VendorKanban() {
 
             {viewMode === 'history' && (
                 /* ═══ HISTORY TABLE ═══ */
-                <div className="flex-1 flex flex-col overflow-hidden bg-gray-50  p-6">
+                <div className="flex-1 flex flex-col overflow-hidden bg-[#f5f5f7] p-6">
                     <div className="flex items-center gap-4 mb-6 shrink-0">
-                        <div className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 shadow-sm">
+                        <div className="bg-white border border-gray-200/60 rounded-2xl p-4 flex-1 shadow-sm">
                             <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Orders Served</p>
                             <p className="text-3xl font-black text-gray-900 mt-1">{historySummary.totalOrders}</p>
                         </div>
-                        <div className="bg-white border border-gray-200 rounded-2xl p-4 flex-1 shadow-sm">
+                        <div className="bg-white border border-gray-200/60 rounded-2xl p-4 flex-1 shadow-sm">
                             <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Sales</p>
-                            <p className="text-3xl font-black text-emerald-600 mt-1">₹{historySummary.totalSales}</p>
+                            <p className="text-3xl font-black text-red-500 mt-1">₹{historySummary.totalSales}</p>
                         </div>
                     </div>
-                    <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+                    <div className="flex-1 bg-white rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden flex flex-col min-h-0">
                         <div className="overflow-auto flex-1 scrollbar-thin">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -1054,7 +1054,7 @@ export default function VendorKanban() {
                                                         <span className={`inline-flex items-center px-2.5 py-1 rounded-sm text-[11px] font-bold uppercase tracking-wider ${order.status === 'Completed' || order.status === 'Dispatched' || order.status === 'Delivered' ? 'bg-[#2eaa25] text-white' : order.status === 'Cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-700'}`}>{order.status}</span>
                                                     </td>
                                                     <td className="px-5 py-5 text-center">
-                                                        <button onClick={() => setSelectedOrderDetails(order)} className={`text-[13px] font-semibold transition-all ${isExpanded ? 'text-blue-700' : 'text-blue-500 hover:text-blue-700'}`}>
+                                                        <button onClick={() => setSelectedOrderDetails(order)} className={`text-[13px] font-semibold transition-all ${isExpanded ? 'text-red-600' : 'text-red-500 hover:text-red-600'}`}>
                                                             {isExpanded ? 'Viewing' : 'View'}
                                                         </button>
                                                     </td>

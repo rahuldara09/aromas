@@ -197,7 +197,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     ];
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden font-sans text-gray-900 dark:text-gray-100 transition-colors" onClick={unlockAudio}>
+        <div className="flex h-screen bg-[#f5f5f7] overflow-hidden font-sans text-gray-900 transition-colors" onClick={unlockAudio}>
 
             {/* ═══ MOBILE DRAWER OVERLAY ═══ */}
             {mobileDrawerOpen && (
@@ -208,14 +208,14 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
             )}
 
             {/* ═══ MOBILE SLIDE-IN DRAWER ═══ */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200/60 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Drawer Header */}
-                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800">
+                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm shrink-0">
                             <Image src="/icon.png" alt="Aromas Logo" width={32} height={32} className="w-full h-full object-cover" />
                         </div>
-                        <span className="font-extrabold text-[17px] tracking-tight dark:text-gray-100">AROMA OPS</span>
+                        <span className="font-extrabold text-[17px] tracking-tight text-gray-900">AROMA OPS</span>
                     </div>
                     <button
                         onClick={() => setMobileDrawerOpen(false)}
@@ -226,14 +226,14 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Store Toggle in drawer */}
-                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-emerald-600' : 'text-gray-400'}`}>
+                <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                        <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-red-600' : 'text-gray-400'}`}>
                             {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
                         </span>
                         <button
                             onClick={(e) => { e.stopPropagation(); toggleStore(); }}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${isStoreOpen ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${isStoreOpen ? 'bg-red-500' : 'bg-gray-300'}`}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[26px]' : 'translate-x-[4px]'}`} />
                         </button>
@@ -246,28 +246,28 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all ${item.active
-                                ? 'bg-[#e2e7dd] text-gray-900 font-bold'
+                            className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all ${item.active
+                                ? 'bg-red-50 text-red-700 font-bold'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
                                 }`}
                         >
-                            <span className={item.active ? 'text-gray-900' : 'text-gray-400'}>{item.icon}</span>
+                            <span className={item.active ? 'text-red-600' : 'text-gray-400'}>{item.icon}</span>
                             {item.label}
                             {item.badge && (
-                                <span className="ml-auto bg-gray-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
+                                <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
                                     {item.badge}
                                 </span>
                             )}
-                            {item.active && <span className="absolute left-0 w-1.5 h-8 bg-[#2f4f4f] rounded-r-full" />}
+                            {item.active && <span className="absolute left-0 w-1.5 h-8 bg-red-500 rounded-r-full" />}
                         </Link>
                     ))}
                 </nav>
 
                 {/* Sign Out */}
-                <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+                <div className="p-3 border-t border-gray-100">
                     <button
                         onClick={async (e) => { e.stopPropagation(); sessionStorage.removeItem('isVendorVerified'); await signOut(); router.push('/'); }}
-                        className="flex items-center gap-3 px-4 py-3 w-full text-sm font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 w-full text-sm font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-colors"
                     >
                         <LogOut size={20} />
                         Sign Out
@@ -275,10 +275,10 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
             </aside>
 
-            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-56' : 'w-20'} bg-white border-r border-gray-200 flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
+            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-56' : 'w-20'} bg-white/80 backdrop-blur-xl border-r border-gray-200/60 flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
                 {/* Logo Area */}
                 <div className="h-20 flex items-center px-6 border-b border-gray-100 min-w-0">
-                    <div className="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
+                    <div className="w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
                         a
                     </div>
                     {sidebarOpen && (
@@ -319,7 +319,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
                 {/* ── MOBILE HEADER ── */}
-                <header className="lg:hidden h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 flex-shrink-0 z-10">
+                <header className="lg:hidden h-14 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 flex items-center justify-between px-4 flex-shrink-0 z-10">
                     {/* Hamburger */}
                     <button
                         onClick={(e) => { e.stopPropagation(); setMobileDrawerOpen(true); }}
@@ -331,7 +331,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
 
                     {/* Logo center */}
                     <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-red-500 text-white flex items-center justify-center shadow-sm">
+                        <div className="w-7 h-7 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-sm">
                             <Store size={15} />
                         </div>
                         <span className="font-extrabold text-[15px] tracking-tight">AROMA OPS</span>
@@ -343,56 +343,62 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                             <Bell size={20} />
                             {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
                         </button>
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">
+                        <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 font-bold flex items-center justify-center text-sm ring-1 ring-red-200">
                             AV
                         </div>
                     </div>
                 </header>
 
                 {/* ── DESKTOP HEADER ── */}
-                <header className="hidden lg:flex h-20 bg-[#fafafa] border-b border-gray-100 items-center justify-between px-8 flex-shrink-0 z-10 w-full overflow-hidden transition-colors">
+                <header className="hidden lg:flex h-16 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 items-center justify-between px-8 flex-shrink-0 z-10 w-full overflow-hidden">
                     <div className="flex items-center gap-8 xl:gap-12">
-                        <h1 className="text-xl font-bold tracking-tight text-gray-800 whitespace-nowrap">
+                        <h1 className="text-lg font-bold tracking-tight text-gray-800 whitespace-nowrap">
                             Hello, <span className="text-gray-900 font-extrabold">Aroma Vendor</span>
                         </h1>
 
                         {/* HUD METRICS */}
-                        <div className="hidden xl:flex items-center gap-8 pl-8 border-l border-gray-200 h-10">
-                            <div className="flex items-center gap-3 text-gray-600 min-w-32">
-                                <TrendingUp size={20} className="text-emerald-500" />
+                        <div className="hidden xl:flex items-center gap-6 pl-8 border-l border-gray-200/60 h-10">
+                            <div className="flex items-center gap-2.5 text-gray-600">
+                                <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+                                    <TrendingUp size={14} />
+                                </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Today&apos;s Sales</span>
-                                    <span className="text-base font-extrabold text-gray-900 leading-none">₹{todaysSales.toLocaleString()}</span>
+                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Sales</span>
+                                    <span className="text-sm font-extrabold text-gray-900 leading-none">₹{todaysSales.toLocaleString()}</span>
                                 </div>
                             </div>
-                            <div className="w-px h-6 bg-gray-200" />
-                            <div className="flex items-center gap-3 text-gray-600 min-w-32">
-                                <Activity size={20} className="text-blue-500" />
+                            <div className="w-px h-5 bg-gray-200/60" />
+                            <div className="flex items-center gap-2.5 text-gray-600">
+                                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center">
+                                    <Activity size={14} />
+                                </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Active Orders</span>
-                                    <span className="text-base font-extrabold text-gray-900 leading-none">{activeCount}</span>
+                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Active</span>
+                                    <span className="text-sm font-extrabold text-gray-900 leading-none">{activeCount}</span>
                                 </div>
                             </div>
-                            <div className="w-px h-6 bg-gray-200" />
-                            <div className="flex items-center gap-3 text-gray-600 min-w-32">
-                                <Timer size={20} className="text-amber-500" />
+                            <div className="w-px h-5 bg-gray-200/60" />
+                            <div className="flex items-center gap-2.5 text-gray-600">
+                                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
+                                    <Timer size={14} />
+                                </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Avg Prep Time</span>
-                                    <span className="text-base font-extrabold text-gray-900 leading-none">12m</span>
+                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Prep</span>
+                                    <span className="text-sm font-extrabold text-gray-900 leading-none">12m</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 xl:gap-6">
+                    <div className="flex items-center gap-3 xl:gap-4">
                         {/* Store Toggle */}
-                        <div className={`flex items-center gap-3 px-4 py-2 ${isStoreOpen ? 'bg-[#e6efe1]' : 'bg-gray-100'} rounded-full transition-colors`}>
-                            <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-[#1a4a38]' : 'text-gray-500'}`}>
+                        <div className={`flex items-center gap-3 px-4 py-2 ${isStoreOpen ? 'bg-red-50' : 'bg-gray-100'} rounded-full transition-colors`}>
+                            <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-red-600' : 'text-gray-500'}`}>
                                 {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
                             </span>
                             <button
                                 onClick={(e) => { e.stopPropagation(); toggleStore(); }}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-sm ${isStoreOpen ? 'bg-[#1a4a38]' : 'bg-gray-300'}`}
+                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-sm ${isStoreOpen ? 'bg-red-500' : 'bg-gray-300'}`}
                             >
                                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[26px]' : 'translate-x-[4px]'}`} />
                             </button>
@@ -401,11 +407,11 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         {/* Printer Status */}
                         <div className="flex items-center" title={isPrinterConnected ? 'Thermal Printer Connected' : 'QZ Tray Offline / Disconnected'}>
                             {isPrinterConnected ? (
-                                <div className="p-2 text-emerald-500 bg-emerald-50 rounded-full transition-colors">
+                                <div className="p-2 text-emerald-500 bg-emerald-50 rounded-xl transition-colors">
                                     <Printer size={18} />
                                 </div>
                             ) : (
-                                <div className="p-2 text-red-500 bg-red-50 rounded-full animate-pulse transition-colors relative">
+                                <div className="p-2 text-red-500 bg-red-50 rounded-xl animate-pulse transition-colors relative">
                                     <MonitorOff size={18} />
                                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
                                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -416,14 +422,14 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
 
                         {/* Notifications */}
-                        <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                            <Bell size={22} />
+                        <button className="relative p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition-colors">
+                            <Bell size={20} />
                             {unreadCount > 0 && <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
                         </button>
 
                         {/* Avatar */}
-                        <div className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1 rounded-full transition-all">
-                            <div className="w-8 h-8 rounded-full bg-[#ecf2ff] text-blue-600 font-bold flex items-center justify-center text-sm ring-1 ring-[#c0d6ff]">
+                        <div className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded-xl transition-all">
+                            <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 font-bold flex items-center justify-center text-sm ring-1 ring-red-200">
                                 AV
                             </div>
                             <ChevronDown size={14} className="text-gray-400 mr-1" />
@@ -455,22 +461,22 @@ function NavItem({
         <Link
             href={href}
             title={collapsed ? label : undefined}
-            className={`relative flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3.5 rounded-xl transition-all ${active
-                ? 'bg-[#e2e7dd] text-gray-900 font-bold'
+            className={`relative flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3.5 rounded-2xl transition-all ${active
+                ? 'bg-red-50 text-red-700 font-bold'
                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
                 }`}
         >
-            <span className={active ? 'text-gray-900' : 'text-gray-400'}>{icon}</span>
+            <span className={active ? 'text-red-600' : 'text-gray-400'}>{icon}</span>
             {!collapsed && label}
             {!collapsed && badge && (
-                <span className="ml-auto bg-gray-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
                     {badge}
                 </span>
             )}
             {collapsed && badge && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-gray-900 rounded-full" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
             )}
-            {active && !collapsed && <span className="absolute left-0 w-1.5 h-8 bg-[#2f4f4f] rounded-r-full" />}
+            {active && !collapsed && <span className="absolute left-0 w-1.5 h-8 bg-red-500 rounded-r-full" />}
         </Link>
     );
 }

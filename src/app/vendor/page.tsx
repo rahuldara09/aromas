@@ -133,7 +133,7 @@ export default function VendorDashboardHome() {
 
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 pb-20">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-5 pb-20">
 
             {/* ═══ KPI CARDS ═══ */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -142,52 +142,52 @@ export default function VendorDashboardHome() {
                     value={`₹${todaySales.toLocaleString('en-IN')}`}
                     change={salesChange}
                     icon={<IndianRupee size={18} />}
-                    iconBg="bg-emerald-50 text-emerald-600"
+                    iconBg="bg-red-50 text-red-500"
                 />
                 <KPICard
                     title="Orders Today"
                     value={todayOrders.length}
                     change={ordersChange}
                     icon={<ShoppingBag size={18} />}
-                    iconBg="bg-blue-50 text-blue-600"
+                    iconBg="bg-red-50 text-red-500"
                 />
                 <KPICard
                     title="Delivered"
                     value={deliveredOrders.length}
                     subtitle={`of ${todayOrders.length} orders`}
                     icon={<PackageCheck size={18} />}
-                    iconBg="bg-violet-50 text-violet-600"
+                    iconBg="bg-gray-100 text-gray-600"
                 />
                 <KPICard
                     title="Avg Wait"
                     value={`${avgWaitTime}m`}
                     subtitle={activeOrders.length > 0 ? `${activeOrders.length} active` : 'No active orders'}
                     icon={<Clock size={18} />}
-                    iconBg={avgWaitTime > 15 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}
+                    iconBg={avgWaitTime > 15 ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-600'}
                 />
             </div>
 
             {/* ═══ REVENUE BREAKDOWN STRIP ═══ */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
                         <TrendingUp size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Online Revenue</p>
                         <p className="text-xl font-black text-gray-900 mt-0.5">₹{onlineRevenue.toLocaleString('en-IN')}</p>
                     </div>
-                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">{onlineOrdersToday.length} orders</span>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">{onlineOrdersToday.length} orders</span>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
                         <ShoppingBag size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">POS Revenue</p>
                         <p className="text-xl font-black text-gray-900 mt-0.5">₹{posRevenue.toLocaleString('en-IN')}</p>
                     </div>
-                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">{posOrdersToday.length} orders</span>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">{posOrdersToday.length} orders</span>
                 </div>
             </div>
 
@@ -195,7 +195,7 @@ export default function VendorDashboardHome() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Chart */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 flex flex-col min-h-[360px]">
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 sm:p-6 flex flex-col min-h-[360px]">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-base font-extrabold text-gray-900 tracking-tight">Revenue & Orders</h3>
@@ -228,15 +228,15 @@ export default function VendorDashboardHome() {
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600 }}
                                     />
-                                    <Bar dataKey="revenue" name="Revenue (₹)" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={28} />
-                                    <Bar dataKey="orders" name="Orders" fill="#e5e7eb" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                    <Bar dataKey="revenue" name="Revenue (₹)" fill="#ef4444" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                    <Bar dataKey="orders" name="Orders" fill="#fecaca" radius={[6, 6, 0, 0]} maxBarSize={28} />
                                 </BarChart>
                             ) : (
                                 <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.12} />
+                                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -245,7 +245,7 @@ export default function VendorDashboardHome() {
                                     <Tooltip
                                         contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600 }}
                                     />
-                                    <Area type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#10b981" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
+                                    <Area type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#ef4444" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
                                 </AreaChart>
                             )}
                         </ResponsiveContainer>
@@ -253,7 +253,7 @@ export default function VendorDashboardHome() {
                 </div>
 
                 {/* Top Selling Items */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 flex flex-col min-h-[360px]">
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 sm:p-6 flex flex-col min-h-[360px]">
                     <h3 className="text-base font-extrabold text-gray-900 tracking-tight mb-1">Top Sellers</h3>
                     <p className="text-xs text-gray-500 font-medium mb-5">Today&apos;s most ordered items</p>
 
@@ -277,7 +277,7 @@ export default function VendorDashboardHome() {
                                         </div>
                                         <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full rounded-full transition-all duration-700 ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-emerald-400' : 'bg-emerald-300'}`}
+                                                className={`h-full rounded-full transition-all duration-700 ${i === 0 ? 'bg-red-500' : i === 1 ? 'bg-red-400' : 'bg-red-300'}`}
                                                 style={{ width: `${item.percentage}%` }}
                                             />
                                         </div>
@@ -293,7 +293,7 @@ export default function VendorDashboardHome() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Recent Activity */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 sm:p-6">
                     <div className="flex items-center gap-2 mb-5">
                         <Activity size={16} className="text-blue-500" />
                         <h3 className="text-base font-extrabold text-gray-900">Recent Orders</h3>
@@ -334,15 +334,15 @@ export default function VendorDashboardHome() {
                 </div>
 
                 {/* Stock Alerts */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 flex flex-col">
+                <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 sm:p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-5">
                         <h3 className="text-base font-extrabold text-gray-900">Stock Status</h3>
                         {lowStockProducts.length === 0 ? (
-                            <span className="bg-emerald-50 text-emerald-700 font-bold text-[10px] px-2 py-1 rounded-full uppercase tracking-wide border border-emerald-200/50">
+                            <span className="bg-gray-50 text-gray-600 font-bold text-[10px] px-2 py-1 rounded-full uppercase tracking-wide border border-gray-200">
                                 All Good
                             </span>
                         ) : (
-                            <span className="bg-red-50 text-red-700 font-bold text-[10px] px-2 py-1 rounded-full uppercase tracking-wide border border-red-200">
+                            <span className="bg-red-50 text-red-600 font-bold text-[10px] px-2 py-1 rounded-full uppercase tracking-wide border border-red-200">
                                 {lowStockProducts.length} Out
                             </span>
                         )}
@@ -350,12 +350,12 @@ export default function VendorDashboardHome() {
 
                     {lowStockProducts.length === 0 ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
-                            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
-                                <CheckCircle2 size={24} className="text-emerald-600" />
+                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
+                                <CheckCircle2 size={24} className="text-gray-600" />
                             </div>
                             <p className="text-sm font-bold text-gray-900 mb-1">All items in stock</p>
                             <p className="text-xs text-gray-500">{products.length} menu items available</p>
-                            <Link href="/vendor/menu" className="mt-4 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                            <Link href="/vendor/menu" className="mt-4 text-xs font-bold text-red-500 hover:text-red-600 transition-colors">
                                 Manage Inventory →
                             </Link>
                         </div>
@@ -369,7 +369,7 @@ export default function VendorDashboardHome() {
                                     </div>
                                     <button
                                         onClick={() => handleToggleProduct(product)}
-                                        className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+                                        className="text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
                                     >
                                         Restock
                                     </button>
@@ -405,7 +405,7 @@ function KPICard({
     iconBg?: string;
 }) {
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+        <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h4>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
