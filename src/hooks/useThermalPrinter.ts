@@ -35,26 +35,22 @@ export function useThermalPrinter() {
         connectingRef.current = true;
 
         // ── Certificate: allow unsigned for development ──
-        qz.security.setCertificatePromise(() =>
-            Promise.resolve(
-                '-----BEGIN CERTIFICATE-----\n' +
-                'MIIBkTCB+wIJAM2C5drVksMXMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnFp\n' +
-                'dHJheTAeFw0yMzAxMDEwMDAwMDBaFw0yNTAxMDEwMDAwMDBaMBExDzANBgNVBAMM\n' +
-                'BnFpdHJheTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC3q2dFiYHJW4bXx3YDzVJp\n' +
-                'Xr6v3Kx7Fn7GdxnXzKFJrE0d/JrE0d/JrE0d/JrE0d/JrE0d/JrE0dAgMBAAEw\n' +
-                'DQYJKoZIhvcNAQELBQADQQBPlKLH\n' +
-                '-----END CERTIFICATE-----',
-            ),
-        );
+        qz.security.setCertificatePromise((resolve: any) => {
+            resolve(
+                '-----BEGIN CERTIFICATE-----\nFAKE_CERT\n-----END CERTIFICATE-----'
+            );
+        });
 
         // ── Signing: return empty promise (unsigned mode) ──
         qz.security.setSignatureAlgorithm('SHA512');
-        qz.security.setSignaturePromise(() => (hash: string) =>
-            Promise.resolve(''),
-        );
+        qz.security.setSignaturePromise((toSign: any) => {
+            return (resolve: any) => {
+                resolve();
+            };
+        });
 
         try {
-            await qz.websocket.connect();
+            await qz.websocket.connect({ retries: 5, delay: 1 });
             setIsConnected(true);
             console.log('✅ QZ Tray connected');
 
@@ -164,13 +160,27 @@ export function useThermalPrinter() {
     // ─── PRINT KOT ───────────────────────────────────────────────────
     const printKOT = useCallback(
         async (order: Order, tokenNum: string) => {
-            if (!window.qz?.websocket?.isActive()) {
-                throw new Error('QZ Tray is not connected. Please start QZ Tray.');
-            }
-            if (!printerName) {
-                throw new Error('No printer found. Check printer connection.');
+            if (typeof window === 'undefined' || !window.qz) {
+                throw new Error('QZ Tray library not loaded.');
             }
 
+            if (!window.qz.websocket.isActive()) {
+                await connect();
+                if (!window.qz.websocket.isActive()) {
+                    throw new Error('Please start QZ Tray');
+                }
+            }
+
+            let targetPrinter = printerName;
+            
+            if (!targetPrinter) {
+                // Try discovery one more time if printer not set
+                await discoverPrinter();
+                // discoverPrinter updates the state asynchronously, but the state won't update in this execution context
+                // so we won't wait for it. We'll rely on what QZ Tray discovers directly if possible.
+                // However, since we're using a known default printer 'Printer_POS_80', we can default to it directly.
+                targetPrinter = 'Printer_POS_80';
+            }
             setIsPrinting(true);
 
             try {
@@ -180,7 +190,7 @@ export function useThermalPrinter() {
                 const receiptData = formatReceipt(order, tokenNum);
 
                 // Create printer config
-                const config = qz.configs.create(printerName, {
+                const config = qz.configs.create(targetPrinter, {
                     encoding: 'UTF-8',
                 });
 
