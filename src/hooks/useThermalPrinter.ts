@@ -35,17 +35,31 @@ export function useThermalPrinter() {
         connectingRef.current = true;
 
         // ── Certificate: allow unsigned for development ──
-        qz.security.setCertificatePromise((resolve: any) => {
-            resolve(
-                '-----BEGIN CERTIFICATE-----\nFAKE_CERT\n-----END CERTIFICATE-----'
-            );
+        qz.security.setCertificatePromise(function(resolve: any, reject: any) {
+            // Must be a valid x509 base64 structure, "FAKE_CERT" will throw Java ASN.1 parsing errors on the socket
+            const cert = '-----BEGIN CERTIFICATE-----\n' +
+                'MIIBkTCB+wIJAM2C5drVksMXMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnFp\n' +
+                'dHJheTAeFw0yMzAxMDEwMDAwMDBaFw0yNTAxMDEwMDAwMDBaMBExDzANBgNVBAMM\n' +
+                'BnFpdHJheTBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC3q2dFiYHJW4bXx3YDzVJp\n' +
+                'Xr6v3Kx7Fn7GdxnXzKFJrE0d/JrE0d/JrE0d/JrE0d/JrE0d/JrE0dAgMBAAEw\n' +
+                'DQYJKoZIhvcNAQELBQADQQBPlKLH\n' +
+                '-----END CERTIFICATE-----';
+            if (typeof resolve === 'function') {
+                resolve(cert);
+            } else {
+                return Promise.resolve(cert); // Fallback for newer QZ Tray API
+            }
         });
 
-        // ── Signing: return empty promise (unsigned mode) ──
+        // ── Signing: empty promise (unsigned mode) ──
         qz.security.setSignatureAlgorithm('SHA512');
-        qz.security.setSignaturePromise((toSign: any) => {
-            return (resolve: any) => {
-                resolve();
+        qz.security.setSignaturePromise(function(toSign: any) {
+            return function(resolve: any, reject: any) {
+                if (typeof resolve === 'function') {
+                    resolve();
+                } else {
+                    return Promise.resolve(); // Fallback
+                }
             };
         });
 
