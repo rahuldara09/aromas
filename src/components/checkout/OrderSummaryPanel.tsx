@@ -74,7 +74,7 @@ export default function OrderSummaryPanel({
                     <div className="px-4 pb-4">
                         <button
                             onClick={onContinue}
-                            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors"
+                            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3.5 rounded-xl transition-colors"
                         >
                             {continueLabel}
                         </button>

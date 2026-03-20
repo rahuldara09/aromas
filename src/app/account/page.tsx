@@ -19,6 +19,8 @@ const STATUS_COLORS: Record<string, string> = {
     Placed: 'text-green-600',
     Pending: 'text-yellow-600',
     Cancelled: 'text-red-500',
+    pending_payment: 'text-amber-600',
+    failed: 'text-red-500',
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -27,6 +29,14 @@ const STATUS_DOT: Record<string, string> = {
     Paid: 'bg-blue-500',
     Pending: 'bg-yellow-500',
     Cancelled: 'bg-red-400',
+    pending_payment: 'bg-amber-500',
+    failed: 'bg-red-400',
+};
+
+/** Human-readable labels for raw status codes */
+const STATUS_LABEL: Record<string, string> = {
+    pending_payment: 'Payment Pending',
+    failed: 'Failed',
 };
 
 function formatDate(date: Date): string {
@@ -57,13 +67,7 @@ export default function AccountPage() {
     const [editRoom, setEditRoom] = useState('');
     const [saving, setSaving] = useState(false);
 
-    // Redirect if not authenticated
-    useEffect(() => {
-        if (!loading && !user) {
-            openAuthModal();
-            router.push('/');
-        }
-    }, [user, loading, router, openAuthModal]);
+    // No longer redirect — we show a login prompt inline instead
 
     // Load orders / addresses based on Phone Number (not UID)
     useEffect(() => {
@@ -127,7 +131,7 @@ export default function AccountPage() {
         );
     }
 
-    if (!user) return null;
+    const isLoggedIn = !!user && !!phoneNumber;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -136,7 +140,7 @@ export default function AccountPage() {
             <div className="max-w-6xl mx-auto px-4 py-6">
                 <div className="flex items-center justify-between mb-5">
                     <h1 className="text-xl font-bold text-gray-900">My Account</h1>
-                    <p className="text-gray-500 text-xs">{user.phoneNumber}</p>
+                    {isLoggedIn && <p className="text-gray-500 text-xs">{user?.phoneNumber}</p>}
                 </div>
 
                 {/* ── MOBILE: horizontal tab bar ───────────────────────────── */}
@@ -155,12 +159,14 @@ export default function AccountPage() {
                     >
                         <MapPin size={16} /> Addresses
                     </button>
-                    <button
-                        onClick={handleSignOut}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 ml-auto"
-                    >
-                        <LogOut size={16} /> Sign out
-                    </button>
+                    {isLoggedIn && (
+                        <button
+                            onClick={handleSignOut}
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 ml-auto"
+                        >
+                            <LogOut size={16} /> Sign out
+                        </button>
+                    )}
                 </div>
 
                 {/* ── DESKTOP + MOBILE content layout ─────────────────────── */}
@@ -188,13 +194,15 @@ export default function AccountPage() {
                                 <MapPin size={18} />
                                 My addresses
                             </button>
-                            <button
-                                onClick={handleSignOut}
-                                className="w-full flex items-center gap-3 px-5 py-4 text-sm font-medium text-gray-700 hover:bg-gray-50 border-l-4 border-transparent transition-all"
-                            >
-                                <LogOut size={18} />
-                                Sign out
-                            </button>
+                            {isLoggedIn && (
+                                <button
+                                    onClick={handleSignOut}
+                                    className="w-full flex items-center gap-3 px-5 py-4 text-sm font-medium text-gray-700 hover:bg-gray-50 border-l-4 border-transparent transition-all"
+                                >
+                                    <LogOut size={18} />
+                                    Sign out
+                                </button>
+                            )}
                         </div>
                     </aside>
 
@@ -213,7 +221,19 @@ export default function AccountPage() {
                                         </button>
                                     </div>
 
-                                    {dataLoading ? (
+                                    {!isLoggedIn ? (
+                                        <div className="text-center py-16">
+                                            <div className="text-5xl mb-4">🔒</div>
+                                            <p className="text-gray-800 font-semibold text-lg mb-1">Please log in</p>
+                                            <p className="text-gray-400 text-sm mb-6">Log in with your phone number to view your orders</p>
+                                            <button
+                                                onClick={openAuthModal}
+                                                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-sm"
+                                            >
+                                                Log in →
+                                            </button>
+                                        </div>
+                                    ) : dataLoading ? (
                                         <div className="flex items-center justify-center py-12">
                                             <div className="w-8 h-8 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
                                         </div>
@@ -266,7 +286,7 @@ export default function AccountPage() {
                                                             <div className="flex items-center gap-1.5">
                                                                 <div className={`w-2 h-2 rounded-full ${STATUS_DOT[order.status] ?? 'bg-gray-400'}`} />
                                                                 <span className={`text-sm font-medium ${STATUS_COLORS[order.status] ?? 'text-gray-600'}`}>
-                                                                    {order.status}
+                                                                    {STATUS_LABEL[order.status] ?? order.status}
                                                                 </span>
                                                             </div>
                                                             {isActive && (

@@ -202,7 +202,7 @@ export default function AuthModal() {
                             <button
                                 onClick={handleConfirm}
                                 disabled={loading}
-                                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold transition-colors"
+                                className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm font-semibold transition-colors"
                             >
                                 {loading
                                     ? <Loader2 size={16} className="animate-spin" />
