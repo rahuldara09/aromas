@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MoreHorizontal, ClipboardList, Truck, Package, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, ClipboardList, Truck, Package, RotateCcw, Image as ImageIcon, Banknote } from 'lucide-react';
 import { Order, OrderItem } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -200,6 +200,81 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
                                         <span className="text-[15px] font-bold text-gray-900">Grand total</span>
                                         <span className="text-[15px] font-bold text-gray-900">₹{order.grandTotal}</span>
                                     </div>
+                                </div>
+
+                                {/* Payment Details */}
+                                <div className="bg-white border-b border-gray-100 px-4 py-5">
+                                    <span className="block text-[13px] text-gray-500 font-medium tracking-wide uppercase mb-4">PAYMENT DETAILS</span>
+                                    
+                                    {isPOS ? (
+                                        <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                                <Banknote size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[14px] font-bold text-gray-900">In-Store Payment</p>
+                                                <p className="text-[12px] text-gray-500 font-medium mt-0.5">{order.payment_provider === 'UPI' ? 'UPI' : 'Cash'} · POS Order</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {/* Status Badge */}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[13px] text-gray-500 font-medium">Status</span>
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                                                    order.payment_status === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                    order.payment_status === 'failed' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                                    order.payment_status === 'refunded' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                                    'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                                        order.payment_status === 'success' ? 'bg-emerald-500' :
+                                                        order.payment_status === 'failed' ? 'bg-red-500' :
+                                                        order.payment_status === 'refunded' ? 'bg-purple-500' :
+                                                        'bg-amber-500'
+                                                    }`} />
+                                                    {order.payment_status?.toUpperCase() || 'PENDING'}
+                                                </span>
+                                            </div>
+
+                                            {/* Provider */}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[13px] text-gray-500 font-medium">Provider</span>
+                                                <span className="text-[13px] font-bold text-gray-900">{order.payment_provider?.toUpperCase() || 'ONLINE'}</span>
+                                            </div>
+
+                                            {/* Amount */}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[13px] text-gray-500 font-medium">Amount</span>
+                                                <span className="text-[13px] font-bold text-gray-900">₹{order.payment_amount || order.grandTotal}</span>
+                                            </div>
+
+                                            {/* Transaction ID */}
+                                            {order.payment_transaction_id && (
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[13px] text-gray-500 font-medium shrink-0">Txn ID</span>
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className="text-[12px] font-mono text-gray-600 truncate">{order.payment_transaction_id}</span>
+                                                        <button
+                                                            onClick={() => { navigator.clipboard.writeText(order.payment_transaction_id || ''); toast.success('Copied!'); }}
+                                                            className="text-gray-400 hover:text-gray-700 transition-colors shrink-0 p-1 rounded hover:bg-gray-100"
+                                                            title="Copy Transaction ID"
+                                                        >
+                                                            <ClipboardList size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Verified At */}
+                                            {order.payment_verified_at && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[13px] text-gray-500 font-medium">Verified</span>
+                                                    <span className="text-[12px] text-gray-600">{new Date(order.payment_verified_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Your Details */}

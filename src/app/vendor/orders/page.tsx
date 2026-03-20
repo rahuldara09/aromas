@@ -433,7 +433,11 @@ export default function VendorKanban() {
                             <option value="Placed">Placed</option>
                             <option value="Preparing">Preparing</option>
                             <option value="Completed">Completed</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="pending_payment">Payment Pending</option>
+                            <option value="failed">Failed</option>
                         </select>
                     </div>
                 )}
@@ -980,6 +984,7 @@ export default function VendorKanban() {
                                         <th className="px-5 py-4 font-medium">Customer</th>
                                         <th className="px-5 py-4 font-medium">Items</th>
                                         <th className="px-5 py-4 font-medium text-right">Total</th>
+                                        <th className="px-5 py-4 font-medium">Payment</th>
                                         <th className="px-5 py-4 font-medium text-center">Prep Time</th>
                                         <th className="px-5 py-4 font-medium">Status</th>
                                         <th className="px-5 py-4 font-medium text-center">Action</th>
@@ -1018,10 +1023,27 @@ export default function VendorKanban() {
                                                     </td>
                                                     <td className="px-5 py-5 text-right">
                                                         <div className="font-bold text-gray-900">₹{order.grandTotal}</div>
-                                                        <div className="flex items-center justify-end gap-1 mt-1 text-[11px]">
-                                                            {order.payment_provider?.toLowerCase() === 'upi' || order.payment_provider === 'payu' ? <Smartphone size={10} className="text-purple-600" /> : <Banknote size={10} className="text-emerald-600" />}
-                                                            <span className={`font-semibold ${order.status !== 'Pending' && order.status !== 'Cancelled' ? 'text-emerald-600' : order.status === 'Cancelled' ? 'text-gray-500' : 'text-amber-600'}`}>
-                                                                {order.status !== 'Pending' && order.status !== 'Cancelled' ? 'PAID' : order.status === 'Cancelled' ? 'CXL' : 'COD'}
+                                                    </td>
+                                                    <td className="px-5 py-5">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[12px] font-bold text-gray-700 uppercase">
+                                                                {isPOS ? (order.payment_provider === 'UPI' ? 'UPI' : 'Cash') : (order.payment_provider?.toUpperCase() || 'ONLINE')}
+                                                            </span>
+                                                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider w-fit px-1.5 py-0.5 rounded ${
+                                                                order.payment_status === 'success' ? 'bg-emerald-50 text-emerald-700' :
+                                                                order.payment_status === 'failed' ? 'bg-red-50 text-red-600' :
+                                                                order.payment_status === 'refunded' ? 'bg-purple-50 text-purple-600' :
+                                                                isPOS ? 'bg-gray-100 text-gray-600' :
+                                                                'bg-amber-50 text-amber-700'
+                                                            }`}>
+                                                                <span className={`w-1 h-1 rounded-full ${
+                                                                    order.payment_status === 'success' ? 'bg-emerald-500' :
+                                                                    order.payment_status === 'failed' ? 'bg-red-500' :
+                                                                    order.payment_status === 'refunded' ? 'bg-purple-500' :
+                                                                    isPOS ? 'bg-gray-400' :
+                                                                    'bg-amber-500'
+                                                                }`} />
+                                                                {isPOS ? 'PAID' : (order.payment_status?.toUpperCase() || 'PENDING')}
                                                             </span>
                                                         </div>
                                                     </td>
