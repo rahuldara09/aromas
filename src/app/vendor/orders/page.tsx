@@ -1103,10 +1103,15 @@ function OrderCard({ order, token, onViewDetails, children }: { order: Order; to
     const isPOS = order.orderType === 'pos';
     const displayToken = isPOS ? `POS-#${token}` : `#${token}`;
 
+    const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const platformFee = order.grandTotal - subtotal > 0 ? order.grandTotal - subtotal : 0;
+
     return (
-        <div className={`flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow border-l-4 ${urgency === 'red' ? 'border-l-red-500' : urgency === 'amber' ? 'border-l-amber-400' : 'border-l-gray-300'} transition-all relative max-h-80`}>
+        <div className={`flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow border-l-4 ${urgency === 'red' ? 'border-l-red-500' : urgency === 'amber' ? 'border-l-amber-400' : 'border-l-gray-300'} transition-all relative`}>
             {isPOS && <div className="absolute top-3 right-3 bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-black tracking-wide border border-purple-200 z-10">WALK-IN</div>}
-            <div className="px-3 pt-3 pb-2 flex items-center justify-between shrink-0">
+            
+            {/* Header: Token + Amount */}
+            <div className="px-4 pt-3 pb-2 flex items-center justify-between shrink-0 border-b border-gray-100">
                 <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-gray-900 tracking-tighter">{displayToken}</span>
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${urgency === 'red' ? 'bg-red-100 text-red-700' : 'text-gray-500'}`}>{mins}m</span>
@@ -1115,29 +1120,73 @@ function OrderCard({ order, token, onViewDetails, children }: { order: Order; to
                 <div className="flex items-center gap-2 text-right">
                     <span className="text-xl font-black text-gray-900">₹{order.grandTotal}</span>
                     {onViewDetails && (
-                        <button onClick={(e) => { e.stopPropagation(); onViewDetails(); }} className="p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors" title="View Details">
+                        <button onClick={(e) => { e.stopPropagation(); onViewDetails(); }} className="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-md transition-colors" title="View Details">
                             <Eye size={16} />
                         </button>
                     )}
                 </div>
             </div>
-            <div className="px-3 py-1 space-y-0.5 flex-1 overflow-y-auto scrollbar-thin">
-                {order.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm leading-tight">
-                        <span className="font-bold text-gray-900">{item.quantity}×</span>
-                        <span className="font-medium text-gray-700 truncate">{item.name}</span>
+
+            {/* Items List with prices */}
+            <div className="px-4 py-3 flex-1 overflow-y-auto scrollbar-thin">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">{order.items.reduce((s, i) => s + i.quantity, 0)} Items</p>
+                <div className="space-y-2">
+                    {order.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-6 h-6 rounded-md bg-red-50 text-red-600 flex items-center justify-center text-[11px] font-black shrink-0">{item.quantity}</span>
+                                <span className="font-semibold text-gray-800 truncate">{item.name}</span>
+                            </div>
+                            <span className="font-bold text-gray-600 shrink-0 ml-2 text-xs">₹{item.price * item.quantity}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Bill Breakdown */}
+                <div className="mt-3 pt-3 border-t border-dashed border-gray-200 space-y-1.5 text-xs">
+                    <div className="flex justify-between text-gray-500">
+                        <span>Item Total</span>
+                        <span className="font-semibold">₹{subtotal}</span>
                     </div>
-                ))}
-            </div>
-            <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 flex flex-col gap-1 mt-auto shrink-0">
-                <div className="flex items-center justify-between text-xs font-medium text-gray-600">
-                    <span className="truncate">{order.deliveryAddress?.name || 'Guest'} · {order.deliveryAddress?.hostelNumber || 'Pickup'} {order.deliveryAddress?.roomNumber ? `Rm ${order.deliveryAddress.roomNumber}` : ''}</span>
-                    {(order.customerPhone || order.deliveryAddress?.mobile) && (
-                        <a href={`tel:${order.customerPhone || order.deliveryAddress?.mobile}`} className="text-blue-500 font-bold hover:underline">Call</a>
+                    {platformFee > 0 && (
+                        <div className="flex justify-between text-gray-500">
+                            <span>Platform Fee</span>
+                            <span className="font-semibold">₹{platformFee}</span>
+                        </div>
                     )}
+                    <div className="flex justify-between text-gray-500">
+                        <span>Delivery</span>
+                        <span className="font-semibold text-green-600">FREE</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-gray-900 text-sm pt-1 border-t border-gray-100">
+                        <span>Grand Total</span>
+                        <span>₹{order.grandTotal}</span>
+                    </div>
                 </div>
             </div>
-            {children && <div className="p-2 bg-white border-t border-gray-100 shrink-0">{children}</div>}
+
+            {/* Customer + Delivery Info */}
+            <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 shrink-0">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{order.deliveryAddress?.name || 'Guest'}</p>
+                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                            {order.deliveryAddress?.hostelNumber ? `Hostel ${order.deliveryAddress.hostelNumber}` : 'Pickup'}
+                            {order.deliveryAddress?.roomNumber ? ` · Rm ${order.deliveryAddress.roomNumber}` : ''}
+                            {order.deliveryAddress?.deliveryType ? ` · ${order.deliveryAddress.deliveryType}` : ''}
+                        </p>
+                    </div>
+                    {(order.customerPhone || order.deliveryAddress?.mobile) && (
+                        <a href={`tel:${order.customerPhone || order.deliveryAddress?.mobile}`} className="text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors">Call</a>
+                    )}
+                </div>
+                {/* Order timestamp */}
+                <p className="text-[10px] text-gray-400 font-medium mt-1.5">
+                    Ordered {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(order.orderDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                </p>
+            </div>
+
+            {children && <div className="p-2.5 bg-white border-t border-gray-100 shrink-0">{children}</div>}
         </div>
     );
 }
