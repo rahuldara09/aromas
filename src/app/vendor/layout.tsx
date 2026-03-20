@@ -405,7 +405,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
 
                         {/* Printer Status */}
-                        <div className="flex items-center" title={isPrinterConnected ? 'Thermal Printer Connected' : 'QZ Tray Offline / Disconnected'}>
+                        <div className="flex items-center" title={isPrinterConnected ? 'Thermal Printer Connected' : 'Print Server Offline'}>
                             {isPrinterConnected ? (
                                 <div className="p-2 text-emerald-500 bg-emerald-50 rounded-xl transition-colors">
                                     <Printer size={18} />

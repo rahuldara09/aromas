@@ -56,16 +56,6 @@ function groupByHostel(orders: Order[]): Record<string, Order[]> {
     });
     return groups;
 }
-function printKOT(order: Order, token: string) {
-    const printWindow = window.open('', '_blank', 'width=300,height=500');
-    if (!printWindow) return;
-    const itemsHtml = order.items.map(it => `<tr><td style="padding:4px 0;font-size:20px;font-weight:800">${it.quantity}×</td><td style="padding:4px 8px;font-size:16px">${it.name}</td></tr>`).join('');
-    printWindow.document.write(`<html><head><title>KOT #${token}</title><style>*{margin:0;padding:0}body{font-family:'Courier New',monospace;padding:12px;width:280px}h1{text-align:center;font-size:56px;font-weight:900;letter-spacing:-2px}h2{text-align:center;font-size:13px;font-weight:400;border-bottom:2px dashed #000;padding-bottom:8px;margin:4px 0 10px}table{width:100%}p{font-size:12px;margin:10px 0 0;border-top:1px dashed #000;padding-top:6px}</style></head><body><h1>#${token}</h1><h2>${new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${order.deliveryAddress?.deliveryType || 'Delivery'}</h2><table>${itemsHtml}</table><p>${order.deliveryAddress?.name || 'Guest'} · ${order.deliveryAddress?.hostelNumber || ''} Rm ${order.deliveryAddress?.roomNumber || ''}</p></body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
@@ -75,7 +65,7 @@ export default function VendorKanban() {
     const [preparingSearchToken, setPreparingSearchToken] = useState('');
     const [dispatchSearchToken, setDispatchSearchToken] = useState('');
     const [kitchenYellMode, setKitchenYellMode] = useState(false);
-    const { isConnected: isPrinterConnected, printKOT: qzPrintKOT } = useThermalPrinter();
+    const { isConnected: isPrinterConnected, printKOT: printReceipt } = useThermalPrinter();
 
     // ── MOBILE TAB STATE & FEEDBACK ────────────────────────────────
     const [mobileTab, setMobileTab] = useState<'new' | 'preparing' | 'dispatch' | 'pos'>('new');
@@ -102,11 +92,21 @@ export default function VendorKanban() {
 
     const handleAcceptAndPrint = useCallback(async (order: Order, token: string) => {
         try {
-            if (isPrinterConnected) { await qzPrintKOT(order, token); } else { printKOT(order, token); }
+            // Always attempt print via print server (it logs to console if no hardware printer)
+            await printReceipt(order, token);
             await updateOrderStatus(order.id, 'Preparing');
             toast.success(`#${token} accepted`, { style: { borderRadius: '14px', fontWeight: 600 } });
-        } catch (err) { console.error(err); toast.error('Failed to print/accept order'); }
-    }, [isPrinterConnected, qzPrintKOT]);
+        } catch (err) {
+            console.error(err);
+            // Still accept the order even if printing fails
+            try {
+                await updateOrderStatus(order.id, 'Preparing');
+                toast.success(`#${token} accepted (print failed)`, { style: { borderRadius: '14px', fontWeight: 600 } });
+            } catch {
+                toast.error('Failed to accept order');
+            }
+        }
+    }, [printReceipt]);
 
     const dispatchWithUndo = useCallback((orderId: string, token: string) => {
         const run = async () => {
@@ -693,7 +693,7 @@ export default function VendorKanban() {
                                             {!isPrinterConnected && (
                                                 <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-start gap-2 font-semibold">
                                                     <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
-                                                    <span>Awaiting QZ Tray... click <strong>&quot;Trust Always&quot;</strong> when prompted.</span>
+                                                    <span>Print server offline. Run <strong>node print-server/server.js</strong> to enable silent printing.</span>
                                                 </div>
                                             )}
                                             <div className="relative w-full flex-1">
