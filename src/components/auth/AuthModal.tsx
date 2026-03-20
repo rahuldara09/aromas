@@ -58,8 +58,9 @@ export default function AuthModal() {
         setLoadingMsg('Signing in...');
         try {
             // 1. Create anonymous Firebase session (gives us a real UID)
-            await signInWithPhone(phone);
-            setPhoneNumber(phone); // Store phone in React state only — never localStorage
+            const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
+            await signInWithPhone(formattedPhone);
+            setPhoneNumber(formattedPhone); // Store phone in React state only — never localStorage
 
             // 2. Query Firestore for an existing user with this phone number
             setLoadingMsg('Checking account...');

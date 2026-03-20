@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         // Create Order as "pending_payment"
         const orderData = {
             userId: uid,
-            customerPhone: data.customerPhone,
+            customerPhone: data.customerPhone.startsWith('+91') ? data.customerPhone : `+91${data.customerPhone}`,
             items: data.items,
             itemTotal: serverItemTotal,
             dukanFee: data.dukanFee,

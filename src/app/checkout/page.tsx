@@ -169,7 +169,7 @@ export default function CheckoutPage() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    customerPhone: phoneNumber ?? '',
+                    customerPhone: phoneNumber ? (phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`) : '',
                     items: orderItems,
                     itemTotal: subtotal,
                     dukanFee,
