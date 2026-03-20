@@ -15,7 +15,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const { formatReceipt } = require('./receipt');
+const { formatReceiptText, formatReceiptRaw } = require('./receipt');
 
 const app = express();
 const PORT = 9100;
@@ -36,7 +36,6 @@ async function initUSBPrinter() {
     device = new escpos.USB();
     printerName = 'USB Thermal Printer';
 
-    // Test open/close to verify connection
     await new Promise((resolve, reject) => {
       device.open((err) => {
         if (err) return reject(err);
@@ -48,7 +47,7 @@ async function initUSBPrinter() {
     });
   } catch (err) {
     console.log('⚠️  No USB printer found:', err.message || err);
-    console.log('   Server will start anyway. Connect printer and restart.');
+    console.log('   Server will start in console-only mode.');
     isConnected = false;
     printer = null;
     device = null;
@@ -61,11 +60,11 @@ app.use(express.json());
 
 // ── ROUTES ────────────────────────────────────────────────────────
 
-// Health check
+// Health check — frontend polls this every 5s
 app.get('/status', (req, res) => {
   res.json({
     connected: isConnected,
-    printerName: printerName || null,
+    printerName: printerName || 'Console (no printer)',
     server: 'aroma-print-server',
     version: '1.0.0',
   });
@@ -79,30 +78,24 @@ app.post('/print', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing order or token' });
   }
 
-  // Format the receipt
-  const receiptData = formatReceipt(order, token);
-
-  // If no printer, log receipt to console (useful for testing)
+  // ── NO PRINTER → Console output ──
   if (!isConnected || !device) {
-    console.log('\n📄 RECEIPT (no printer connected — console output):');
-    console.log('─'.repeat(48));
-    // Strip ESC codes for console display
-    const readable = receiptData
-      .join('')
-      .replace(/[\x1B\x1D][\x00-\x7F]*/g, '')
-      .replace(/\x0A/g, '\n');
-    console.log(readable);
-    console.log('─'.repeat(48));
+    const text = formatReceiptText(order, token);
+    console.log('\n📄 RECEIPT #' + token + ':');
+    console.log(text);
 
     return res.json({
       success: true,
       printed: false,
-      message: 'No printer connected — receipt logged to console',
+      message: 'No printer — receipt logged to console',
+      receipt: text,
     });
   }
 
-  // Print via ESC/POS
+  // ── HAS PRINTER → ESC/POS ──
   try {
+    const rawData = formatReceiptRaw(order, token);
+
     await new Promise((resolve, reject) => {
       device.open((err) => {
         if (err) return reject(err);
@@ -110,14 +103,9 @@ app.post('/print', async (req, res) => {
         const escpos = require('escpos');
         const p = new escpos.Printer(device);
 
-        // Send raw data
-        receiptData.forEach(chunk => {
-          p.text(chunk);
-        });
+        rawData.forEach(chunk => p.text(chunk));
 
-        p.close(() => {
-          resolve();
-        });
+        p.close(() => resolve());
       });
     });
 
@@ -125,27 +113,38 @@ app.post('/print', async (req, res) => {
     res.json({ success: true, printed: true });
   } catch (err) {
     console.error('❌ Print failed:', err.message || err);
-    res.status(500).json({ success: false, error: err.message || 'Print failed' });
+
+    // Fallback to console
+    const text = formatReceiptText(order, token);
+    console.log('\n📄 FALLBACK RECEIPT #' + token + ':');
+    console.log(text);
+
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Print failed',
+      receipt: text,
+    });
   }
 });
 
 // ── START ──────────────────────────────────────────────────────────
 async function start() {
   console.log('\n🖨️  Aroma Print Server');
-  console.log('─'.repeat(40));
+  console.log('─'.repeat(48));
 
   await initUSBPrinter();
 
   app.listen(PORT, () => {
-    console.log(`\n🚀 Server running at http://localhost:${PORT}`);
+    console.log(`\n🚀 Listening on http://localhost:${PORT}`);
     console.log(`   GET  /status  → printer status`);
     console.log(`   POST /print   → print receipt`);
-    console.log('─'.repeat(40));
 
     if (!isConnected) {
-      console.log('\n💡 No printer detected. Receipts will be logged to console.');
-      console.log('   Connect a USB thermal printer and restart the server.\n');
+      console.log('\n💡 No printer detected — receipts print to console.');
+      console.log('   Connect USB thermal printer and restart.\n');
     }
+
+    console.log('─'.repeat(48) + '\n');
   });
 }
 
