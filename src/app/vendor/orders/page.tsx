@@ -9,7 +9,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Printer, Search, Truck, Package, ChefHat, Bell, Phone, MapPin,
-    X, List, Layers, BarChart2, ClipboardList, AlertCircle, Plus, Eye, Banknote, Smartphone, Clock, CheckCircle2, ChevronUp, ChevronDown, Calendar, CreditCard, RotateCcw
+    X, List, Layers, BarChart2, ClipboardList, AlertCircle, Plus, Eye, Banknote, Smartphone, Clock, CheckCircle2, ChevronUp, ChevronDown, Calendar, CreditCard, RotateCcw,
+    Globe, Store as StoreIcon, MoreVertical, Download, ChevronLeft, ChevronRight, TrendingUp
 } from 'lucide-react';
 import OrderDetailsDrawer from './OrderDetailsDrawer';
 
@@ -97,14 +98,11 @@ export default function VendorKanban() {
             toast.success(`#${token} accepted`, { style: { borderRadius: '14px', fontWeight: 600 } });
         } catch (err: any) {
             console.error(err);
-            toast.error(err?.message || 'Failed to print');
-            // Still accept the order even if printing fails
-            try {
-                await updateOrderStatus(order.id, 'Preparing');
-                toast.success(`#${token} accepted (print failed)`, { style: { borderRadius: '14px', fontWeight: 600 } });
-            } catch {
-                toast.error('Failed to accept order');
-            }
+            // Show error and allow retry — do NOT accept the order if printing failed
+            toast.error(err?.message || 'Print failed', {
+                duration: 4000,
+                style: { borderRadius: '14px', fontWeight: 600 },
+            });
         }
     }, [printReceipt]);
 
@@ -391,7 +389,9 @@ export default function VendorKanban() {
 
     const historySummary = useMemo(() => {
         const valid = filteredHistoryOrders.filter(o => o.status !== 'Cancelled');
-        return { totalOrders: valid.length, totalSales: valid.reduce((s, o) => s + o.grandTotal, 0) };
+        const onlineOrders = valid.filter(o => o.orderType !== 'pos').length;
+        const posOrders = valid.filter(o => o.orderType === 'pos').length;
+        return { totalOrders: valid.length, onlineOrders, posOrders, totalSales: valid.reduce((s, o) => s + o.grandTotal, 0) };
     }, [filteredHistoryOrders]);
 
     const historyTotalPages = Math.max(1, Math.ceil(filteredHistoryOrders.length / ITEMS_PER_PAGE));
@@ -405,68 +405,55 @@ export default function VendorKanban() {
     //  RENDER
     // ═══════════════════════════════════════════════════════════════════════
     return (
-        <div className="h-full flex flex-col bg-gray-50  overflow-hidden select-none transition-colors">
-            {/* VIEW MODE TOGGLE */}
-            <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-white  border-b border-gray-200  shadow-sm z-20 flex-shrink-0 overflow-x-auto">
-                <div className="flex bg-gray-100  p-1 rounded-xl flex-shrink-0">
-                    <button onClick={() => setViewMode('board')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'board' ? 'bg-white  text-gray-900  shadow-sm' : 'text-gray-500  hover:text-gray-700'}`}>
-                        <BarChart2 size={16} /> Live Board
-                    </button>
-                    <button onClick={() => setViewMode('history')} className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'history' ? 'bg-white  text-gray-900  shadow-sm' : 'text-gray-500  hover:text-gray-700'}`}>
-                        <ClipboardList size={16} /> History
-                    </button>
-                </div>
-                {viewMode === 'history' && (
-                    <div className="flex flex-1 items-center gap-3">
-                        <div className="relative flex-1 max-w-md">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input type="text" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Search by ID or Name..." className="w-full pl-9 pr-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100 text-gray-900" />
-                        </div>
-                        <input type="date" value={historyDate} onChange={e => setHistoryDate(e.target.value)} className="w-36 lg:w-44 px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100" />
-                        <select value={historySource} onChange={e => setHistorySource(e.target.value)} className="w-28 lg:w-36 px-3 lg:px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100 text-gray-700 cursor-pointer appearance-none">
-                            <option value="All">All Sources</option>
-                            <option value="POS">POS Only</option>
-                            <option value="Online">Online Only</option>
-                        </select>
-                        <select value={historyStatus} onChange={e => setHistoryStatus(e.target.value)} className="w-32 lg:w-44 px-3 lg:px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm font-medium focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100 text-gray-700 cursor-pointer appearance-none">
-                            <option value="All">All Statuses</option>
-                            <option value="Placed">Placed</option>
-                            <option value="Preparing">Preparing</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Dispatched">Dispatched</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
-                            <option value="pending_payment">Payment Pending</option>
-                            <option value="failed">Failed</option>
-                        </select>
+        <div className="h-full flex flex-col bg-white overflow-hidden select-none transition-colors">
+            {viewMode === 'board' && (
+                <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-20 flex-shrink-0 overflow-x-auto">
+                    <div className="flex items-center gap-6 shrink-0 mt-1">
+                        <button onClick={() => setViewMode('board')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-900 border-slate-900 pt-[3px]">
+                            Live Board
+                        </button>
+                        <button onClick={() => setViewMode('history')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-400 border-transparent hover:text-slate-600">
+                            History
+                        </button>
                     </div>
-                )}
-                
-                {/* INLINE DISPATCH FEEDBACK */}
-                <div className="ml-auto overflow-hidden">
-                    <AnimatePresence>
-                        {inlineFeedback && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100"
-                            >
-                                <span className="text-xs font-semibold text-gray-500">
-                                    <span className="font-extrabold text-gray-700 mr-1.5">#{inlineFeedback.token}</span>
-                                    Moved to pickup
-                                </span>
-                                <button
-                                    onClick={() => handleUndoDispatch(inlineFeedback.id)}
-                                    className="text-xs font-bold text-gray-400 hover:text-gray-900 underline decoration-gray-300 hover:decoration-gray-900 transition-colors ml-2"
+                    {/* INLINE DISPATCH FEEDBACK */}
+                    <div className="ml-auto overflow-hidden">
+                        <AnimatePresence>
+                            {inlineFeedback && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100"
                                 >
-                                    undo
-                                </button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                    <span className="text-xs font-semibold text-gray-500">
+                                        <span className="font-extrabold text-gray-700 mr-1.5">#{inlineFeedback.token}</span>
+                                        Moved to pickup
+                                    </span>
+                                    <button onClick={() => handleUndoDispatch(inlineFeedback.id)} className="text-xs font-bold text-gray-400 hover:text-gray-900 underline decoration-gray-300 hover:decoration-gray-900 transition-colors ml-2">undo</button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {viewMode === 'history' && (
+                <div className="px-5 sm:px-8 py-6 sm:py-8 flex flex-col sm:flex-row sm:items-start justify-between shrink-0 gap-4">
+                    <div>
+                        <h1 className="text-[28px] font-extrabold text-slate-900 tracking-tight leading-none">Order Management</h1>
+                        <p className="text-[15px] font-medium text-slate-500 mt-2">Track, analyze, and manage your vendor operations with<br className="hidden sm:block"/>high-precision editorial data views.</p>
+                    </div>
+                    <div className="flex items-center gap-6 shrink-0 mt-4 sm:mt-0 self-start sm:self-center">
+                        <button onClick={() => setViewMode('board')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-400 border-transparent hover:text-slate-600">
+                            Live Board
+                        </button>
+                        <button onClick={() => setViewMode('history')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-900 border-slate-900 pt-[3px]">
+                            History
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {viewMode === 'board' ? (
                 <>
@@ -700,7 +687,7 @@ export default function VendorKanban() {
                                             {!isPrinterConnected && (
                                                 <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-start gap-2 font-semibold">
                                                     <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
-                                                    <span>QZ Tray is not connected. <strong>Please open QZ Tray</strong> to enable silent printing.</span>
+                                                    <span>Printer service is offline. <strong>Please start the printer server</strong> to enable silent printing.</span>
                                                 </div>
                                             )}
                                             <div className="relative w-full flex-1">
@@ -975,102 +962,170 @@ export default function VendorKanban() {
             ) : null}
 
             {viewMode === 'history' && (
-                /* ═══ HISTORY TABLE ═══ */
-                <div className="flex-1 flex flex-col overflow-hidden bg-[#f5f5f7] p-6">
-                    <div className="flex items-center gap-4 mb-6 shrink-0">
-                        <div className="bg-white border border-gray-200/60 rounded-2xl p-4 flex-1 shadow-sm">
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Orders Served</p>
-                            <p className="text-3xl font-black text-gray-900 mt-1">{historySummary.totalOrders}</p>
+                <div className="flex-1 overflow-y-auto bg-white px-5 sm:px-8 scrollbar-thin relative pb-10">
+                    {/* ── KPI CARDS ── */}
+                    <div className="flex items-stretch gap-4 sm:gap-6 mb-6 shrink-0 overflow-x-auto pb-2">
+                        {/* Revenue Card */}
+                        <div className="bg-white border text-left border-gray-200 rounded-[14px] p-5 flex-1 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] min-w-[260px]">
+                            <p className="text-[11px] font-extrabold text-gray-500 uppercase tracking-widest mb-1.5">TOTAL REVENUE</p>
+                            <p className="text-[32px] font-bold text-gray-900 leading-none">₹{historySummary.totalSales.toLocaleString()}</p>
+                            <div className="flex items-center gap-2 mt-3">
+                                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-black flex items-center gap-1"><TrendingUp size={10} strokeWidth={3}/> +14.2%</span>
+                                <span className="text-xs font-medium text-gray-500">vs yesterday</span>
+                            </div>
                         </div>
-                        <div className="bg-white border border-gray-200/60 rounded-2xl p-4 flex-1 shadow-sm">
-                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Sales</p>
-                            <p className="text-3xl font-black text-red-500 mt-1">₹{historySummary.totalSales}</p>
+                        {/* Online Orders Card */}
+                        <div className="bg-white border text-left border-gray-200 rounded-[14px] p-5 flex-1 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] min-w-[220px]">
+                            <p className="text-[11px] font-extrabold text-gray-500 uppercase tracking-widest mb-1.5">ONLINE ORDERS</p>
+                            <p className="text-[32px] font-bold text-gray-900 leading-none">{historySummary.onlineOrders}</p>
+                            <p className="text-xs font-semibold text-gray-500 mt-3">From mobile & web</p>
+                        </div>
+                        {/* POS Orders Card */}
+                        <div className="bg-white border text-left border-gray-200 rounded-[14px] p-5 flex-1 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] min-w-[220px]">
+                            <p className="text-[11px] font-extrabold text-gray-500 uppercase tracking-widest mb-1.5">POS ORDERS</p>
+                            <p className="text-[32px] font-bold text-gray-900 leading-none">{historySummary.posOrders}</p>
+                            <p className="text-xs font-semibold text-gray-500 mt-3">From in-store walk-ins</p>
                         </div>
                     </div>
-                    <div className="flex-1 bg-white rounded-2xl border border-gray-200/60 shadow-sm overflow-hidden flex flex-col min-h-0">
-                        <div className="overflow-auto flex-1 scrollbar-thin">
+
+                    {/* ── FILTERS ROW ── */}
+                    <div className="flex items-center justify-between shrink-0 overflow-x-auto gap-4 sticky top-0 z-20 bg-white py-4 -mx-5 px-5 sm:-mx-8 sm:px-8 border-b border-gray-100 shadow-[0_4px_6px_-6px_rgba(0,0,0,0.05)]">
+                        <div className="flex gap-2.5">
+                            {/* Date Filter */}
+                            <div className="relative group">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><Calendar size={14} /></span>
+                                <select className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-40">
+                                    <option>Last 7 Days</option>
+                                    <option>Today</option>
+                                    <option>This Month</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
+                            
+                            {/* Source Filter */}
+                            <div className="relative group">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><List size={14} /></span>
+                                <select value={historySource} onChange={e => setHistorySource(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-36">
+                                    <option value="All">Source: All</option>
+                                    <option value="Online">Online</option>
+                                    <option value="POS">In-Store</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
+
+                            {/* Status Filter */}
+                            <div className="relative group">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><CheckCircle2 size={14} /></span>
+                                <select value={historyStatus} onChange={e => setHistoryStatus(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-44">
+                                    <option value="All">Status: All</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Dispatched">Dispatched</option>
+                                    <option value="Preparing">Preparing</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Right side: Search & Export */}
+                        <div className="flex items-center gap-3">
+                            <div className="relative w-64 hidden sm:block">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input type="text" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Search ID or Customer..." className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-semibold focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 text-gray-900 shadow-sm" />
+                            </div>
+                            <button className="flex items-center gap-2 bg-[#475569] hover:bg-slate-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shrink-0">
+                                <Download size={14} className="stroke-[2.5]" /> Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── TABLE ── */}
+                    <div className="bg-white flex flex-col relative">
+
+                        <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-white border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider sticky top-0 z-10">
-                                        <th className="px-5 py-4 font-medium">Order ID</th>
-                                        <th className="px-5 py-4 font-medium">Source</th>
-                                        <th className="px-5 py-4 font-medium">Date/Time</th>
-                                        <th className="px-5 py-4 font-medium">Customer</th>
-                                        <th className="px-5 py-4 font-medium">Items</th>
-                                        <th className="px-5 py-4 font-medium text-right">Total</th>
-                                        <th className="px-5 py-4 font-medium">Payment</th>
-                                        <th className="px-5 py-4 font-medium text-center">Prep Time</th>
-                                        <th className="px-5 py-4 font-medium">Status</th>
-                                        <th className="px-5 py-4 font-medium text-center">Action</th>
+                                    <tr className="bg-white border-b border-gray-200 text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">
+                                        <th className="px-3 py-4 pl-1">ORDER DETAILS</th>
+                                        <th className="px-3 py-4">CUSTOMER</th>
+                                        <th className="px-3 py-4">SOURCE</th>
+                                        <th className="px-3 py-4">ITEMS</th>
+                                        <th className="px-3 py-4">STATUS</th>
+                                        <th className="px-3 py-4 text-right pr-6">TOTAL</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50 text-[14px]">
+                                <tbody className="divide-y divide-gray-100 text-[14px]">
                                     {paginatedOrders.length === 0 ? (
-                                        <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-500 font-medium">No orders found.</td></tr>
+                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-400 font-semibold">No orders matched your filters.</td></tr>
                                     ) : (
                                         paginatedOrders.map((order: Order) => {
-                                            const isExpanded = selectedOrderDetails?.id === order.id;
                                             const isPOS = order.orderType === 'pos';
-                                            const prepMins = order.prep_time ? `${order.prep_time}m` : '-';
-                                            const rowBg = isExpanded ? 'bg-blue-50/30' : isPOS ? 'bg-purple-50/10' : '';
+                                            const timeString = new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                            const isToday = new Date().toDateString() === new Date(order.orderDate).toDateString();
+                                            const dateDisplay = isToday ? 'Today' : new Date(order.orderDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                                             
+                                            // Handle status colors
+                                            let statusCls = "bg-gray-100 text-gray-600";
+                                            if (order.status === 'Delivered') statusCls = "bg-green-100 text-green-700";
+                                            if (order.status === 'Dispatched') statusCls = "bg-red-50 text-red-600";
+                                            if (order.status === 'Preparing') statusCls = "bg-slate-200 text-slate-700";
+                                            
+                                            // Split items
+                                            const mainItems = order.items.slice(0, 2);
+                                            const remainingItemsCount = order.items.length - 2;
+
+                                            // Customer Initial
+                                            const custName = order.deliveryAddress?.name || 'Guest User';
+                                            const initial = custName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
                                             return (
-                                                <tr key={order.id} className={`hover:bg-gray-50/80 transition-colors ${rowBg}`}>
-                                                    <td className="px-5 py-5 font-bold text-gray-900">#{tokenMap.get(order.id) || order.id.slice(0, 6).toUpperCase()}</td>
-                                                    <td className="px-5 py-5">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${isPOS ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                            {isPOS ? 'POS' : 'Online'}
+                                                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer group" onClick={() => setSelectedOrderDetails(order)}>
+                                                    <td className="px-3 py-4 pl-1">
+                                                        <div className="font-bold text-gray-900 text-[13px]">#ORD-{order.id.slice(0, 4).toUpperCase()}</div>
+                                                        <div className="text-[12px] font-medium text-gray-500 mt-0.5">{dateDisplay}, {timeString}</div>
+                                                    </td>
+                                                    <td className="px-3 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 text-[10px] font-black flex items-center justify-center shrink-0">
+                                                                {initial}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-semibold text-gray-900 text-[13px]">{custName}</div>
+                                                                <div className="text-[12px] text-gray-400 font-medium">+1 {order.deliveryAddress?.mobile || order.customerPhone || '(555) 0000'}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-4">
+                                                        {isPOS ? (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[11px] font-bold">
+                                                                <StoreIcon size={12} /> In-Store
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[11px] font-bold">
+                                                                <Globe size={12} /> Online
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-4 max-w-[200px]">
+                                                        <div className="text-[13px] font-semibold text-slate-700 leading-snug">
+                                                            {mainItems.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                                                        </div>
+                                                        {remainingItemsCount > 0 && (
+                                                            <div className="text-[11px] font-semibold text-gray-400 mt-0.5">+{remainingItemsCount} more item{remainingItemsCount>1?'s':''}</div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-4">
+                                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${statusCls}`}>
+                                                            {order.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-5 py-5 text-gray-500 whitespace-nowrap">
-                                                        <div className="font-medium">{new Date(order.orderDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                                                        <div className="text-[12px]">{new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                                    </td>
-                                                    <td className="px-5 py-5">
-                                                        <div className="font-bold text-gray-900 max-w-[140px] truncate" title={order.deliveryAddress?.name || 'Guest'}>{order.deliveryAddress?.name || 'Guest'}</div>
-                                                        <div className="text-[12px] text-gray-500 mt-0.5 flex items-center gap-1">
-                                                            <Phone size={10} className="text-gray-400" />{order.deliveryAddress?.mobile || order.customerPhone || 'N/A'}
+                                                    <td className="px-3 py-4 text-right pr-4 relative">
+                                                        <div className="flex items-center justify-end gap-4">
+                                                            <span className="font-bold text-gray-900 text-[14px]">₹{order.grandTotal.toFixed(2)}</span>
+                                                            <button className="text-gray-400 hover:text-gray-900 transition-colors p-1" onClick={e => { e.stopPropagation(); setSelectedOrderDetails(order); }}>
+                                                                <MoreVertical size={16} />
+                                                            </button>
                                                         </div>
-                                                    </td>
-                                                    <td className="px-5 py-5">
-                                                        <span className="text-[13px] text-gray-600 font-medium line-clamp-2 max-w-[200px]">{order.items.map((i: OrderItem) => `${i.quantity} ${i.name}`).join(', ')}</span>
-                                                    </td>
-                                                    <td className="px-5 py-5 text-right">
-                                                        <div className="font-bold text-gray-900">₹{order.grandTotal}</div>
-                                                    </td>
-                                                    <td className="px-5 py-5">
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="text-[12px] font-bold text-gray-700 uppercase">
-                                                                {isPOS ? (order.payment_provider === 'UPI' ? 'UPI' : 'Cash') : (order.payment_provider?.toUpperCase() || 'ONLINE')}
-                                                            </span>
-                                                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider w-fit px-1.5 py-0.5 rounded ${
-                                                                order.payment_status === 'success' ? 'bg-emerald-50 text-emerald-700' :
-                                                                order.payment_status === 'failed' ? 'bg-red-50 text-red-600' :
-                                                                order.payment_status === 'refunded' ? 'bg-purple-50 text-purple-600' :
-                                                                isPOS ? 'bg-gray-100 text-gray-600' :
-                                                                'bg-amber-50 text-amber-700'
-                                                            }`}>
-                                                                <span className={`w-1 h-1 rounded-full ${
-                                                                    order.payment_status === 'success' ? 'bg-emerald-500' :
-                                                                    order.payment_status === 'failed' ? 'bg-red-500' :
-                                                                    order.payment_status === 'refunded' ? 'bg-purple-500' :
-                                                                    isPOS ? 'bg-gray-400' :
-                                                                    'bg-amber-500'
-                                                                }`} />
-                                                                {isPOS ? 'PAID' : (order.payment_status?.toUpperCase() || 'PENDING')}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-5 text-center">
-                                                        <span className="text-[13px] font-medium text-gray-500">{prepMins}</span>
-                                                    </td>
-                                                    <td className="px-5 py-5">
-                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-sm text-[11px] font-bold uppercase tracking-wider ${order.status === 'Completed' || order.status === 'Dispatched' || order.status === 'Delivered' ? 'bg-[#2eaa25] text-white' : order.status === 'Cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-700'}`}>{order.status}</span>
-                                                    </td>
-                                                    <td className="px-5 py-5 text-center">
-                                                        <button onClick={() => setSelectedOrderDetails(order)} className={`text-[13px] font-semibold transition-all ${isExpanded ? 'text-red-600' : 'text-red-500 hover:text-red-600'}`}>
-                                                            {isExpanded ? 'Viewing' : 'View'}
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             );
@@ -1079,15 +1134,26 @@ export default function VendorKanban() {
                                 </tbody>
                             </table>
                         </div>
-                        {historyTotalPages > 1 && (
-                            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between shrink-0 gap-3">
-                                <span className="text-sm font-medium text-gray-500">Page <span className="font-bold text-gray-900">{historyPage}</span> of <span className="font-bold text-gray-900">{historyTotalPages}</span></span>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={historyPage === 1} className="px-4 py-2 rounded-lg border border-gray-200 font-bold text-sm bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors">Previous</button>
-                                    <button onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))} disabled={historyPage === historyTotalPages} className="px-4 py-2 rounded-lg border border-gray-200 font-bold text-sm bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 transition-colors">Next</button>
-                                </div>
+                        
+                        {/* Pagination Footer */}
+                        <div className="px-4 border-t border-gray-100 bg-white flex items-center justify-between shrink-0 h-[60px]">
+                            <span className="text-[13px] font-medium text-gray-500">
+                                Showing <span className="font-bold text-gray-900">{(historyPage-1)*ITEMS_PER_PAGE + 1}-{Math.min(historyPage*ITEMS_PER_PAGE, filteredHistoryOrders.length)}</span> of <span className="font-bold text-gray-900">{filteredHistoryOrders.length}</span> orders
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={historyPage === 1} className="w-8 h-8 flex items-center justify-center rounded-md font-bold text-sm bg-white text-gray-400 hover:text-gray-800 disabled:opacity-30 transition-colors">
+                                    <ChevronLeft size={16} />
+                                </button>
+                                {[...Array(Math.min(3, historyTotalPages))].map((_, i) => (
+                                    <button key={i} onClick={() => setHistoryPage(i + 1)} className={`w-8 h-8 flex items-center justify-center rounded-md text-[13px] font-bold transition-colors ${i + 1 === historyPage ? 'bg-slate-600 text-white shadow-sm' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                                        {i + 1}
+                                    </button>
+                                ))}
+                                <button onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))} disabled={historyPage === historyTotalPages} className="w-8 h-8 flex items-center justify-center rounded-md font-bold text-sm bg-white text-gray-400 hover:text-gray-800 disabled:opacity-30 transition-colors">
+                                    <ChevronRight size={16} />
+                                </button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             )}

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toggleProductAvailability, addProduct, deleteProduct, updateProduct } from '@/lib/vendor';
 import { Product } from '@/types';
 import toast from 'react-hot-toast';
-import { Menu as MenuIcon, Search, Plus, X, Trash2, Edit2 } from 'lucide-react';
+import { Menu as MenuIcon, Search, Plus, X, Trash2, Edit2, TrendingUp, Filter, Download } from 'lucide-react';
 import { useState } from 'react';
 
 export default function VendorMenu() {
@@ -108,48 +108,84 @@ export default function VendorMenu() {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 pb-20 h-full flex flex-col transition-colors">
+        <div className="p-8 max-w-7xl mx-auto space-y-6 pb-20 flex-1 overflow-y-auto w-full transition-colors">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3 transition-colors">
-                        <MenuIcon className="text-red-500" /> Menu & Inventory
+                    <h2 className="text-[28px] font-extrabold text-[#111827] tracking-tight">
+                        Menu & Inventory
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1 transition-colors">Manage your catalog and item availability</p>
+                    <p className="text-[15px] text-gray-500 font-medium mt-1">Manage your catalog and item availability with precision.</p>
                 </div>
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex items-center gap-2 bg-[#d92d20] hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
+                >
+                    <Plus size={18} />
+                    <span>Add Item</span>
+                </button>
+            </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-72">
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search items..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-sm font-bold placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-medium focus:outline-none focus:border-red-400 dark:focus:border-red-500 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-all shadow-sm"
-                        />
+            {/* KPI CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0">
+                <div className="bg-white rounded-[16px] p-6 shadow-sm border border-gray-100 flex flex-col justify-center min-h-[140px]">
+                    <span className="text-xs font-bold text-gray-500 tracking-wider uppercase mb-2">Total Catalog Value</span>
+                    <span className="text-[34px] font-black text-[#111827] mb-2 leading-none">₹{products.reduce((acc, p) => acc + p.price, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <div className="flex items-center text-[#d92d20] text-xs font-bold gap-1 mt-auto">
+                        <TrendingUp size={14} /> 12% increase from last month
                     </div>
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold transition-colors shadow-sm whitespace-nowrap"
-                    >
-                        <Plus size={18} />
-                        <span className="hidden sm:inline">Add Item</span>
-                    </button>
+                </div>
+                <div className="bg-[#f8fafc] rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-transparent">
+                    <span className="text-xs font-bold text-[#1e40af] tracking-wider uppercase mb-2">Active Items</span>
+                    <span className="text-[34px] font-black text-[#111827] mb-2 leading-none">{products.filter(p => p.isAvailable).length}</span>
+                    <div className="w-full h-1 bg-[#dbeafe] rounded-full mt-auto">
+                        <div className="h-full bg-[#d92d20] rounded-full w-[80%]"></div>
+                    </div>
+                </div>
+                <div className="bg-[#fce7f3] rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-transparent">
+                    <span className="text-xs font-bold text-[#831843] tracking-wider uppercase mb-2">Stock Alerts</span>
+                    <span className="text-[34px] font-black text-[#9B1B30] mb-2 leading-none">{products.filter(p => !p.isAvailable).length.toString().padStart(2, '0')}</span>
+                    <span className="text-xs font-bold text-[#be185d] underline underline-offset-2 mt-auto cursor-pointer hover:text-[#9B1B30] transition-colors leading-none">View critical items</span>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex-1 overflow-hidden flex flex-col min-h-0 transition-colors">
-                <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/80 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-colors">
+            {/* Sticky Catalog Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 bg-[#f8f9fc] py-4 -mx-8 px-8 border-b border-gray-200/60 shadow-sm backdrop-blur-md bg-opacity-90">
+                    <h3 className="text-[19px] font-bold text-[#111827]">Catalog Listings</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {/* Search is positioned here as Filter placeholder equivalent conceptually */}
+                        <div className="flex bg-[#f1f5f9] rounded-lg items-center px-3 py-1.5 border border-indigo-50/50">
+                            <Search size={14} className="text-gray-400" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search items..."
+                                className="bg-transparent border-none outline-none ml-2 text-xs font-bold text-[#111827] placeholder:text-gray-400 w-32"
+                            />
+                        </div>
+                        <button className="flex items-center gap-2 bg-[#eff6ff] text-[#1e40af] px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#dbeafe] transition-colors shadow-sm">
+                            <Filter size={14} /> Filter
+                        </button>
+                        <button className="flex items-center gap-2 bg-[#eff6ff] text-[#1e40af] px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#dbeafe] transition-colors shadow-sm">
+                            <Download size={14} /> Export
+                        </button>
+                    </div>
+            </div>
+
+            {/* Catalog List */}
+            <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm flex flex-col relative shrink-0">
+
+                <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-white text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider border-b border-gray-50">
                     <div className="col-span-12 md:col-span-5">Item</div>
                     <div className="hidden md:block md:col-span-3">Category</div>
                     <div className="hidden md:block md:col-span-2 text-right">Price</div>
-                    <div className="col-span-12 md:col-span-2 text-right mt-2 md:mt-0 flex justify-between md:justify-end gap-6">
+                    <div className="col-span-12 md:col-span-2 flex justify-between md:justify-end gap-12">
                         <span>Status</span>
-                        <span>Action</span>
+                        <span>Actions</span>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800 scrollbar-thin transition-colors text-sm">
+                <div className="divide-y divide-gray-100 dark:divide-gray-800 transition-colors text-sm">
                     {filteredProducts.length === 0 ? (
                         <div className="p-10 text-center text-gray-400 dark:text-gray-500 font-medium transition-colors">No items found matching "{search}"</div>
                     ) : (
@@ -157,9 +193,9 @@ export default function VendorMenu() {
                             const available = product.isAvailable ?? true;
 
                             return (
-                                <div key={product.id} className={`grid grid-cols-12 gap-4 p-4 items-center transition-colors ${!available ? 'bg-rose-50/30 dark:bg-rose-950/20' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/50'}`}>
-                                    <div className="col-span-12 md:col-span-5 flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-200 dark:border-gray-700 transition-colors ${!available ? 'grayscale opacity-60' : ''}`}>
+                                <div key={product.id} className={`grid grid-cols-12 gap-4 px-6 py-5 items-center transition-colors hover:bg-[#f8fafc] bg-white`}>
+                                    <div className="col-span-12 md:col-span-5 flex items-center gap-4">
+                                        <div className={`w-[52px] h-[52px] rounded-xl bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-200 transition-colors ${!available ? 'grayscale opacity-60' : ''}`}>
                                             {product.imageURL ? (
                                                 <img src={product.imageURL} alt={product.name} className="w-full h-full object-cover" />
                                             ) : (
@@ -167,48 +203,46 @@ export default function VendorMenu() {
                                             )}
                                         </div>
                                         <div>
-                                            <p className={`font-bold text-sm ${!available ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>{product.name}</p>
-                                            <div className="md:hidden mt-0.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                                <span>{(product as any).category || 'Uncategorized'}</span>
-                                                <span>•</span>
-                                                <span className="font-bold text-gray-700 dark:text-gray-300">₹{product.price}</span>
-                                            </div>
+                                            <p className={`font-bold text-[15px] ${!available ? 'text-gray-500' : 'text-[#111827]'}`}>{product.name}</p>
+                                            <p className="text-[11px] font-bold text-[#64748b] mt-0.5 tracking-wide">ID: ARM-{product.id.slice(0, 4).toUpperCase()}</p>
                                         </div>
                                     </div>
 
                                     <div className="hidden md:block md:col-span-3">
-                                        <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-md transition-colors">
-                                            {(product as any).category || 'Uncategorized'}
+                                        <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
+                                            ((product as any).category || 'UNCATEGORIZED').toLowerCase().includes('health') ? 'bg-[#fce7f3] text-[#be185d]' :
+                                            ((product as any).category || 'UNCATEGORIZED').toLowerCase().includes('breakfast') ? 'bg-[#fce7f3] text-[#be185d]' :
+                                            ((product as any).category || 'UNCATEGORIZED').toLowerCase().includes('premium') ? 'bg-[#ffedd5] text-[#c2410c]' :
+                                            'bg-[#f3e8eb] text-[#9B1B30]'
+                                        }`}>
+                                            {(product as any).category || 'UNCATEGORIZED'}
                                         </span>
                                     </div>
 
-                                    <div className="hidden md:block md:col-span-2 text-right font-black text-gray-900 dark:text-white text-sm transition-colors">
-                                        ₹{product.price}
+                                    <div className="hidden md:block md:col-span-2 text-right font-black text-[#111827] text-[15px]">
+                                        ₹{product.price.toFixed(2)}
                                     </div>
 
-                                    <div className="col-span-12 md:col-span-2 flex justify-between md:justify-end items-center gap-4">
-                                        <div className="flex md:hidden items-center gap-3 w-full">
-                                            {/* Mobile layout helpers */}
-                                        </div>
+                                    <div className="col-span-12 md:col-span-2 flex justify-between md:justify-end items-center gap-8">
+                                        <div className="flex md:hidden items-center gap-3 w-full"></div>
+                                        
                                         <button
                                             onClick={() => handleToggleProduct(product)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shadow-inner flex-shrink-0 ${available ? 'bg-emerald-500 dark:bg-emerald-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${available ? 'bg-[#d92d20]' : 'bg-[#e2e8f0]'}`}
                                         >
-                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-[4px]'}`} />
+                                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
                                         </button>
 
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-3">
                                             <button
                                                 onClick={() => handleEditClick(product)}
-                                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
-                                                title="Edit Item"
+                                                className="text-[#64748b] hover:text-[#1e40af] transition-colors"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteProduct(product)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                                                title="Delete Item"
+                                                className="text-[#64748b] hover:text-[#d92d20] transition-colors"
                                             >
                                                 <Trash2 size={16} />
                                             </button>

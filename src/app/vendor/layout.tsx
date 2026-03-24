@@ -12,8 +12,9 @@ import { saveSessionPhone } from '@/lib/auth';
 import { StepUpAuthModal } from '@/components/vendor/StepUpAuthModal';
 import {
     Store,
-    LayoutDashboard,
-    LayoutList,
+    LayoutGrid,
+    ReceiptText,
+    Archive,
     Menu as MenuIcon,
     Settings,
     LogOut,
@@ -26,7 +27,15 @@ import {
     TrendingUp,
     Timer,
     Activity,
+    Search,
+    UtensilsCrossed,
     X as XIcon,
+    Home,
+    ShoppingCart,
+    Wine,
+    ClipboardList,
+    Utensils,
+    PanelLeftClose,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -59,6 +68,8 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
             document.title = 'Aroma Ops';
         }
     }, [activeCount]);
+
+    const activeOrdersCount = activeCount;
 
     // ── DESKTOP SIDEBAR COLLAPSE STATE ────────────────────────────────────────
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -185,21 +196,22 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     }
 
     const unreadCount = orders.filter(o => o.status === 'Placed' || o.status === 'Pending').length;
-    const today = new Date().toDateString();
+    const todayDateStr = new Date().toDateString();
     const todaysSales = orders
-        .filter(o => o.status !== 'Cancelled' && new Date(o.orderDate).toDateString() === today)
+        .filter(o => o.status !== 'Cancelled' && new Date(o.orderDate).toDateString() === todayDateStr)
         .reduce((sum, o) => sum + o.grandTotal, 0);
 
 
     const navItems = [
-        { href: '/vendor', icon: <LayoutDashboard size={20} />, label: 'Home', active: pathname === '/vendor' },
-        { href: '/vendor/orders', icon: <LayoutList size={20} />, label: 'Orders', active: pathname === '/vendor/orders', badge: unreadCount > 0 ? unreadCount : undefined },
-        { href: '/vendor/menu', icon: <MenuIcon size={20} />, label: 'Menu/Inventory', active: pathname === '/vendor/menu' },
-        { href: '/vendor/settings', icon: <Settings size={20} />, label: 'Settings', active: pathname === '/vendor/settings' },
+        { href: '/vendor', icon: <LayoutGrid size={20} strokeWidth={2.5} />, label: 'Dashboard', active: pathname === '/vendor' },
+        { href: '/vendor/orders', icon: <ShoppingCart size={20} strokeWidth={2.5} />, label: 'Orders', active: pathname === '/vendor/orders', badge: unreadCount > 0 ? unreadCount : undefined },
+        { href: '/vendor/menu', icon: <Archive size={20} strokeWidth={2.5} />, label: 'Inventory', active: pathname === '/vendor/menu' },
+        { href: '/vendor/analytics', icon: <Activity size={20} strokeWidth={2.5} />, label: 'Analytics', active: pathname === '/vendor/analytics' },
+        { href: '/vendor/settings', icon: <Settings size={20} strokeWidth={2.5} />, label: 'Settings', active: pathname === '/vendor/settings' },
     ];
 
     return (
-        <div className="flex h-screen bg-[#f5f5f7] overflow-hidden font-sans text-gray-900 transition-colors" onClick={unlockAudio}>
+        <div className="flex h-screen bg-[#f8f9fc] overflow-hidden font-sans text-gray-900 transition-colors" onClick={unlockAudio}>
 
             {/* ═══ MOBILE DRAWER OVERLAY ═══ */}
             {mobileDrawerOpen && (
@@ -210,14 +222,21 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
             )}
 
             {/* ═══ MOBILE SLIDE-IN DRAWER ═══ */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200/60 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#fafafa] border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Drawer Header */}
-                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
+                <div className="h-24 flex items-center justify-between px-6 border-b border-transparent">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm shrink-0">
-                            <Image src="/icon.png" alt="Aromas Logo" width={32} height={32} className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm overflow-hidden bg-white border border-gray-100">
+                            <Image src="/favicon.png" alt="Aromas Logo" width={40} height={40} className="w-full h-full object-cover" />
                         </div>
-                        <span className="font-extrabold text-[17px] tracking-tight text-gray-900">AROMA OPS</span>
+                        <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden text-left">
+                            <span className="font-bold text-[18px] tracking-tight text-slate-900 leading-none mb-1">
+                                Aromas
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase leading-none">
+                                VENDOR DASHBOARD
+                            </span>
+                        </div>
                     </div>
                     <button
                         onClick={() => setMobileDrawerOpen(false)}
@@ -229,92 +248,83 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
 
                 {/* Store Toggle in drawer */}
                 <div className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
-                        <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-red-600' : 'text-gray-400'}`}>
-                            {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
-                        </span>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); toggleStore(); }}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${isStoreOpen ? 'bg-red-500' : 'bg-gray-300'}`}
-                        >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[26px]' : 'translate-x-[4px]'}`} />
-                        </button>
-                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); toggleStore(); }} className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-extrabold text-[12px] uppercase tracking-wider transition-colors border ${isStoreOpen ? 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100' : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isStoreOpen ? 'bg-red-600' : 'bg-gray-400'}`} />
+                        {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
+                    </button>
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex-1 px-2 py-4 space-y-1">
+                <nav className="flex-1 px-3 py-6 space-y-2">
                     {navItems.map(item => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all ${item.active
-                                ? 'bg-red-50 text-red-700 font-bold'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
-                                }`}
-                        >
-                            <span className={item.active ? 'text-red-600' : 'text-gray-400'}>{item.icon}</span>
-                            {item.label}
-                            {item.badge && (
-                                <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
-                                    {item.badge}
-                                </span>
-                            )}
-                            {item.active && <span className="absolute left-0 w-1.5 h-8 bg-red-500 rounded-r-full" />}
-                        </Link>
+                        <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={item.active} badge={item.badge} collapsed={false} />
                     ))}
                 </nav>
 
                 {/* Sign Out */}
-                <div className="p-3 border-t border-gray-100">
+                <div className="p-4 space-y-4 mt-auto mb-4 border-t border-gray-100">
                     <button
                         onClick={async (e) => { e.stopPropagation(); sessionStorage.removeItem('isVendorVerified'); await signOut(); router.push('/'); }}
-                        className="flex items-center gap-3 px-4 py-3 w-full text-sm font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors"
                     >
-                        <LogOut size={20} />
-                        Sign Out
+                        <LogOut size={20} className="text-[#d92d20]" />
+                        Logout
                     </button>
+
+                    <div className="flex items-center gap-3 px-4 py-2 mt-2">
+                        <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                            {/* Generic Chef Picture Placeholder */}
+                            <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=100&h=100&fit=crop" alt="Marcus Vane" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-[14px] text-slate-900 truncate">Marcus Vane</span>
+                            <span className="text-[12px] text-slate-500 truncate">Executive Chef</span>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
-            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-56' : 'w-20'} bg-white/80 backdrop-blur-xl border-r border-gray-200/60 flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
+            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-64' : 'w-20'} bg-[#fafafa] border-r border-gray-100 flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
                 {/* Logo Area */}
-                <div className="h-20 flex items-center px-6 border-b border-gray-100 min-w-0">
-                    <div className="w-8 h-8 bg-red-500 text-white rounded-xl flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
-                        a
+                <div className="h-28 flex items-center px-6 min-w-0 border-b border-transparent">
+                    <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 overflow-hidden bg-white border border-gray-100 ${!sidebarOpen ? 'hover:scale-105 cursor-pointer' : ''}`} onClick={() => !sidebarOpen && setSidebarOpen(true)} title={!sidebarOpen ? "Expand Sidebar" : ""}>
+                        <Image src="/favicon.png" alt="Aromas Logo" width={40} height={40} className="w-full h-full object-cover" />
                     </div>
                     {sidebarOpen && (
-                        <span className="ml-3 font-extrabold text-[17px] tracking-tight text-gray-900 whitespace-nowrap overflow-hidden">
-                            AROMA OPS
-                        </span>
+                        <>
+                            <div className="ml-3 flex flex-col justify-center whitespace-nowrap overflow-hidden text-left flex-1">
+                                <span className="font-bold text-[18px] tracking-tight text-slate-900 leading-none mb-1">
+                                    Aromas
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase leading-none">
+                                    VENDOR DASHBOARD
+                                </span>
+                            </div>
+                            <button onClick={() => setSidebarOpen(false)} className="p-1.5 -mr-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors bg-white border border-transparent hover:border-slate-200" title="Collapse Sidebar">
+                                <PanelLeftClose size={18} />
+                            </button>
+                        </>
                     )}
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex-1 px-2 py-6 space-y-1.5">
+                <nav className="flex-1 px-3 py-6 space-y-2">
                     {navItems.map(item => (
                         <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={item.active} badge={item.badge} collapsed={!sidebarOpen} />
                     ))}
                 </nav>
 
-                {/* Collapse Toggle + Logout */}
-                <div className="p-4 border-t border-gray-100 space-y-2 mt-auto">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setSidebarOpen(v => !v); }}
-                        className="flex items-center justify-center w-full p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-                        title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-                    >
-                        {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-                    </button>
+                {/* Bottom Logout Profile Section */}
+                <div className="p-4 space-y-4 mt-auto mb-4">
                     <button
                         onClick={async (e) => { e.stopPropagation(); sessionStorage.removeItem('isVendorVerified'); await signOut(); router.push('/'); }}
-                        className={`flex items-center ${sidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 w-full text-sm font-semibold text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors`}
+                        className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center'} py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors`}
                         title="Sign Out"
                     >
-                        <LogOut size={20} />
-                        {sidebarOpen && 'Sign Out'}
+                        <LogOut size={20} className="text-[#d92d20]" />
+                        {sidebarOpen && 'Logout'}
                     </button>
-                </div>
+                    </div>
             </aside>
 
             {/* ═══ MAIN CONTENT AREA ═══ */}
@@ -339,71 +349,53 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         <span className="font-extrabold text-[15px] tracking-tight">AROMA OPS</span>
                     </div>
 
-                    {/* Right: Bell + Avatar */}
+                    {/* Right: Bell */}
                     <div className="flex items-center gap-1">
                         <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                             <Bell size={20} />
-                            {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-0 -right-0 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center text-[10px] font-black text-white px-1 shadow-sm border-2 border-white">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
-                        <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 font-bold flex items-center justify-center text-sm ring-1 ring-red-200">
-                            AV
-                        </div>
                     </div>
                 </header>
 
                 {/* ── DESKTOP HEADER ── */}
-                <header className="hidden lg:flex h-16 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 items-center justify-between px-8 flex-shrink-0 z-10 w-full overflow-hidden">
-                    <div className="flex items-center gap-8 xl:gap-12">
-                        <h1 className="text-lg font-bold tracking-tight text-gray-800 whitespace-nowrap">
-                            Hello, <span className="text-gray-900 font-extrabold">Aroma Vendor</span>
-                        </h1>
+                <header className="hidden lg:flex h-16 bg-[#f8f9fc] items-center justify-between px-8 flex-shrink-0 z-10 w-full overflow-hidden">
+                    <div className="flex items-center flex-1 gap-8">
+                        {/* Search Bar */}
+                        <div className="relative flex items-center w-72 bg-indigo-50/50 rounded-lg px-4 py-2 border border-indigo-50/50">
+                            <Search size={16} className="text-gray-400" />
+                            <input 
+                                type="text" 
+                                placeholder="Search inventory..." 
+                                className="bg-transparent border-none outline-none ml-2 text-sm w-full text-gray-600 placeholder:text-gray-400 font-medium" 
+                            />
+                        </div>
 
-                        {/* HUD METRICS */}
-                        <div className="hidden xl:flex items-center gap-6 pl-8 border-l border-gray-200/60 h-10">
-                            <div className="flex items-center gap-2.5 text-gray-600">
-                                <div className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
-                                    <TrendingUp size={14} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Sales</span>
-                                    <span className="text-sm font-extrabold text-gray-900 leading-none">₹{todaysSales.toLocaleString()}</span>
-                                </div>
+                        {/* Top Nav Links */}
+                        <div className="hidden xl:flex items-center gap-6 text-[12px] font-extrabold uppercase tracking-wider">
+                            <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-[10px] text-gray-400 font-bold">SALES (TODAY)</span>
+                                <span className="text-[#0f172a] text-[15px]">₹{todaysSales.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                             </div>
-                            <div className="w-px h-5 bg-gray-200/60" />
-                            <div className="flex items-center gap-2.5 text-gray-600">
-                                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center">
-                                    <Activity size={14} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Active</span>
-                                    <span className="text-sm font-extrabold text-gray-900 leading-none">{activeCount}</span>
-                                </div>
-                            </div>
-                            <div className="w-px h-5 bg-gray-200/60" />
-                            <div className="flex items-center gap-2.5 text-gray-600">
-                                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
-                                    <Timer size={14} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase leading-none mb-0.5">Prep</span>
-                                    <span className="text-sm font-extrabold text-gray-900 leading-none">12m</span>
-                                </div>
+                            <div className="w-px h-8 bg-gray-200"></div>
+                            <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-[10px] text-gray-400 font-bold">ACTIVE ORDERS</span>
+                                <span className="text-[#0f172a] text-[15px]">{activeOrdersCount}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 xl:gap-4">
-                        {/* Store Toggle */}
-                        <div className={`flex items-center gap-3 px-4 py-2 ${isStoreOpen ? 'bg-red-50' : 'bg-gray-100'} rounded-full transition-colors`}>
-                            <span className={`text-sm font-extrabold ${isStoreOpen ? 'text-red-600' : 'text-gray-500'}`}>
+                    <div className="flex items-center gap-5 xl:gap-6 shrink-0">
+                        {/* Store Status Indicator */}
+                        <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${isStoreOpen ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'}`}></div>
+                            <span className={`text-[12px] font-black uppercase tracking-widest ${isStoreOpen ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
                             </span>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); toggleStore(); }}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-sm ${isStoreOpen ? 'bg-red-500' : 'bg-gray-300'}`}
-                            >
-                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[26px]' : 'translate-x-[4px]'}`} />
-                            </button>
                         </div>
 
                         {/* Printer Status */}
@@ -426,16 +418,12 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                         {/* Notifications */}
                         <button className="relative p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition-colors">
                             <Bell size={20} />
-                            {unreadCount > 0 && <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />}
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center text-[10px] font-black text-white px-1 shadow-sm border-2 border-[#f8f9fc]">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
-
-                        {/* Avatar */}
-                        <div className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded-xl transition-all">
-                            <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 font-bold flex items-center justify-center text-sm ring-1 ring-red-200">
-                                AV
-                            </div>
-                            <ChevronDown size={14} className="text-gray-400 mr-1" />
-                        </div>
                     </div>
                 </header>
 
@@ -463,22 +451,21 @@ function NavItem({
         <Link
             href={href}
             title={collapsed ? label : undefined}
-            className={`relative flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3.5 rounded-2xl transition-all ${active
-                ? 'bg-red-50 text-red-700 font-bold'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+            className={`relative flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-2.5 mx-2 rounded-[12px] transition-all ${active
+                ? 'bg-[#f1f5f9] text-slate-900 font-bold'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium'
                 }`}
         >
-            <span className={active ? 'text-red-600' : 'text-gray-400'}>{icon}</span>
-            {!collapsed && label}
+            <span className={active ? 'text-slate-900' : 'text-slate-500'}>{icon}</span>
+            {!collapsed && <span className="text-[15px] tracking-normal">{label}</span>}
             {!collapsed && badge && (
-                <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
+                <span className="ml-auto bg-slate-200 text-slate-700 text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
                     {badge}
                 </span>
             )}
             {collapsed && badge && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-[#9B1B30] rounded-full" />
             )}
-            {active && !collapsed && <span className="absolute left-0 w-1.5 h-8 bg-red-500 rounded-r-full" />}
         </Link>
     );
 }
