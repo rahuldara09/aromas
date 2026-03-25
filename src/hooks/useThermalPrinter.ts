@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Order } from '@/types';
 
 
-// All print requests go through the Next.js API proxy (/api/print),
-// which forwards to localhost:4000 server-side — no CORS issues.
-const PRINTER_API_URL = '/api/print';
+// The browser must communicate directly with the local print server over HTTPS
+// to bypass browser Mixed Content (HTTP/HTTPS) blocking rules in production.
+const PRINTER_API_URL = 'https://localhost:9443/print';
+const PRINTER_HEALTH_URL = 'https://localhost:9443';
 const PRINT_TIMEOUT_MS = 5000;
 
 
@@ -30,7 +31,7 @@ export function useThermalPrinter() {
         try {
             const ctrl = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 3000);
-            const res = await fetch(`${PRINTER_API_URL}/health`, {
+            const res = await fetch(`${PRINTER_HEALTH_URL}/status`, {
                 method: 'GET',
                 signal: ctrl.signal,
             });
@@ -77,8 +78,8 @@ export function useThermalPrinter() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            orderId: order.id,
-                            items: order.items,
+                            order,
+                            token: _tokenNum,
                         }),
                         signal: ctrl.signal,
                     });

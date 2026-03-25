@@ -222,15 +222,37 @@ export default function VendorKanban() {
         setConfirmPending(false);
         if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
         try {
-            await createPOSOrder(posCartItems, posTotal, posTotal, posPayment);
-            // Silently create the order without a toast announcement
+            const orderId = await createPOSOrder(posCartItems, posTotal, posTotal, posPayment);
+            
+            // Build a sufficient mock order for the printer service
+            // The local print server primarily relies on `orderId` and `items`
+            const printMockOrder = {
+                id: orderId,
+                items: posCartItems,
+                orderDate: new Date(),
+                status: 'Preparing',
+                orderType: 'pos',
+                payment_status: 'success',
+                grandTotal: posTotal,
+            } as Order;
+
+            const token = orderId.slice(-3).toUpperCase(); // Quick token generation for POS
+
+            try {
+                await printReceipt(printMockOrder, token);
+                toast.success(`POS Order #${token} created & printed!`, { style: { borderRadius: '14px', fontWeight: 600 } });
+            } catch (err: any) {
+                console.error('POS Print error:', err);
+                toast.success(`Order created! (Print failed: ${err.message})`, { style: { borderRadius: '14px', fontWeight: 600 } });
+            }
+
             setPosCart({});
             setPosSearch('');
             setSelectedCartIndex(null);
             setTimeout(() => posSearchRef.current?.focus(), 30);
         } catch { toast.error('Failed to create POS order'); }
         finally { setPosSubmitting(false); }
-    }, [posCartItems, posTotal, posPayment]);
+    }, [posCartItems, posTotal, posPayment, printReceipt]);
 
     const handlePosSearchKey = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
