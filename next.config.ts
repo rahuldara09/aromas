@@ -26,8 +26,8 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com",
       // Images: self, data URIs, Unsplash, Firebase Storage
       "img-src 'self' blob: data: https://images.unsplash.com https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com https://pub-*.r2.dev https:",
-      // API connections: Firebase, Google APIs, Upstash Redis
-      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.upstash.io",
+      // API connections: Firebase, Google APIs, Upstash Redis, Local Print Server
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.upstash.io https://localhost:9443 http://127.0.0.1:9100 http://localhost:9100",
       // Allow Web Workers for Firebase SDK
       "worker-src blob:",
     ].join('; '),
