@@ -5,7 +5,7 @@
  * 1. formatReceiptRaw()  → ESC/POS byte sequences for thermal printers
  * 2. formatReceiptText() → Plain text for console / visual preview
  * 
- * 80mm paper = 48 chars per line, 58mm = 32 chars.
+ * 80mm paper = 48 chars per line
  */
 
 const COLS = 48;
@@ -23,7 +23,8 @@ const CMD = {
   BOLD_OFF:    `${ESC}\x45\x00`,
   DOUBLE_SIZE: `${GS}\x21\x11`,
   NORMAL_SIZE: `${GS}\x21\x00`,
-  CUT:         `${GS}\x56\x41`,
+  // \x1d\x56\x00 is GS V 0 -> Full cut instantly
+  CUT:         `${GS}\x56\x00`,
   FEED:        '\x0A',
 };
 
@@ -52,12 +53,18 @@ function center(text) {
 function parseOrder(order, token) {
   const orderDate = new Date(order.orderDate || Date.now());
   const time = orderDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const date = orderDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  
+  const dObj = orderDate;
+  const dd = String(dObj.getDate()).padStart(2, '0');
+  const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+  const yy = String(dObj.getFullYear()).slice(-2);
+  const date = `${dd}/${mm}/${yy}`; // e.g. 22/03/26
+
   const isPOS = order.orderType === 'pos';
   const subtotal = order.items.reduce((s, i) => s + (i.price * i.quantity), 0);
   const platformFee = Math.max(0, (order.grandTotal || subtotal) - subtotal);
   const totalItems = order.items.reduce((s, i) => s + i.quantity, 0);
-  const paymentLabel = order.payment_status === 'success' ? 'PAID ONLINE' : (isPOS ? 'IN-STORE' : 'COD');
+  const paymentLabel = order.payment_status === 'success' ? 'PAID' : 'COD';
   const typeLabel = isPOS ? 'Walk-in' : (order.deliveryAddress?.deliveryType || 'Delivery');
 
   return { time, date, isPOS, subtotal, platformFee, totalItems, paymentLabel, typeLabel };
@@ -70,64 +77,32 @@ function parseOrder(order, token) {
 function formatReceiptText(order, token) {
   const { time, date, isPOS, subtotal, platformFee, totalItems, paymentLabel, typeLabel } = parseOrder(order, token);
 
-  const lines = [
-    '',
-    center('AROMA DHABA'),
-    center(isPOS ? 'POS Receipt' : 'Kitchen Order'),
-    center(date),
-    '',
-    center(`#${token}`),
-    '',
-    divider('='),
-    twoCol('TIME', time),
-    twoCol('TYPE', typeLabel),
-    twoCol('PAYMENT', paymentLabel),
-    divider('='),
-    '',
-    `${totalItems} ITEMS`,
-    divider('-'),
-  ];
-
-  order.items.forEach(item => {
-    lines.push(twoCol(`${item.quantity}x ${item.name}`, `Rs.${item.price * item.quantity}`));
-  });
-
-  lines.push(
-    divider('-'),
-    '',
-    twoCol('Item Total', `Rs.${subtotal}`),
-  );
-
-  if (platformFee > 0) {
-    lines.push(twoCol('Platform Fee', `Rs.${platformFee}`));
-  }
-
-  lines.push(
-    twoCol('Delivery', 'FREE'),
-    divider('-'),
-    twoCol('GRAND TOTAL', `Rs.${order.grandTotal || subtotal}`),
-    divider('='),
-    '',
-  );
-
-  if (!isPOS && order.deliveryAddress) {
-    lines.push(
-      'DELIVER TO',
-      order.deliveryAddress.name || 'Guest',
-    );
-    if (order.deliveryAddress.hostelNumber) lines.push(`Hostel ${order.deliveryAddress.hostelNumber}`);
-    if (order.deliveryAddress.roomNumber) lines.push(`Room ${order.deliveryAddress.roomNumber}`);
-    if (order.customerPhone || order.deliveryAddress.mobile) {
-      lines.push(`Ph: ${order.customerPhone || order.deliveryAddress.mobile}`);
-    }
-    lines.push(divider('-'), '');
-  }
-
-  lines.push(center('Thank you!'), '', '');
-
-  return lines.join('\n');
+  return `
+                  AROMA DHABA
+          Hostel 1 Canteen, IIT Bombay
+               Powai, Mumbai 400076
+  ${divider('-')}
+  Date : ${date}       Bill No. : ${token}
+  Type : ${typeLabel.padEnd(10)}   Payment  : ${paymentLabel}
+  ${divider('-')}
+  Particulars            Qty Rate   Amount
+  ${divider('-')}
+  ${order.items.map(item => {
+    const name = item.name.substring(0, 20).padEnd(20);
+    const qty = String(item.quantity).padStart(5);
+    const rate = String(item.price).padStart(6);
+    const amt = String(item.price * item.quantity).padStart(8);
+    return `${name} ${qty} ${rate} ${amt}`;
+  }).join('\n')}
+  ${' '.repeat(28)}${divider('-').substring(0, 20)}
+  ${twoCol('          Food Total :', subtotal.toFixed(2))}
+  ${divider('-')}
+  ${twoCol(`1/${totalItems}`, `Total :           ${order.grandTotal || subtotal}`)}
+  ${divider('-')}
+  GSTIN.27AA0CA6957F1Z8         (${time})
+  E.&O.E.     Thank You         Visit Again
+  `;
 }
-
 
 // ═══════════════════════════════════════════════════════════════════
 //  ESC/POS RAW RECEIPT (for thermal printer)
@@ -139,57 +114,65 @@ function formatReceiptRaw(order, token) {
 
   const data = [
     CMD.INIT,
-    CMD.CENTER, CMD.BOLD_ON,
+    CMD.CENTER,
     'AROMA DHABA' + NL,
-    CMD.BOLD_OFF, CMD.NORMAL_SIZE,
-    (isPOS ? 'POS Receipt' : 'Kitchen Order') + NL,
-    date + NL, NL,
-
-    CMD.DOUBLE_SIZE,
-    `#${token}` + NL,
-    CMD.NORMAL_SIZE, NL,
-
+    'Hostel 1 Canteen, IIT Bombay' + NL,
+    'Powai, Mumbai 400076' + NL,
+    '------------ Tax Invoice -------------' + NL, NL,
     CMD.LEFT,
-    divider('=') + NL,
-    twoCol('TIME', time) + NL,
-    twoCol('TYPE', typeLabel) + NL,
-    twoCol('PAYMENT', paymentLabel) + NL,
-    divider('=') + NL, NL,
-
-    CMD.BOLD_ON,
-    `${totalItems} ITEMS` + NL,
-    CMD.BOLD_OFF,
+    `Date : ${date}       Bill No. : ${token}` + NL,
+    `Type : ${typeLabel.padEnd(10)}   Payment  : ${paymentLabel}` + NL,
+    divider('-') + NL,
+    'Particulars            Qty  Rate   Amount' + NL,
     divider('-') + NL,
   ];
 
   order.items.forEach(item => {
-    data.push(twoCol(`${item.quantity}x ${item.name}`, `Rs.${item.price * item.quantity}`) + NL);
+    // 20 chars for name, 5 for qty, 5 for rate, 8 for amount
+    const name = item.name.substring(0, 20).padEnd(21);
+    const qty = String(item.quantity).padStart(4);
+    const rate = String(item.price).padStart(6);
+    const amt = String(item.price * item.quantity).padStart(8);
+    data.push(`${name} ${qty} ${rate} ${amt}` + NL);
   });
 
-  data.push(divider('-') + NL, NL);
-  data.push(twoCol('Item Total', `Rs.${subtotal}`) + NL);
-  if (platformFee > 0) data.push(twoCol('Platform Fee', `Rs.${platformFee}`) + NL);
+  data.push(' '.repeat(28) + divider('-').substring(0, 20) + NL);
+  data.push(twoCol('          Food Total :', subtotal.toFixed(2)) + NL);
+
+  if (platformFee > 0) {
+    data.push(twoCol('          Pltfm Fee  :', platformFee.toFixed(2)) + NL);
+  }
+
+  data.push(divider('-') + NL);
+
   data.push(
-    twoCol('Delivery', 'FREE') + NL,
+    CMD.DOUBLE_SIZE,
+    twoCol(`1/${totalItems}`, `Total:       ${order.grandTotal || subtotal}`) + NL,
+    CMD.NORMAL_SIZE,
     divider('-') + NL,
-    CMD.BOLD_ON,
-    twoCol('GRAND TOTAL', `Rs.${order.grandTotal || subtotal}`) + NL,
-    CMD.BOLD_OFF,
-    divider('=') + NL, NL,
   );
 
   if (!isPOS && order.deliveryAddress) {
-    data.push(CMD.BOLD_ON, 'DELIVER TO' + NL, CMD.BOLD_OFF);
-    data.push((order.deliveryAddress.name || 'Guest') + NL);
+    data.push(
+      CMD.CENTER,
+      'DELIVER TO' + NL,
+      (order.deliveryAddress.name || 'Guest') + NL,
+    );
     if (order.deliveryAddress.hostelNumber) data.push(`Hostel ${order.deliveryAddress.hostelNumber}` + NL);
     if (order.deliveryAddress.roomNumber) data.push(`Room ${order.deliveryAddress.roomNumber}` + NL);
     if (order.customerPhone || order.deliveryAddress.mobile) {
       data.push(`Ph: ${order.customerPhone || order.deliveryAddress.mobile}` + NL);
     }
-    data.push(divider('-') + NL, NL);
+    data.push(CMD.LEFT, divider('-') + NL);
   }
 
-  data.push(CMD.CENTER, 'Thank you!' + NL, NL, NL, NL, CMD.CUT);
+  data.push(
+    twoCol('GSTIN.27AA0CA6957F1Z8', `(${time})`) + NL,
+    twoCol('E.&O.E.     Thank You', 'Visit Again') + NL,
+  );
+
+  // Add 6 blank line feeds at the very bottom to push the paper entirely out of the blade
+  data.push(NL, NL, NL, NL, NL, NL, CMD.CUT);
 
   return data;
 }
