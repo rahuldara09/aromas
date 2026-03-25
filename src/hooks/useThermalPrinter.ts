@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Order } from '@/types';
 
 
-// The browser must communicate directly with the local print server over HTTP.
-// Chrome natively exempts http://127.0.0.1 from Mixed Content (HTTP/HTTPS) blocking natively!
-// Using HTTPS with self-signed cert triggers aggressive `fetch` blocks cross-origin.
-const PRINTER_API_URL = 'http://127.0.0.1:9100/print';
-const PRINTER_HEALTH_URL = 'http://127.0.0.1:9100';
+// The browser must communicate directly with the local print server over HTTPS.
+// Since the user explicitly trusted the self-signed cert at https://localhost:9443,
+// this will now seamlessly bypass ad-blockers and mixed-content restrictions!
+const PRINTER_API_URL = 'https://localhost:9443/print';
+const PRINTER_HEALTH_URL = 'https://localhost:9443';
 const PRINT_TIMEOUT_MS = 5000;
 
 
