@@ -109,10 +109,20 @@ function getOrCreateCert() {
 }
 
 // ── MIDDLEWARE ─────────────────────────────────────────────────────
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  // ⚡ CRITICAL FIX FOR CHROME PRIVATE NETWORK ACCESS (PNA)
+  if (req.headers['access-control-request-private-network']) {
+    res.header('Access-Control-Allow-Private-Network', 'true');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.use(express.json());
 
 // ── ROUTES ────────────────────────────────────────────────────────
