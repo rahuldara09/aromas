@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/AromaPrinter/node_modules
+/print-server/AromaPrinter/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,6 +21,9 @@
 
 # production
 /build
+/dist
+print-server/AromaPrinter/dist/
+AromaPrinter/dist/
 
 # misc
 .DS_Store

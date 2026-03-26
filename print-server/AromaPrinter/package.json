@@ -1,0 +1,39 @@
+{
+  "name": "aroma-printer",
+  "version": "1.0.0",
+  "description": "Desktop app for Aroma Printer Server",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4",
+    "escpos-network": "^3.0.0-alpha.4",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.aroma.printer",
+    "productName": "Aroma Printer",
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities"
+    },
+    "npmRebuild": false,
+    "files": [
+      "main.js",
+      "index.html",
+      "server.js",
+      "receipt.js",
+      ".certs/**/*",
+      "node_modules/**/*"
+    ]
+  }
+}
+
