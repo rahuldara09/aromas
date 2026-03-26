@@ -216,11 +216,21 @@ export default function CheckoutPage() {
             // Clear cart early since order is technically placed as pending_payment
             clearCart();
             
-            // Direct redirect to Cashfree Hosted Link Page
-            if (data.session?.paymentUrl) {
+            // Use Cashfree SDK to open the checkout integrated experience
+            if (data.session?.payload?.payment_session_id) {
+                const cashfree = await load({ 
+                  mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
+                });
+                
+                await cashfree.checkout({
+                    paymentSessionId: data.session.payload.payment_session_id,
+                    redirectTarget: "_self", // Preferred for mobile/integrated web
+                });
+            } else if (data.session?.paymentUrl) {
+                // Fallback to direct redirect if session id is missing for some reason
                 window.location.href = data.session.paymentUrl;   
             } else {
-                throw new Error('No payment link received');
+                throw new Error('No payment session received');
             }
 
         } catch (error: any) {

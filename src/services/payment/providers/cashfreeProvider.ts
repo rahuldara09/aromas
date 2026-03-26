@@ -13,32 +13,32 @@ export class CashfreeProvider implements PaymentProvider {
         this.environment = (process.env.CASHFREE_ENVIRONMENT || 'SANDBOX').toUpperCase();
         
         this.baseUrl = this.environment === 'PRODUCTION' 
-            ? 'https://api.cashfree.com/pg/links' 
-            : 'https://sandbox.cashfree.com/pg/links';
+            ? 'https://api.cashfree.com/pg/orders' 
+            : 'https://sandbox.cashfree.com/pg/orders';
     }
 
     async createPaymentSession(order: Order, baseUrl?: string): Promise<PaymentSession> {
-        // Cashfree internal link ID must be alphanumeric
-        const linkId = `CF_${order.id}_${Date.now()}`.slice(0, 40);
+        // Order ID must be alphanumeric and unique
+        const orderId = `order_${order.id}_${Date.now()}`.slice(0, 45);
 
         const customerPhone = order.customerPhone || order.deliveryAddress?.mobile || '9999999999';
         const customerName = order.deliveryAddress?.name || 'Customer';
 
         const payload = {
-            link_id: linkId,
-            link_amount: order.grandTotal,
-            link_currency: 'INR',
-            link_purpose: `Order #${order.orderToken || order.id}`,
+            order_id: orderId,
+            order_amount: order.grandTotal,
+            order_currency: 'INR',
             customer_details: {
+                customer_id: order.userId || 'guest_user',
                 customer_phone: customerPhone.replace(/\D/g, '').slice(-10), // 10 digit phone
                 customer_name: customerName,
                 customer_email: 'customer@aromadhaba.com'
             },
-            link_meta: {
-                return_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?cf_id={link_id}`,
+            order_meta: {
+                return_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/order/${order.id}?order_id={order_id}`,
                 notify_url: `${baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/payment/webhook`
             },
-            link_notes: {
+            order_tags: {
                 internal_order_id: order.id
             }
         };
@@ -58,16 +58,23 @@ export class CashfreeProvider implements PaymentProvider {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('[Cashfree] Create Link Error:', data);
-            throw new Error(`Cashfree link creation failed: ${data.message || response.statusText}`);
+            console.error('[Cashfree] Create Order Error:', data);
+            throw new Error(`Cashfree order creation failed: ${data.message || response.statusText}`);
         }
 
+        // For Orders API, we get payment_session_id
+        // Hosted URL can be constructed if needed for direct redirect, but SDK is better
+        const hostedUrl = this.environment === 'PRODUCTION' 
+            ? `https://payments.cashfree.com/order/${data.order_id}`
+            : `https://payments-test.cashfree.com/order/${data.order_id}`;
+
         return {
-            transactionId: linkId, // Our generated link ID for Cashfree
-            paymentUrl: data.link_url, // Direct hosted checkout page URL
+            transactionId: orderId, 
+            paymentUrl: hostedUrl, // Redirect URL for hosted checkout
             payload: {
-                link_id: data.link_id,
-                link_url: data.link_url
+                order_id: data.order_id || '',
+                payment_session_id: data.payment_session_id || '',
+                cf_order_id: String(data.cf_order_id || '')
             }
         };
     }
