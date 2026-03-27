@@ -21,7 +21,7 @@ export default function Footer() {
                             </span>
                         </Link>
                         <p className="text-gray-400 max-w-sm text-sm leading-relaxed font-medium">
-                            Serving IIM Ahmedabad Campus. Delicious, hot, and hygienic food delivered right to your hostel.
+                            Serving the <strong>IIM Ahmedabad Campus</strong>. Aroma Dhaba IIM Ahmedabad delivers delicious, hot, and hygienic food right to your dorm.
                         </p>
 
                         {/* Social Links */}
@@ -39,11 +39,12 @@ export default function Footer() {
                     <div className="lg:col-span-2">
                         <h3 className="text-white font-bold mb-6 text-sm tracking-wider uppercase flex items-center gap-2">Explore <span className="w-8 h-px bg-white/10"></span></h3>
                         <ul className="space-y-4">
-                            <li><Link href="/" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Home</Link></li>
-                            <li><Link href="/about" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">About Us</Link></li>
-                            <li><Link href="/blog" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Blog</Link></li>
-                            <li><Link href="/menu" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Menu</Link></li>
-                            <li><Link href="/account" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">My Account</Link></li>
+                             <li><Link href="/" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Home</Link></li>
+                             <li><Link href="/menu" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Full Menu</Link></li>
+                             <li><Link href="/about" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">About Us</Link></li>
+                             <li><Link href="/contact" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Contact Us</Link></li>
+                             <li><Link href="/blog" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Campus Blog</Link></li>
+                             <li><Link href="/account" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">My Account</Link></li>
                         </ul>
                     </div>
 

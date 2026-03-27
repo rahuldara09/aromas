@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Grid3X3, ShoppingCart, User, Search, X } from 'lucide-react';
+import { Grid3X3, ShoppingCart, User, Search, X, Menu } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -39,6 +39,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
 
     // ── Mobile search toggle ───────────────────────────────────────────────────
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const mobileInputRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
         if (mobileSearchOpen) {
@@ -177,10 +178,19 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
             {/* ── MOBILE: compact header row ───────────────────────────────── */}
             <div className="md:hidden px-4 h-14 flex items-center justify-between gap-3">
-                {/* Logo */}
-                <Link href="/" title="Aroma Dhaba IIM Ahmedabad">
-                    <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
-                </Link>
+                {/* Hamburger & Logo */}
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setMobileMenuOpen(true)}
+                        className="p-1 -ml-1 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        aria-label="Open Menu"
+                    >
+                        <Menu size={24} />
+                    </button>
+                    <Link href="/" title="Aroma Dhaba IIM Ahmedabad">
+                        <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
+                    </Link>
+                </div>
 
                 {/* Right icons */}
                 <div className="flex items-center gap-3">
@@ -431,10 +441,15 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                         </div>
 
                         {/* Nav */}
-                        <nav className="flex items-center gap-[1rem] justify-self-end">
-                            <Link href="/#categories" className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
-                                <Grid3X3 size={17} />
-                                <span className="hidden sm:inline">Categories</span>
+                        <nav className="flex items-center gap-[1.5rem] justify-self-end">
+                            <Link href="/menu" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
+                                Menu
+                            </Link>
+                            <Link href="/about" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
+                                About
+                            </Link>
+                            <Link href="/contact" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
+                                Contact
                             </Link>
                             <Link href="/checkout" className="relative flex items-center gap-1.5 text-sm text-gray-700 hover:text-red-500 transition-colors">
                                 {displayCount > 0 && (
@@ -456,6 +471,63 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                     </>
                 )}
             </div>
+
+            {/* ── MOBILE MENU DRAWER ────────────────────────────────────────── */}
+            {mobileMenuOpen && (
+                <div className="fixed inset-0 z-50 md:hidden">
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+                    <div className="fixed inset-y-0 left-0 w-[280px] bg-white shadow-2xl flex flex-col pt-5 pb-8">
+                        <div className="px-6 flex items-center justify-between mb-8">
+                            <span className="text-2xl font-black tracking-tight text-gray-900">aromas</span>
+                            <button onClick={() => setMobileMenuOpen(false)} className="p-2 -mr-2 text-gray-500">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <nav className="flex-1 px-4 space-y-1">
+                            <Link 
+                                href="/menu" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                            >
+                                Menu
+                            </Link>
+                            <Link 
+                                href="/about" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                            >
+                                About Us
+                            </Link>
+                            <Link 
+                                href="/contact" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                            >
+                                Contact Us
+                            </Link>
+                            <Link 
+                                href="/blog" 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+                            >
+                                Campus Blog
+                            </Link>
+                        </nav>
+
+                        <div className="px-6 pt-6 border-t border-gray-100">
+                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">My Account</p>
+                             <button
+                                onClick={() => { setMobileMenuOpen(false); user ? router.push('/account') : openAuthModal(); }}
+                                className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg hover:bg-gray-800 transition-all"
+                             >
+                                <User size={18} />
+                                {user ? 'View Account' : 'Log in / Sign up'}
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 }

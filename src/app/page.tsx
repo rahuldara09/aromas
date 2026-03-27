@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Banner from '@/components/layout/Banner';
 import CategoryCard from '@/components/products/CategoryCard';
@@ -26,11 +27,19 @@ export default async function HomePage() {
         <section id="categories" className="py-10 md:py-14 container mx-auto px-4">
           <div className="mb-10">
             <h1 className="text-2xl md:text-4xl font-bold text-gray-900 tracking-tight mb-3">
-                What are you craving?
+                Experience the best Late Night Food at IIM Ahmedabad
             </h1>
-            <p className="text-sm md:text-base text-gray-500 font-medium max-w-2xl">
-                Pick a category to explore our menu and order your favorites.
+            <p className="text-sm md:text-base text-gray-500 font-medium max-w-2xl mb-6">
+                Pick a category to explore our wide range of North Indian, Chinese, and Fast Food. Aroma Dhaba IIM Ahmedabad is your go-to spot for delicious bites.
             </p>
+            <div className="flex flex-wrap gap-3">
+                <Link href="/menu" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-md">
+                    View Full Menu
+                </Link>
+                <Link href="/about" className="bg-white border border-gray-200 hover:border-red-200 text-gray-700 font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-sm">
+                    Learn About Us
+                </Link>
+            </div>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
@@ -50,7 +59,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Express Delivery</h4>
-                            <p className="text-sm text-gray-500 font-medium">Within IIM A campus in under 30 minutes.</p>
+                            <p className="text-sm text-gray-500 font-medium">Within <strong>IIM Ahmedabad campus</strong> in under 30 minutes.</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -59,7 +68,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Hygienic Food</h4>
-                            <p className="text-sm text-gray-500 font-medium">Quality ingredients, prepared with care.</p>
+                            <p className="text-sm text-gray-500 font-medium">Quality ingredients, prepared with care at <strong>IIM A</strong>.</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -68,7 +77,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Always Hot</h4>
-                            <p className="text-sm text-gray-500 font-medium">Insulated bags to keep your food fresh.</p>
+                            <p className="text-sm text-gray-500 font-medium">Insulated bags to keep your food fresh for <strong>IIMA students</strong>.</p>
                         </div>
                     </div>
                 </div>

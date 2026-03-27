@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Restaurant',
-  'name': 'Aroma Dhaba',
+  'name': 'Aroma Dhaba IIM Ahmedabad',
   'image': 'https://aromadhaba.in/logo.png',
   '@id': 'https://aromadhaba.in',
   'url': 'https://aromadhaba.in',
@@ -55,8 +55,9 @@ const jsonLd = {
     'addressLocality': 'Ahmedabad',
     'postalCode': '380015',
     'addressRegion': 'Gujarat',
-    'addressCountry': 'IN'
+    'addressCountry': 'India'
   },
+  'areaServed': 'IIM Ahmedabad',
   'geo': {
     '@type': 'GeoCoordinates',
     'latitude': 23.0311,
