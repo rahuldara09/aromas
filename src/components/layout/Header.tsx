@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Grid3X3, ShoppingCart, User, Search, X } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuth } from '@/contexts/AuthContext';
@@ -283,7 +283,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                     <>
                         {/* Logo */}
                         <Link href="/" className="justify-self-start">
-                            <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromasdhaba</span>
+                            <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromas</span>
                         </Link>
 
                         {/* Checkout stepper */}
@@ -432,10 +432,10 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
 
                         {/* Nav */}
                         <nav className="flex items-center gap-[1rem] justify-self-end">
-                            <button onClick={() => router.push('/categories')} className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-red-500 transition-colors">
+                            <Link href="/#categories" className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
                                 <Grid3X3 size={17} />
                                 <span className="hidden sm:inline">Categories</span>
-                            </button>
+                            </Link>
                             <Link href="/checkout" className="relative flex items-center gap-1.5 text-sm text-gray-700 hover:text-red-500 transition-colors">
                                 {displayCount > 0 && (
                                     <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-black tracking-tighter rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center">

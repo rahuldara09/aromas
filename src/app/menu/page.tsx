@@ -1,5 +1,12 @@
 import { Suspense } from 'react';
 import MenuContent from './MenuContent';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Menu | Student Favorites at IIM Ahmedabad',
+    description: 'Explore the full menu of Aroma Dhaba at IIM Ahmedabad campus. North Indian, Chinese, Fast Food, and late-night specials.',
+    keywords: ['aroma dhaba menu', 'iim ahmedabad food menu', 'late night menu iima', 'paneer paratha iima'],
+};
 
 export default function MenuPage() {
     return (

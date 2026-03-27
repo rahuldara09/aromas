@@ -40,8 +40,9 @@ export default function Footer() {
                         <h3 className="text-white font-bold mb-6 text-sm tracking-wider uppercase flex items-center gap-2">Explore <span className="w-8 h-px bg-white/10"></span></h3>
                         <ul className="space-y-4">
                             <li><Link href="/" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Home</Link></li>
-                            <li><Link href="/categories" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Menu by Category</Link></li>
-                            <li><Link href="/checkout" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Your Cart</Link></li>
+                            <li><Link href="/about" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">About Us</Link></li>
+                            <li><Link href="/blog" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Blog</Link></li>
+                            <li><Link href="/menu" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Menu</Link></li>
                             <li><Link href="/account" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">My Account</Link></li>
                         </ul>
                     </div>
@@ -86,9 +87,9 @@ export default function Footer() {
                                 </span>
                                 <div className="flex flex-col">
                                     <span className="text-xs text-gray-500 font-medium mb-0.5">Location</span>
-                                    <Link href="/legal/contact-us" className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors leading-relaxed">
-                                        Near Hostel 1, Hostel Road, IIT Bombay<br />
-                                        Mumbai, Maharashtra 400076
+                                    <Link href="/contact" className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors leading-relaxed">
+                                        IIM Ahmedabad Campus, Vastrapur<br />
+                                        Ahmedabad, Gujarat 380015
                                     </Link>
                                 </div>
                             </div>
@@ -103,7 +104,7 @@ export default function Footer() {
                         &copy; {currentYear} Aromas Delight Catering Service. All rights reserved.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-white/5 py-1.5 px-3 rounded-full border border-white/5">
-                        Made with <Heart size={12} className="text-red-500 fill-red-500" /> at <span className="text-gray-300 font-bold ml-1">IIT Bombay</span>
+                        Made with <Heart size={12} className="text-red-500 fill-red-500" /> at <span className="text-gray-300 font-bold ml-1">IIM Ahmedabad</span>
                     </div>
                 </div>
             </div>
