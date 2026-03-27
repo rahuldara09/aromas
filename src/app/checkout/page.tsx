@@ -9,7 +9,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { createOrder, upsertUserProfile, getUserByPhone } from '@/lib/firestore';
 import { listenToStoreStatus } from '@/lib/vendor';
-import { IIT_BOMBAY_HOSTELS } from '@/lib/hostels';
+import { IIM_AHMEDABAD_DORMS } from '@/lib/hostels';
 import { load } from '@cashfreepayments/cashfree-js';
 // import PayUForm from '@/components/checkout/PayUForm';
 import toast from 'react-hot-toast';
@@ -346,8 +346,8 @@ export default function CheckoutPage() {
                                         <span className="text-red-500 text-lg">📍</span>
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900 text-sm">IIT Bombay Campus</p>
-                                        <p className="text-xs text-gray-400">Powai, Mumbai — 400076</p>
+                                        <p className="font-semibold text-gray-900 text-sm">IIM Ahmedabad Campus</p>
+                                        <p className="text-xs text-gray-400">Vastrapur, Ahmedabad — 380015</p>
                                     </div>
                                 </div>
                                 <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
@@ -387,7 +387,7 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Hostel Dropdown — IIT Bombay specific */}
+                                    {/* Dorm Dropdown — IIM Ahmedabad specific */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Hostel <span className="text-red-500">*</span>
@@ -399,7 +399,7 @@ export default function CheckoutPage() {
                                                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
                                             >
                                                 <option value="">Select hostel</option>
-                                                {IIT_BOMBAY_HOSTELS.map((h: string) => (
+                                                {IIM_AHMEDABAD_DORMS.map((h: string) => (
                                                     <option key={h} value={h}>{h}</option>
                                                 ))}
                                             </select>

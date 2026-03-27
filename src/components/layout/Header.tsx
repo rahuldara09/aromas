@@ -178,7 +178,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
             {/* ── MOBILE: compact header row ───────────────────────────────── */}
             <div className="md:hidden px-4 h-14 flex items-center justify-between gap-3">
                 {/* Logo */}
-                <Link href="/">
+                <Link href="/" title="Aroma Dhaba IIM Ahmedabad">
                     <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
                 </Link>
 
@@ -282,7 +282,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                 {variant === 'checkout' ? (
                     <>
                         {/* Logo */}
-                        <Link href="/" className="justify-self-start">
+                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Ahmedabad">
                             <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromas</span>
                         </Link>
 
@@ -345,7 +345,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                 ) : (
                     <>
                         {/* Logo */}
-                        <Link href="/" className="justify-self-start">
+                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Ahmedabad">
                             <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromas</span>
                         </Link>
 

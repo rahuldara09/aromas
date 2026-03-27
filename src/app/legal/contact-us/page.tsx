@@ -18,20 +18,20 @@ export default function ContactUs() {
                         <div>
                             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Registered Address</h2>
                             <p className="text-gray-900 leading-relaxed">
-                                Near Hostel 1<br />
-                                Hostel Road, IIT Bombay<br />
-                                Mumbai, Maharashtra<br />
-                                PIN: 400076
+                                Near Dorm 15<br />
+                                IIM Ahmedabad Campus, Vastrapur<br />
+                                Ahmedabad, Gujarat<br />
+                                PIN: 380015
                             </p>
                         </div>
 
                         <div>
                             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Operational Address</h2>
                             <p className="text-gray-900 leading-relaxed">
-                                Near Hostel 1<br />
-                                Hostel Road, IIT Bombay<br />
-                                Mumbai, Maharashtra<br />
-                                PIN: 400076
+                                Near Dorm 15<br />
+                                IIM Ahmedabad Campus, Vastrapur<br />
+                                Ahmedabad, Gujarat<br />
+                                PIN: 380015
                             </p>
                         </div>
                     </div>

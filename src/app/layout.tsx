@@ -15,7 +15,7 @@ const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aroma Dhaba | Late Night Food at IIM Ahmedabad',
+    default: 'Aroma Dhaba IIM Ahmedabad | Order Food Online',
     template: '%s | Aroma Dhaba',
   },
   description: 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Ahmedabad campus. Fast late-night delivery and daily canteen service for students.',

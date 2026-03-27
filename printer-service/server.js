@@ -8,7 +8,7 @@ device.open(() => {
 
     .style('NORMAL')
     .size(0, 0)
-    .text("Seawoods, Navi Mumbai")
+    .text("Ahmedabad, Gujarat")
     .text("-------------------------------")
 
     .align('LT')

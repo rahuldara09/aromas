@@ -21,7 +21,7 @@ export default function Footer() {
                             </span>
                         </Link>
                         <p className="text-gray-400 max-w-sm text-sm leading-relaxed font-medium">
-                            Serving delicious, hot, and hygienic food right to your hostel. Craving midnight snacks or a full meal? We've got you covered.
+                            Serving IIM Ahmedabad Campus. Delicious, hot, and hygienic food delivered right to your hostel.
                         </p>
 
                         {/* Social Links */}

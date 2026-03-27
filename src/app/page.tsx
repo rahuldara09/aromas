@@ -6,7 +6,7 @@ import { Flame, Clock, ShoppingBag } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Aroma Dhaba | Late Night Food at IIM Ahmedabad',
+  title: 'Aroma Dhaba IIM Ahmedabad | Order Food Online',
   description: 'Order hot food in minutes, even at 1 AM. Aroma Dhaba is the favorite late-night food spot at IIM Ahmedabad campus. Fast delivery of Parathas, Biryani, and more.',
   alternates: {
     canonical: 'https://aromadhaba.in',
