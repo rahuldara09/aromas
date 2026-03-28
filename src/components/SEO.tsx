@@ -1,7 +1,6 @@
-'use client';
-
 import Head from 'next/head';
 import { usePathname } from 'next/navigation';
+import { SEO_CONFIG, getRestaurantSchema } from '@/lib/seo-config';
 
 interface SEOProps {
   title?: string;
@@ -13,74 +12,31 @@ interface SEOProps {
   schema?: any;
 }
 
-const DEFAULT_TITLE = 'Aroma Dhaba | Late Night Food at IIM Mumbai';
-const DEFAULT_DESCRIPTION = 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Mumbai campus. Fast late-night delivery and daily canteen service for students.';
-const SITE_URL = 'https://aromadhaba.in';
-
 export default function SEO({
-  title = DEFAULT_TITLE,
-  description = DEFAULT_DESCRIPTION,
+  title = SEO_CONFIG.defaultTitle,
+  description = SEO_CONFIG.defaultDescription,
   canonical,
   ogType = 'website',
   ogImage = '/og-image.jpg',
-  keywords = ['IIM Mumbai food', 'late night food IIM Mumbai', 'campus food delivery', 'Aroma Dhaba', 'IIM Mumbai canteen'],
+  keywords = SEO_CONFIG.keywords,
   schema,
 }: SEOProps) {
   const pathname = usePathname();
-  const url = `${SITE_URL}${pathname}`;
+  const url = `${SEO_CONFIG.siteUrl}${pathname}`;
   const canonicalUrl = canonical || url;
 
-  const restaurantSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Restaurant',
-    'name': 'Aroma Dhaba',
-    'image': `${SITE_URL}/logo.png`,
-    '@id': `${SITE_URL}`,
-    'url': `${SITE_URL}`,
-    'telephone': '+919892820940',
-    'address': {
-      '@type': 'PostalAddress',
-      'streetAddress': 'IIM Mumbai campus, Powai',
-      'addressLocality': 'Mumbai',
-      'postalCode': '400087',
-      'addressRegion': 'Maharashtra',
-      'addressCountry': 'India'
-    },
-    'geo': {
-      '@type': 'GeoCoordinates',
-      'latitude': 19.1312,
-      'longitude': 72.9095
-    },
-    'openingHoursSpecification': [
-      {
-        '@type': 'OpeningHoursSpecification',
-        'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-        'opens': '11:00',
-        'closes': '23:59'
-      },
-      {
-        '@type': 'OpeningHoursSpecification',
-        'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-        'opens': '00:00',
-        'closes': '03:30'
-      }
-    ],
-    'servesCuisine': 'North Indian, Chinese, Fast Food',
-    'priceRange': '₹',
-    'menu': `${SITE_URL}/menu`,
-    'acceptsReservations': 'false'
-  };
+  const restaurantSchema = getRestaurantSchema();
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     'name': 'Aroma Dhaba',
-    'description': DEFAULT_DESCRIPTION,
-    'url': SITE_URL,
-    'telephone': '+919892820940',
+    'description': description,
+    'url': SEO_CONFIG.siteUrl,
+    'telephone': SEO_CONFIG.phone,
     'location': {
         '@type': 'Place',
-        'name': 'IIM Mumbai campus'
+        'name': `${SEO_CONFIG.campus} campus`
     }
   };
 
@@ -97,13 +53,13 @@ export default function SEO({
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="Aroma Dhaba" />
       <meta property="og:type" content={ogType} />
-      <meta property="og:image" content={`${SITE_URL}${ogImage}`} />
+      <meta property="og:image" content={`${SEO_CONFIG.siteUrl}${ogImage}`} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={`${SITE_URL}${ogImage}`} />
+      <meta name="twitter:image" content={`${SEO_CONFIG.siteUrl}${ogImage}`} />
 
       {/* JSON-LD Schema */}
       <script

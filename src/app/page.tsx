@@ -5,12 +5,13 @@ import CategoryCard from '@/components/products/CategoryCard';
 import { getCategories } from '@/lib/firestore';
 import { Flame, Clock, ShoppingBag } from 'lucide-react';
 import type { Metadata } from 'next';
+import { SEO_CONFIG } from '@/lib/seo-config';
 
 export const metadata: Metadata = {
-  title: 'Aroma Dhaba IIM Mumbai | Order Food Online',
-  description: 'Order hot food in minutes, even at 1 AM. Aroma Dhaba is the favorite late-night food spot at IIM Mumbai campus. Fast delivery of Parathas, Biryani, and more.',
+  title: SEO_CONFIG.defaultTitle,
+  description: SEO_CONFIG.defaultDescription,
   alternates: {
-    canonical: 'https://aromadhaba.in',
+    canonical: SEO_CONFIG.siteUrl,
   },
 };
 
@@ -27,8 +28,11 @@ export default async function HomePage() {
         <section id="categories" className="pt-6 pb-12 md:pt-8 md:pb-16 container mx-auto px-4">
           <div className="mb-8">
             <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-3">
-                Late Night Food at IIM Mumbai
+                Aroma Dhaba - IIM Mumbai
             </h1>
+            <h2 className="sr-only">
+              {SEO_CONFIG.categories.join(' · ')}
+            </h2>
             <p className="text-base md:text-lg text-gray-600 font-bold max-w-2xl mb-6">
                 From North Indian to Chinese and Fast Food—Aroma Dhaba sorts your midnight cravings fast.
             </p>

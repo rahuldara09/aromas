@@ -2,13 +2,16 @@ import Header from '@/components/layout/Header';
 import CategoryCard from '@/components/products/CategoryCard';
 import { getCategories } from '@/lib/firestore';
 import type { Metadata } from 'next';
+import { SEO_CONFIG } from '@/lib/seo-config';
 
 export const metadata: Metadata = {
-    title: 'Order Food in IIM Mumbai | Aroma Dhaba',
-    description: 'Craving late-night food at IIM Mumbai? Order from Aroma Dhaba - your favorite campus canteen. Fast delivery of Parathas, Biryani, Chinese, and more.',
-    keywords: ['order food iim ahmedabad', 'late night food iima', 'aroma dhaba iima', 'iim ahmedabad canteen'],
+    title: {
+        absolute: SEO_CONFIG.defaultTitle,
+    },
+    description: SEO_CONFIG.defaultDescription,
+    keywords: SEO_CONFIG.keywords,
     alternates: {
-        canonical: 'https://aromadhaba.in/categories',
+        canonical: `${SEO_CONFIG.siteUrl}/categories`,
     },
 };
 
