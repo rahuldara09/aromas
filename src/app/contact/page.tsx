@@ -3,8 +3,8 @@ import { Mail, Phone, MapPin, Clock, MessageSquare, Instagram, Facebook } from '
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Contact Us | Aroma Dhaba IIM Ahmedabad',
-  description: 'Get in touch with Aroma Dhaba at IIM Ahmedabad campus. Order via phone, email us, or visit us. 24/7 student food support.',
+  title: 'Contact Us | Aroma Dhaba IIM Mumbai',
+  description: 'Get in touch with Aroma Dhaba at IIM Mumbai campus. Order via phone, email us, or visit us. 24/7 student food support.',
 };
 
 export default function ContactPage() {
@@ -65,8 +65,8 @@ export default function ContactPage() {
                     <div>
                       <h4 className="text-xl font-bold text-gray-900 mb-1">Location</h4>
                       <p className="text-gray-600 font-medium leading-relaxed">
-                        IIM Ahmedabad Campus, Vastrapur<br />
-                        Ahmedabad, Gujarat 380015
+                        IIM Mumbai Campus, Powai<br />
+                        Mumbai, Maharashtra 400087
                       </p>
                     </div>
                   </div>

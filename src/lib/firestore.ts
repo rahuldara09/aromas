@@ -353,8 +353,8 @@ export async function getUserAddresses(phone: string): Promise<Address[]> {
             name: data.name ?? '',
             mobile: data.phone ?? '',
             hostelDetails: `${data.lastHostel ?? ''}, Room ${data.lastRoom ?? ''}`,
-            city: 'IIM Ahmedabad, Vastrapur',
-            pincode: '380015',
+            city: 'IIM Mumbai, Powai',
+            pincode: '400087',
             // Extra fields for display & edit form:
             hostel: data.lastHostel ?? '',
             room: data.lastRoom ?? '',

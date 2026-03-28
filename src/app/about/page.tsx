@@ -4,8 +4,8 @@ import { Heart, Utensils, Users, Award, Clock } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'About Us | Aroma Dhaba IIM Ahmedabad',
-  description: 'Learn about Aroma Dhaba - the favorite late-night food spot at IIM Ahmedabad campus. Serving quality food with love since our inception.',
+  title: 'About Us | Aroma Dhaba IIM Mumbai',
+  description: 'Learn about Aroma Dhaba - the favorite late-night food spot at IIM Mumbai campus. Serving quality food with love since our inception.',
 };
 
 export default function AboutPage() {
@@ -19,7 +19,7 @@ export default function AboutPage() {
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight">Our Story</h1>
             <p className="text-xl text-red-100 max-w-2xl mx-auto font-medium">
-              Fueling the dreams of IIM Ahmedabad students, one paratha at a time.
+              Fueling the dreams of IIM Mumbai students, one paratha at a time.
             </p>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function AboutPage() {
               <div className="flex-1 space-y-8">
                 <h2 className="text-4xl font-black text-gray-900 leading-tight">Authentic Taste, <br /><span className="text-red-600">Late Night Convenience.</span></h2>
                 <p className="text-gray-600 text-lg leading-relaxed font-medium">
-                  Aroma Dhaba was born out of a simple observation: students at IIM Ahmedabad work hard, often late into the night, and they deserve food that is as dedicated to quality as they are to their studies.
+                  Aroma Dhaba was born out of a simple observation: students at IIM Mumbai work hard, often late into the night, and they deserve food that is as dedicated to quality as they are to their studies.
                 </p>
                 <p className="text-gray-600 text-lg leading-relaxed font-medium">
                   We started with a small menu of North Indian classics and have grown into a campus favorite, known for our hot, fresh, and hygienic meals. Whether it's a quick break between case studies or a midnight celebration, we're here to serve.
@@ -103,7 +103,7 @@ export default function AboutPage() {
                   <Users size={32} />
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-4">Student Community</h3>
-                <p className="text-gray-600 font-medium">We're proud to be a part of the vibrant IIM Ahmedabad campus culture.</p>
+                <p className="text-gray-600 font-medium">We're proud to be a part of the vibrant IIM Mumbai campus culture.</p>
               </div>
             </div>
           </div>

@@ -15,7 +15,7 @@ export default function Banner() {
                 href="/menu" 
                 className="text-xs md:text-sm font-black tracking-wide uppercase hover:underline flex items-center justify-center gap-1.5 transition-all text-white"
             >
-                <span className="shrink-0">🔥 Late Night Food at IIM Ahmedabad</span>
+                <span className="shrink-0">🔥 Late Night Food at IIM Mumbai</span>
                 <span className="hidden sm:inline opacity-60">|</span>
                 <span className="shrink-0">Open till 3:30 AM</span>
                 <span className="hidden sm:inline opacity-60">|</span>

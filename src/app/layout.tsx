@@ -15,11 +15,11 @@ const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aroma Dhaba IIM Ahmedabad | Order Food Online',
+    default: 'Aroma Dhaba IIM Mumbai | Order Food Online',
     template: '%s | Aroma Dhaba',
   },
-  description: 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Ahmedabad campus. Fast late-night delivery and daily canteen service for students.',
-  keywords: ['IIM Ahmedabad food', 'late night food IIMA', 'campus food delivery', 'Aroma Dhaba', 'IIMA canteen', 'best food IIM A'],
+  description: 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Mumbai campus. Fast late-night delivery and daily canteen service for students.',
+  keywords: ['IIM Mumbai food', 'late night food IIM Mumbai', 'campus food delivery', 'Aroma Dhaba', 'IIM Mumbai canteen', 'best food IIM Mumbai'],
   metadataBase: new URL('https://aromadhaba.in'),
   alternates: {
     canonical: '/',
@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     google: 'REPLACE_WITH_YOUR_GOOGLE_SITE_VERIFICATION_CODE',
   },
   openGraph: {
-    title: 'Aroma Dhaba | Late Night Food at IIM Ahmedabad',
-    description: 'Order delicious food from Aroma Dhaba, IIM Ahmedabad. Fast late-night delivery to your hostel.',
+    title: 'Aroma Dhaba | Late Night Food at IIM Mumbai',
+    description: 'Order delicious food from Aroma Dhaba, IIM Mumbai. Fast late-night delivery to your hostel.',
     url: 'https://aromadhaba.in',
     siteName: 'Aroma Dhaba',
     locale: 'en_IN',
@@ -44,24 +44,24 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Restaurant',
-  'name': 'Aroma Dhaba IIM Ahmedabad',
+  'name': 'Aroma Dhaba IIM Mumbai',
   'image': 'https://aromadhaba.in/logo.png',
   '@id': 'https://aromadhaba.in',
   'url': 'https://aromadhaba.in',
   'telephone': '+919892820940',
   'address': {
     '@type': 'PostalAddress',
-    'streetAddress': 'IIM Ahmedabad campus, Vastrapur',
-    'addressLocality': 'Ahmedabad',
-    'postalCode': '380015',
-    'addressRegion': 'Gujarat',
+    'streetAddress': 'IIM Mumbai campus, Powai',
+    'addressLocality': 'Mumbai',
+    'postalCode': '400087',
+    'addressRegion': 'Maharashtra',
     'addressCountry': 'India'
   },
-  'areaServed': 'IIM Ahmedabad',
+  'areaServed': 'IIM Mumbai',
   'geo': {
     '@type': 'GeoCoordinates',
-    'latitude': 23.0311,
-    'longitude': 72.5312
+    'latitude': 19.1312,
+    'longitude': 72.9095
   },
   'openingHoursSpecification': [
     {

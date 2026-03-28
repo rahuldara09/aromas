@@ -7,7 +7,7 @@ import { signInWithPhone } from '@/lib/auth';
 import { getUserByPhone, upsertUserProfile, UserProfile } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { IIM_AHMEDABAD_DORMS } from '@/lib/hostels';
+import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
 
 type ModalStep = 'phone' | 'confirm' | 'profile';
 
@@ -151,7 +151,7 @@ export default function AuthModal() {
                         />
                     </div>
                     <h2 className="text-xl font-bold text-gray-900">Aroma Dhaba</h2>
-                    <p className="text-sm text-gray-500 mt-1">IIM Ahmedabad's favorite canteen</p>
+                    <p className="text-sm text-gray-500 mt-1">IIM Mumbai's favorite canteen</p>
                 </div>
 
                 {/* ── STEP 1: Phone Input ── */}
@@ -251,7 +251,7 @@ export default function AuthModal() {
                                     className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
                                 >
                                     <option value="">Select your hostel</option>
-                                    {IIM_AHMEDABAD_DORMS.map((h: string) => (
+                                    {IIM_MUMBAI_HOSTELS.map((h: string) => (
                                         <option key={h} value={h}>{h}</option>
                                     ))}
                                 </select>

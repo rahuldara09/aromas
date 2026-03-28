@@ -13,8 +13,8 @@ interface SEOProps {
   schema?: any;
 }
 
-const DEFAULT_TITLE = 'Aroma Dhaba | Late Night Food at IIM Ahmedabad';
-const DEFAULT_DESCRIPTION = 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Ahmedabad campus. Fast late-night delivery and daily canteen service for students.';
+const DEFAULT_TITLE = 'Aroma Dhaba | Late Night Food at IIM Mumbai';
+const DEFAULT_DESCRIPTION = 'Order delicious, hot, and hygienic food from Aroma Dhaba, IIM Mumbai campus. Fast late-night delivery and daily canteen service for students.';
 const SITE_URL = 'https://aromadhaba.in';
 
 export default function SEO({
@@ -23,7 +23,7 @@ export default function SEO({
   canonical,
   ogType = 'website',
   ogImage = '/og-image.jpg',
-  keywords = ['IIM Ahmedabad food', 'late night food IIMA', 'campus food delivery', 'Aroma Dhaba', 'IIMA canteen'],
+  keywords = ['IIM Mumbai food', 'late night food IIM Mumbai', 'campus food delivery', 'Aroma Dhaba', 'IIM Mumbai canteen'],
   schema,
 }: SEOProps) {
   const pathname = usePathname();
@@ -40,16 +40,16 @@ export default function SEO({
     'telephone': '+919892820940',
     'address': {
       '@type': 'PostalAddress',
-      'streetAddress': 'IIM Ahmedabad campus, Vastrapur',
-      'addressLocality': 'Ahmedabad',
-      'postalCode': '380015',
-      'addressRegion': 'Gujarat',
-      'addressCountry': 'IN'
+      'streetAddress': 'IIM Mumbai campus, Powai',
+      'addressLocality': 'Mumbai',
+      'postalCode': '400087',
+      'addressRegion': 'Maharashtra',
+      'addressCountry': 'India'
     },
     'geo': {
       '@type': 'GeoCoordinates',
-      'latitude': 23.0311,
-      'longitude': 72.5312
+      'latitude': 19.1312,
+      'longitude': 72.9095
     },
     'openingHoursSpecification': [
       {
@@ -80,7 +80,7 @@ export default function SEO({
     'telephone': '+919892820940',
     'location': {
         '@type': 'Place',
-        'name': 'IIM Ahmedabad campus'
+        'name': 'IIM Mumbai campus'
     }
   };
 

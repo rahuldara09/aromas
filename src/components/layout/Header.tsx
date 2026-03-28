@@ -187,7 +187,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                     >
                         <Menu size={24} />
                     </button>
-                    <Link href="/" title="Aroma Dhaba IIM Ahmedabad">
+                    <Link href="/" title="Aroma Dhaba IIM Mumbai">
                         <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
                     </Link>
                 </div>
@@ -292,7 +292,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                 {variant === 'checkout' ? (
                     <>
                         {/* Logo */}
-                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Ahmedabad">
+                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Mumbai">
                             <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromas</span>
                         </Link>
 
@@ -355,7 +355,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                 ) : (
                     <>
                         {/* Logo */}
-                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Ahmedabad">
+                        <Link href="/" className="justify-self-start" title="Aroma Dhaba IIM Mumbai">
                             <span className="text-2xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)', letterSpacing: '-0.03em' }}>aromas</span>
                         </Link>
 
@@ -442,8 +442,8 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
 
                         {/* Nav */}
                         <nav className="flex items-center gap-[1.5rem] justify-self-end">
-                            <Link href="/menu" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
-                                Menu
+                            <Link href="/categories" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
+                                Categories
                             </Link>
                             <Link href="/about" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
                                 About
@@ -486,11 +486,11 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                         
                         <nav className="flex-1 px-4 space-y-1">
                             <Link 
-                                href="/menu" 
+                                href="/categories" 
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
                             >
-                                Menu
+                                Categories
                             </Link>
                             <Link 
                                 href="/about" 

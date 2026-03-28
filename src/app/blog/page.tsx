@@ -6,8 +6,8 @@ import { Clock, User, ArrowRight, Calendar } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Blog | Aroma Dhaba IIM Ahmedabad',
-  description: 'Read the latest stories, guides, and food reviews from Aroma Dhaba, the favorite late-night food spot at IIM Ahmedabad.',
+  title: 'Blog | Aroma Dhaba IIM Mumbai',
+  description: 'Read the latest stories, guides, and food reviews from Aroma Dhaba, the favorite late-night food spot at IIM Mumbai.',
 };
 
 export default function BlogIndexPage() {
@@ -21,7 +21,7 @@ export default function BlogIndexPage() {
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight text-white shadow-sm">The Aroma Blog</h1>
             <p className="text-xl text-red-100 max-w-2xl mx-auto font-medium">
-              Stories, guides, and midnight fuel from IIM Ahmedabad.
+              Stories, guides, and midnight fuel from IIM Mumbai.
             </p>
           </div>
         </div>

@@ -7,8 +7,8 @@ import { Flame, Clock, ShoppingBag } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Aroma Dhaba IIM Ahmedabad | Order Food Online',
-  description: 'Order hot food in minutes, even at 1 AM. Aroma Dhaba is the favorite late-night food spot at IIM Ahmedabad campus. Fast delivery of Parathas, Biryani, and more.',
+  title: 'Aroma Dhaba IIM Mumbai | Order Food Online',
+  description: 'Order hot food in minutes, even at 1 AM. Aroma Dhaba is the favorite late-night food spot at IIM Mumbai campus. Fast delivery of Parathas, Biryani, and more.',
   alternates: {
     canonical: 'https://aromadhaba.in',
   },
@@ -24,20 +24,20 @@ export default async function HomePage() {
       
       <main className="flex-grow">
         {/* Simplified Homepage - No Hero Section */}
-        <section id="categories" className="py-10 md:py-14 container mx-auto px-4">
-          <div className="mb-10">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 tracking-tight mb-3">
-                Experience the best Late Night Food at IIM Ahmedabad
+        <section id="categories" className="pt-6 pb-12 md:pt-8 md:pb-16 container mx-auto px-4">
+          <div className="mb-8">
+            <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-3">
+                Late Night Food at IIM Mumbai
             </h1>
-            <p className="text-sm md:text-base text-gray-500 font-medium max-w-2xl mb-6">
-                Pick a category to explore our wide range of North Indian, Chinese, and Fast Food. Aroma Dhaba IIM Ahmedabad is your go-to spot for delicious bites.
+            <p className="text-base md:text-lg text-gray-600 font-bold max-w-2xl mb-6">
+                From North Indian to Chinese and Fast Food—Aroma Dhaba sorts your midnight cravings fast.
             </p>
             <div className="flex flex-wrap gap-3">
-                <Link href="/menu" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-md">
-                    View Full Menu
+                <Link href="/categories" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-md">
+                    Explore Categories
                 </Link>
                 <Link href="/about" className="bg-white border border-gray-200 hover:border-red-200 text-gray-700 font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-sm">
-                    Learn About Us
+                    About Us
                 </Link>
             </div>
           </div>
@@ -59,7 +59,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Express Delivery</h4>
-                            <p className="text-sm text-gray-500 font-medium">Within <strong>IIM Ahmedabad campus</strong> in under 30 minutes.</p>
+                            <p className="text-sm text-gray-500 font-medium">Within <strong>IIM Mumbai campus</strong> in under 30 minutes.</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -68,7 +68,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Hygienic Food</h4>
-                            <p className="text-sm text-gray-500 font-medium">Quality ingredients, prepared with care at <strong>IIM A</strong>.</p>
+                            <p className="text-sm text-gray-500 font-medium">Quality ingredients, prepared with care at <strong>IIM Mumbai</strong>.</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-4">
@@ -77,7 +77,7 @@ export default async function HomePage() {
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 mb-1 uppercase tracking-tight">Always Hot</h4>
-                            <p className="text-sm text-gray-500 font-medium">Insulated bags to keep your food fresh for <strong>IIMA students</strong>.</p>
+                            <p className="text-sm text-gray-500 font-medium">Insulated bags to keep your food fresh for <strong>IIM Mumbai students</strong>.</p>
                         </div>
                     </div>
                 </div>

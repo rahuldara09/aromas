@@ -56,7 +56,7 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
                     >
                         {/* Top Green Banner */}
                         <div className="bg-[#488e14] text-white py-2 text-center text-xs font-semibold tracking-wide shadow-sm z-20 shrink-0">
-                            😋 Fresh Food Delivered To Your Dorm! 😋
+                            😋 Fresh Food Delivered To Your Hostel! 😋
                         </div>
 
                         {/* White Navigation Header */}
@@ -292,13 +292,13 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
                                         <span className="text-gray-600">{isPOS ? 'WALK-IN' : order.deliveryAddress?.hostelNumber ? `DORM ${order.deliveryAddress.hostelNumber}` : 'N/A'}</span>
 
                                         <span className="text-gray-900 font-medium">City:</span>
-                                        <span className="text-gray-600">Ahmedabad</span>
+                                        <span className="text-gray-600">Mumbai</span>
 
                                         <span className="text-gray-900 font-medium">State:</span>
-                                        <span className="text-gray-600">Gujarat</span>
+                                        <span className="text-gray-600">Maharashtra</span>
 
                                         <span className="text-gray-900 font-medium">Pin Code:</span>
-                                        <span className="text-gray-600">380015</span>
+                                        <span className="text-gray-600">400087</span>
 
                                         <span className="text-gray-900 font-medium">Payment:</span>
                                         <span className="text-gray-600">{order.payment_provider ? `${order.payment_provider.toUpperCase()} (${order.payment_status?.toUpperCase()})` : (isPOS ? 'In-store Payment' : 'Online Payment')}</span>
