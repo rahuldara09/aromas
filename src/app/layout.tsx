@@ -30,6 +30,15 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
     apple: '/favicon.png',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Aroma Dhaba',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   verification: {
     google: 'REPLACE_WITH_YOUR_GOOGLE_SITE_VERIFICATION_CODE',
   },
@@ -50,6 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#ef4444" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Aroma Dhaba" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
+      </head>
       <body className={geist.className}>
         <Script src="/cashfree.js" strategy="beforeInteractive" />
         <script
