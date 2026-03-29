@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { VendorProvider, useVendor } from '@/contexts/VendorContext';
 import { useThermalPrinter } from '@/hooks/useThermalPrinter';
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { saveSessionPhone } from '@/lib/auth';
-import { StepUpAuthModal } from '@/components/vendor/StepUpAuthModal';
+import { auth } from '@/lib/firebase';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { VendorLoginModal } from '@/components/vendor/StepUpAuthModal';
 import {
     Store,
     LayoutGrid,
@@ -56,81 +53,48 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
 function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { user, signOut, loading: authLoading, phoneNumber, isLoggedIn } = useAuth();
     const { isStoreOpen, toggleStore, unlockAudio, orders } = useVendor();
     const { isConnected: isPrinterConnected } = useThermalPrinter();
 
     const activeCount = orders.filter(o => ['Placed', 'Pending', 'Preparing'].includes(o.status)).length;
     useEffect(() => {
-        if (activeCount > 0) {
-            document.title = `(${activeCount}) Aroma Ops`;
-        } else {
-            document.title = 'Aroma Ops';
-        }
+        document.title = activeCount > 0 ? `(${activeCount}) Aroma Ops` : 'Aroma Ops';
     }, [activeCount]);
 
     const activeOrdersCount = activeCount;
 
-    // ── DESKTOP SIDEBAR COLLAPSE STATE ────────────────────────────────────────
+    // ── DESKTOP SIDEBAR COLLAPSE STATE ─────────────────────────────────────
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    // ── MOBILE DRAWER STATE ───────────────────────────────────────────────────
+    // ── MOBILE DRAWER STATE ─────────────────────────────────────────────────
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    useEffect(() => { setMobileDrawerOpen(false); }, [pathname]);
 
-    // Close mobile drawer on route change
-    useEffect(() => {
-        setMobileDrawerOpen(false);
-    }, [pathname]);
-
-    // ── VENDOR ROLE CHECK ─────────────────────────────────────────────────────
-    const [isVendor, setIsVendor] = useState<boolean | null>(null);
-    const [vendorError, setVendorError] = useState<string | null>(null);
-    const [isVendorVerified, setIsVendorVerified] = useState<boolean>(false);
+    // ── VENDOR EMAIL SESSION ────────────────────────────────────────────────
+    // We gate on sessionStorage.vendorEmail (set after OTP verification).
+    // No client-login required — vendor portal is fully standalone.
+    const [vendorEmail, setVendorEmail] = useState<string | null>(null);
     const [isCheckingSession, setIsCheckingSession] = useState(true);
 
     useEffect(() => {
-        setIsVendorVerified(sessionStorage.getItem('isVendorVerified') === 'true');
+        const email = sessionStorage.getItem('vendorEmail');
+        setVendorEmail(email);
         setIsCheckingSession(false);
     }, []);
 
-    const handleStepUpSuccess = useCallback(() => {
-        setIsVendorVerified(true);
-    }, []);
+    const handleLoginSuccess = (email: string) => {
+        setVendorEmail(email);
+    };
 
     const handleSignOut = async () => {
         sessionStorage.removeItem('isVendorVerified');
-        await signOut();
+        sessionStorage.removeItem('vendorEmail');
+        await firebaseSignOut(auth);
         router.push('/');
     };
 
-    // Redirect unauthenticated users
-    useEffect(() => {
-        if (!authLoading && (!user || !phoneNumber)) {
-            router.push('/');
-        }
-    }, [user, phoneNumber, authLoading, router]);
-
-    useEffect(() => {
-        if (authLoading || !user || !phoneNumber) return;
-        
-        const formattedPhone = phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`;
-        getDoc(doc(db, 'vendors', formattedPhone)).then((snap) => {
-            if (snap.exists() && snap.data().isVendor === true) {
-                setIsVendor(true);
-            } else {
-                setVendorError(snap.exists()
-                    ? 'Document found but isVendor field is not true.'
-                    : `No vendor doc at vendors/${formattedPhone}. Create it in Firebase Console.`);
-                setIsVendor(false);
-            }
-        }).catch((err: { code?: string; message?: string }) => {
-            setVendorError(`Firestore error: ${err?.code ?? err?.message ?? 'permission-denied'}.`);
-            setIsVendor(false);
-        });
-    }, [user, phoneNumber, authLoading]);
-
-    // Loading spinner
-    if (authLoading || isCheckingSession || !user || !phoneNumber || isVendor === null) {
+    // Loading spinner while checking session
+    if (isCheckingSession) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50">
                 <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -138,60 +102,13 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
         );
     }
 
-    // Show Step Up Modal if not verified
-    if (!isVendorVerified) {
+    // Show standalone email+OTP login if not authenticated
+    if (!vendorEmail) {
         return (
-            <StepUpAuthModal 
-                onSuccess={handleStepUpSuccess} 
-                onSignOut={handleSignOut} 
-                initialPhone={phoneNumber || ''} 
+            <VendorLoginModal
+                onSuccess={handleLoginSuccess}
+                onSignOut={handleSignOut}
             />
-        );
-    }
-
-    // ── NOT A VENDOR → error screen ──────────────────────────────────────────
-    if (!isVendor) {
-        return (
-            <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-red-50 gap-6 p-8">
-                <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 max-w-md w-full text-center space-y-5">
-                    <div className="flex items-center justify-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden shadow shrink-0">
-                            <Image src="/icon.png" alt="Aromas Logo" width={40} height={40} className="w-full h-full object-cover" />
-                        </div>
-                        <span className="font-extrabold text-xl tracking-tight text-gray-900">AROMA OPS</span>
-                    </div>
-
-                    <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-                        <span className="text-2xl">🔒</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Access Denied</h2>
-                    <p className="text-sm text-gray-500">
-                        Your account is not registered as a vendor.
-                    </p>
-
-                    {vendorError && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-left">
-                            <p className="text-xs font-bold text-amber-700 mb-1">⚠ Debug Info</p>
-                            <p className="text-xs text-amber-700 font-mono break-all">{vendorError}</p>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
-                        >
-                            Retry After Creating Document
-                        </button>
-                        <button
-                            onClick={handleSignOut}
-                            className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
-                </div>
-            </div>
         );
     }
 
@@ -264,7 +181,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Sign Out */}
                 <div className="p-4 space-y-4 mt-auto mb-4 border-t border-gray-100">
                     <button
-                        onClick={async (e) => { e.stopPropagation(); sessionStorage.removeItem('isVendorVerified'); await signOut(); router.push('/'); }}
+                        onClick={handleSignOut}
                         className="flex items-center gap-3 px-4 py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors"
                     >
                         <LogOut size={20} className="text-[#d92d20]" />
@@ -317,7 +234,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Bottom Logout Profile Section */}
                 <div className="p-4 space-y-4 mt-auto mb-4">
                     <button
-                        onClick={async (e) => { e.stopPropagation(); sessionStorage.removeItem('isVendorVerified'); await signOut(); router.push('/'); }}
+                        onClick={handleSignOut}
                         className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center'} py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors`}
                         title="Sign Out"
                     >
