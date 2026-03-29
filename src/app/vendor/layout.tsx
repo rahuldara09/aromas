@@ -77,8 +77,15 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     const [isCheckingSession, setIsCheckingSession] = useState(true);
 
     useEffect(() => {
-        const email = sessionStorage.getItem('vendorEmail');
-        setVendorEmail(email);
+        const email = localStorage.getItem('vendorEmail');
+        const expiry = localStorage.getItem('vendorSessionExpiry');
+        if (email && expiry && Date.now() < Number(expiry)) {
+            setVendorEmail(email);
+        } else {
+            // Session expired or missing — clear stale data
+            localStorage.removeItem('vendorEmail');
+            localStorage.removeItem('vendorSessionExpiry');
+        }
         setIsCheckingSession(false);
     }, []);
 
@@ -87,8 +94,8 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     };
 
     const handleSignOut = async () => {
-        sessionStorage.removeItem('isVendorVerified');
-        sessionStorage.removeItem('vendorEmail');
+        localStorage.removeItem('vendorEmail');
+        localStorage.removeItem('vendorSessionExpiry');
         await firebaseSignOut(auth);
         router.push('/');
     };

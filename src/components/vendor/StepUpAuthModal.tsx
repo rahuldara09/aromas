@@ -171,9 +171,10 @@ export function VendorLoginModal({ onSuccess, onSignOut }: VendorLoginModalProps
 
             // Sign in with the Firebase custom token
             await signInWithCustomToken(auth, data.token);
-            // Store vendor email in sessionStorage for layout persistence
-            sessionStorage.setItem('isVendorVerified', 'true');
-            sessionStorage.setItem('vendorEmail', data.email);
+            // Persist vendor session in localStorage with 30-day expiry
+            const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+            localStorage.setItem('vendorEmail', data.email);
+            localStorage.setItem('vendorSessionExpiry', String(expiresAt));
             onSuccess(data.email);
         } catch {
             setOtpError('Network error. Please try again.');
