@@ -307,6 +307,7 @@ export interface UserProfile {
     lastHostel: string;
     lastRoom: string;
     totalOrders: number;
+    email?: string;
     createdAt?: Date;
 }
 
@@ -419,6 +420,73 @@ export async function upsertUserProfile(
                 lastHostel,
                 lastRoom,
                 totalOrders: isFirstOrder ? 0 : 1,
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+            });
+        }
+    } catch {
+        // Silently fail
+    }
+}
+
+/**
+ * Fetch a user document keyed by email.
+ */
+export async function getUserByEmail(email: string): Promise<UserProfile | null> {
+    if (!isFirebaseConfigured()) return null;
+    try {
+        const key = `email_${email.toLowerCase().trim()}`;
+        const snap = await getDoc(doc(db, 'users', key));
+        if (!snap.exists()) return null;
+        const data = snap.data();
+        return {
+            phone: data.phone ?? '',
+            name: data.name ?? '',
+            lastHostel: data.lastHostel ?? '',
+            lastRoom: data.lastRoom ?? '',
+            totalOrders: data.totalOrders ?? 0,
+            email: data.email ?? email,
+            createdAt: data.createdAt?.toDate?.(),
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Create or update a user document keyed by email.
+ */
+export async function upsertUserProfileByEmail(
+    email: string,
+    name: string,
+    phone: string,
+    lastHostel: string,
+    lastRoom: string,
+): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+    try {
+        const normalizedEmail = email.toLowerCase().trim();
+        const key = `email_${normalizedEmail}`;
+        const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
+        const userRef = doc(db, 'users', key);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+            await setDoc(userRef, {
+                email: normalizedEmail,
+                phone: formatted,
+                name,
+                lastHostel,
+                lastRoom,
+                updatedAt: Timestamp.now(),
+            }, { merge: true });
+        } else {
+            await setDoc(userRef, {
+                email: normalizedEmail,
+                phone: formatted,
+                name,
+                lastHostel,
+                lastRoom,
+                totalOrders: 0,
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             });
