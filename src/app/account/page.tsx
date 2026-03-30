@@ -131,7 +131,8 @@ export default function AccountPage() {
         );
     }
 
-    const isLoggedIn = !!user && !!phoneNumber;
+    // isLoggedIn: just Firebase auth — phone comes later from profile
+    const isLoggedIn = !!user;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -145,7 +146,7 @@ export default function AccountPage() {
                                 ? `Hello, ${userProfile.name} 👋`
                                 : 'My Account'}
                         </h1>
-                        {isLoggedIn && <p className="text-gray-400 text-xs mt-0.5">{user?.phoneNumber}</p>}
+                        {isLoggedIn && <p className="text-gray-400 text-xs mt-0.5">{userProfile?.email ?? phoneNumber ?? ''}</p>}
                     </div>
                 </div>
 
@@ -231,12 +232,24 @@ export default function AccountPage() {
                                         <div className="text-center py-16">
                                             <div className="text-5xl mb-4">🔒</div>
                                             <p className="text-gray-800 font-semibold text-lg mb-1">Please log in</p>
-                                            <p className="text-gray-400 text-sm mb-6">Log in with your phone number to view your orders</p>
+                                            <p className="text-gray-400 text-sm mb-6">Sign in with your email to view your orders</p>
                                             <button
                                                 onClick={openAuthModal}
                                                 className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-sm"
                                             >
                                                 Log in →
+                                            </button>
+                                        </div>
+                                    ) : !phoneNumber ? (
+                                        <div className="text-center py-16">
+                                            <div className="text-5xl mb-4">👤</div>
+                                            <p className="text-gray-800 font-semibold text-lg mb-1">Complete your profile</p>
+                                            <p className="text-gray-400 text-sm mb-6">Add your name, phone &amp; hostel to place and track orders</p>
+                                            <button
+                                                onClick={openAuthModal}
+                                                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-sm"
+                                            >
+                                                Complete Profile →
                                             </button>
                                         </div>
                                     ) : dataLoading ? (

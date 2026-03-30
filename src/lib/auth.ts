@@ -2,26 +2,34 @@ import { auth } from './firebase';
 import { signInAnonymously } from 'firebase/auth';
 
 const PHONE_SESSION_KEY = 'aromas_vendor_phone';
+const EMAIL_SESSION_KEY = 'aromas_user_email';
 
-/**
- * Saves the phone number to sessionStorage.
- * sessionStorage is cleared when the browser tab closes — safer than localStorage
- * because it cannot be accessed across tabs or after the browser session ends.
- */
 export function saveSessionPhone(phone: string): void {
     if (typeof window === 'undefined') return;
     const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
     sessionStorage.setItem(PHONE_SESSION_KEY, formatted);
 }
-
 export function getSessionPhone(): string | null {
     if (typeof window === 'undefined') return null;
     return sessionStorage.getItem(PHONE_SESSION_KEY);
 }
-
 export function clearSessionPhone(): void {
     if (typeof window === 'undefined') return;
     sessionStorage.removeItem(PHONE_SESSION_KEY);
+}
+
+/** Persist the user's email so it survives tab/page refreshes */
+export function saveUserEmail(email: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EMAIL_SESSION_KEY, email.toLowerCase().trim());
+}
+export function getUserEmail(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(EMAIL_SESSION_KEY);
+}
+export function clearUserEmail(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(EMAIL_SESSION_KEY);
 }
 
 /**

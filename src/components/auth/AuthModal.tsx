@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ArrowRight, Loader2, User, Home, Hash, Phone, RotateCcw, ArrowLeft, Mail, Pencil } from 'lucide-react';
+import { X, ArrowRight, Loader2, User, Home, Hash, Phone, RotateCcw, Mail, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserByEmail, upsertUserProfileByEmail } from '@/lib/firestore';
+import { saveUserEmail } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
@@ -17,10 +18,23 @@ type ModalStep = 'email' | 'otp' | 'profile';
 
 export default function AuthModal() {
     const router = useRouter();
-    const { isAuthModalOpen, closeAuthModal, setUserProfile, setPhoneNumber } = useAuth();
+    const { isAuthModalOpen, closeAuthModal, setUserProfile, setPhoneNumber, setSessionEmail, user, sessionEmail, userProfile } = useAuth();
 
     const [step, setStep] = useState<ModalStep>('email');
     const [loading, setLoading] = useState(false);
+
+    // If user is already Firebase-authenticated but has no profile → skip to profile step
+    useEffect(() => {
+        if (isAuthModalOpen && user && !userProfile) {
+            // Restore email from session if available
+            if (sessionEmail) setEmail(sessionEmail);
+            setStep('profile');
+        } else if (isAuthModalOpen && user && userProfile?.phone) {
+            // Fully logged in — nothing to do, close modal
+            closeAuthModal();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthModalOpen]);
 
     // Step 1 – email (single field, smart suggestions)
     const [email, setEmail] = useState('');
@@ -150,6 +164,9 @@ export default function AuthModal() {
             const data = await res.json();
             if (!res.ok) { setOtpError(data.error || 'Verification failed.'); return; }
 
+            // Persist email before any state changes
+            saveUserEmail(email.trim().toLowerCase());
+            setSessionEmail(email.trim().toLowerCase());
             await signInWithCustomToken(auth, data.token);
             const existingUser = await getUserByEmail(email.trim().toLowerCase());
             if (existingUser && existingUser.name) {

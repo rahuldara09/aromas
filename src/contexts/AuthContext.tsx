@@ -3,20 +3,23 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { signOutUser, getSessionPhone, clearSessionPhone } from '@/lib/auth';
-import { UserProfile } from '@/lib/firestore';
+import { signOutUser, getSessionPhone, clearSessionPhone, getUserEmail, clearUserEmail } from '@/lib/auth';
+import { UserProfile, getUserByEmail } from '@/lib/firestore';
 
 interface AuthContextType {
     user: User | null;
-    /** Phone number attached to this anonymous session (stored in Firestore user doc, not localStorage) */
+    /** Phone number linked to this session (from profile) */
     phoneNumber: string | null;
     setPhoneNumber: (phone: string | null) => void;
+    /** Email for the current session */
+    sessionEmail: string | null;
+    setSessionEmail: (email: string | null) => void;
     /** The fetched Firestore user profile, if any */
     userProfile: UserProfile | null;
     setUserProfile: (profile: UserProfile | null) => void;
     /** True until the first auth state check completes */
     loading: boolean;
-    /** True ONLY when Firebase reports a real authenticated user — no localStorage fallback */
+    /** True ONLY when Firebase reports a real authenticated user */
     isLoggedIn: boolean;
     signOut: () => Promise<void>;
     openAuthModal: () => void;
@@ -28,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     phoneNumber: null,
     setPhoneNumber: () => { },
+    sessionEmail: null,
+    setSessionEmail: () => { },
     userProfile: null,
     setUserProfile: () => { },
     loading: true,
@@ -43,36 +48,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+    const [sessionEmail, setSessionEmail] = useState<string | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
-            setLoading(false);
 
             if (firebaseUser) {
-                // Real Firebase session exists — restore phone from sessionStorage if available
+                // Try to restore phone (anonymous/vendor sessions)
                 const savedPhone = getSessionPhone();
                 if (savedPhone) setPhoneNumber(savedPhone);
+
+                // Try to restore email-based session
+                const savedEmail = getUserEmail();
+                if (savedEmail) {
+                    setSessionEmail(savedEmail);
+                    // Load user profile by email (if not already loaded)
+                    if (!userProfile) {
+                        const profile = await getUserByEmail(savedEmail);
+                        if (profile) {
+                            setUserProfile(profile);
+                            if (profile.phone) setPhoneNumber(profile.phone);
+                        }
+                    }
+                }
+
                 setIsAuthModalOpen(false);
             } else {
                 // No Firebase session — clear all state
                 setPhoneNumber(null);
+                setSessionEmail(null);
                 setUserProfile(null);
                 clearSessionPhone();
+                clearUserEmail();
             }
+
+            setLoading(false);
         });
         return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSignOut = async () => {
-        await signOutUser(); // also clears sessionStorage
+        await signOutUser();
         setUser(null);
         setPhoneNumber(null);
+        setSessionEmail(null);
         setUserProfile(null);
+        clearUserEmail();
     };
 
-    // ── SECURITY: isLoggedIn depends ONLY on Firebase Auth, never localStorage ──
     const isLoggedIn = !!user;
 
     return (
@@ -81,6 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 user,
                 phoneNumber,
                 setPhoneNumber,
+                sessionEmail,
+                setSessionEmail,
                 userProfile,
                 setUserProfile,
                 loading,
