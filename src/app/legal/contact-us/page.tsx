@@ -44,7 +44,7 @@ export default function ContactUs() {
 
                         <div>
                             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">E-Mail ID</h2>
-                            <a href="mailto:satishsakhreh1@gmail.com" className="font-semibold text-red-500 hover:text-red-600 transition-colors text-lg">satishsakhreh1@gmail.com</a>
+                            <a href="mailto:aromasdhaba@gmail.com" className="font-semibold text-red-500 hover:text-red-600 transition-colors text-lg">aromasdhaba@gmail.com</a>
                         </div>
                     </div>
                 </div>
