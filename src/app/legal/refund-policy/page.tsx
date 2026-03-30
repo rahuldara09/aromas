@@ -19,7 +19,7 @@ export default function RefundPolicy() {
                 <p>If you have any questions about our Returns and Refunds Policy, please contact us:</p>
                 <ul className="list-disc pl-6 space-y-2">
                     <li>Contact Details: +91-9892820940</li>
-                    <li>Email: satishsakhreh1@gmail.com</li>
+                    <li>Email: <a href="mailto:aromasdhaba@gmail.com" className="text-red-600 hover:underline">aromasdhaba@gmail.com</a></li>
                 </ul>
             </div>
         </div>
