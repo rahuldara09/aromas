@@ -25,22 +25,22 @@ export default async function HomePage() {
       
       <main className="flex-grow">
         {/* Simplified Homepage - No Hero Section */}
-        <section id="categories" className="pt-6 pb-12 md:pt-8 md:pb-16 container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-3">
+        <section id="categories" className="pt-6 pb-12 md:pt-8 md:pb-16 container mx-auto px-4 overflow-x-hidden">
+          <div className="mb-8 text-center md:text-left">
+            <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-3 leading-tight">
                 Aroma Dhaba - IIM Mumbai
             </h1>
             <h2 className="sr-only">
               {SEO_CONFIG.categories.join(' · ')}
             </h2>
-            <p className="text-base md:text-lg text-gray-600 font-bold max-w-2xl mb-6">
+            <p className="text-sm md:text-lg text-gray-600 font-bold max-w-2xl mx-auto md:mx-0 mb-8">
                 From North Indian to Chinese and Fast Food—Aroma Dhaba sorts your midnight cravings fast.
             </p>
-            <div className="flex flex-wrap gap-3">
-                <Link href="/categories" className="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-md">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                <Link href="/categories" className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-xl transition-all text-sm shadow-lg shadow-red-500/20 text-center">
                     Explore Categories
                 </Link>
-                <Link href="/about" className="bg-white border border-gray-200 hover:border-red-200 text-gray-700 font-bold py-2.5 px-6 rounded-xl transition-all text-sm shadow-sm">
+                <Link href="/about" className="w-full sm:w-auto bg-white border border-gray-200 hover:border-red-200 text-gray-700 font-bold py-3 px-8 rounded-xl transition-all text-sm shadow-sm text-center">
                     About Us
                 </Link>
             </div>

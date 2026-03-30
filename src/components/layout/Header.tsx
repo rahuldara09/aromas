@@ -177,44 +177,44 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
     return (
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
             {/* ── MOBILE: compact header row ───────────────────────────────── */}
-            <div className="md:hidden px-4 h-14 flex items-center justify-between gap-3">
-                {/* Hamburger & Logo */}
-                <div className="flex items-center gap-2">
+            <div className="md:hidden px-4 h-14 flex items-center justify-between gap-1">
+                {/* Logo & Hamburger - grouped together */}
+                <div className="flex items-center gap-1.5 shrink-0">
                     <button 
                         onClick={() => setMobileMenuOpen(true)}
                         className="p-1 -ml-1 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                         aria-label="Open Menu"
                     >
-                        <Menu size={24} />
+                        <Menu size={22} />
                     </button>
                     <Link href="/" title="Aroma Dhaba IIM Mumbai">
-                        <span className="text-xl font-black tracking-tight text-gray-900" style={{ letterSpacing: '-0.03em' }}>aromas</span>
+                        <span className="text-xl font-black tracking-tighter text-gray-900" style={{ letterSpacing: '-0.04em' }}>aromas</span>
                     </Link>
                 </div>
 
-                {/* Right icons */}
-                <div className="flex items-center gap-3">
+                {/* Right icons - pushed to the right */}
+                <div className="flex items-center gap-0.5 sm:gap-1.5">
                     <button
                         onClick={() => setMobileSearchOpen(o => !o)}
-                        className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
                         aria-label="Search"
                     >
-                        {mobileSearchOpen ? <X size={20} className="text-gray-700" /> : <Search size={20} className="text-gray-700" />}
+                        {mobileSearchOpen ? <X size={18} className="text-gray-700" /> : <Search size={18} className="text-gray-700" />}
                     </button>
-                    <Link href="/checkout" className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors" aria-label="Cart">
+                    <Link href="/checkout" className="relative flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors" aria-label="Cart">
                         {displayCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-black rounded-full min-w-[16px] h-[16px] px-0.5 flex items-center justify-center">
+                            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center">
                                 {displayCount}
                             </span>
                         )}
-                        <ShoppingCart size={20} className="text-gray-700" />
+                        <ShoppingCart size={18} className="text-gray-700" />
                     </Link>
                     <button
                         onClick={user ? () => router.push('/account') : openAuthModal}
-                        className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
                         aria-label="Account"
                     >
-                        <User size={20} className="text-gray-700" />
+                        <User size={18} className="text-gray-700" />
                     </button>
                 </div>
             </div>

@@ -94,7 +94,7 @@ export default function MenuContent() {
             {/* ── MOBILE: Horizontal scrollable category tab bar ──────────────── */}
             <div
                 ref={categoryBarRef}
-                className="md:hidden sticky top-16 z-30 bg-white border-b border-gray-100 shadow-sm flex overflow-x-auto scrollbar-none"
+                className="md:hidden sticky top-14 z-30 bg-white border-b border-gray-100 shadow-sm flex overflow-x-auto scrollbar-hide"
                 style={{ WebkitOverflowScrolling: 'touch' }}
             >
                 {categories.map((cat) => {
@@ -105,14 +105,14 @@ export default function MenuContent() {
                             key={cat.id}
                             data-cat={cat.id}
                             onClick={() => handleCategoryClick(cat.id)}
-                            className={`flex-shrink-0 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all duration-150 ${isActive
-                                    ? 'border-red-500 text-red-600 bg-red-50'
+                            className={`flex-shrink-0 px-5 py-3.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all duration-200 ${isActive
+                                    ? 'border-red-500 text-red-600 bg-red-50/50'
                                     : 'border-transparent text-gray-500 hover:text-gray-800'
                                 }`}
                         >
                             {cat.name}
                             {count > 0 && (
-                                <span className={`ml-1 text-xs ${isActive ? 'text-red-400' : 'text-gray-400'}`}>
+                                <span className={`ml-1 text-[10px] ${isActive ? 'text-red-400' : 'text-gray-400'}`}>
                                     ({count})
                                 </span>
                             )}
