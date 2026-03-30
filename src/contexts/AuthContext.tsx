@@ -70,11 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (profile) {
                             setUserProfile(profile);
                             if (profile.phone) setPhoneNumber(profile.phone);
+                            // Only auto-close modal if profile is already complete
+                            setIsAuthModalOpen(false);
                         }
+                        // If no profile found, leave modal open so profile step shows
                     }
+                } else {
+                    // Non-email sessions (e.g. anonymous) — close modal as before
+                    setIsAuthModalOpen(false);
                 }
-
-                setIsAuthModalOpen(false);
             } else {
                 // No Firebase session — clear all state
                 setPhoneNumber(null);
