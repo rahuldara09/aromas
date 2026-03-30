@@ -120,6 +120,49 @@ export default function ContactPage() {
             </div>
           </div>
         </section>
+
+        {/* Legal / Business Info Section */}
+        <section className="py-16 bg-gray-50 border-t border-gray-100">
+          <div className="container mx-auto px-4 max-w-3xl">
+            <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Business Information</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Merchant Legal Entity Name</p>
+                <p className="text-lg font-bold text-gray-900">AROMAS DELIGHT CATERING SERVICE</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Registered Address</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    Near Hostel 15<br />
+                    IIM Mumbai Campus, Powai<br />
+                    Mumbai, Maharashtra<br />
+                    PIN: 400087
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Operational Address</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    Near Hostel 15<br />
+                    IIM Mumbai Campus, Powai<br />
+                    Mumbai, Maharashtra<br />
+                    PIN: 400087
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Telephone No</p>
+                  <a href="tel:+919892820940" className="text-lg font-bold text-gray-900 hover:text-red-600 transition-colors">9892820940</a>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">E-Mail ID</p>
+                  <a href="mailto:aromasdhaba@gmail.com" className="text-lg font-bold text-red-600 hover:text-red-700 transition-colors">aromasdhaba@gmail.com</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
