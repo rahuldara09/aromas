@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import { Store, Mail, ArrowLeft, RotateCcw } from 'lucide-react';
 
 // Common email domain suggestions (shown as chips after @)
-const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'iimb.ac.in'];
+const EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'iimmumbai.ac.in', 'iitb.ac.in'];
 
 interface VendorLoginModalProps {
     onSuccess: (email: string) => void;
