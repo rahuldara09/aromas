@@ -3,10 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, ArrowRight, Loader2, User, Home, Hash, Phone, RotateCcw, Mail, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { getUserByEmail, upsertUserProfileByEmail } from '@/lib/firestore';
-import { saveUserEmail } from '@/lib/auth';
+import { saveUserEmail, signInWithEmailToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
@@ -164,10 +162,10 @@ export default function AuthModal() {
             const data = await res.json();
             if (!res.ok) { setOtpError(data.error || 'Verification failed.'); return; }
 
-            // Persist email before any state changes
+            // Persist email and sign in with LOCAL persistence (60-day session)
             saveUserEmail(email.trim().toLowerCase());
             setSessionEmail(email.trim().toLowerCase());
-            await signInWithCustomToken(auth, data.token);
+            await signInWithEmailToken(data.token);
             const existingUser = await getUserByEmail(email.trim().toLowerCase());
             if (existingUser && existingUser.name) {
                 setUserProfile(existingUser);
