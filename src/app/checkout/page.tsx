@@ -40,10 +40,26 @@ export default function CheckoutPage() {
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [isStoreOpen, setIsStoreOpen] = useState(true);
+    const [cashfree, setCashfree] = useState<any>(null);
 
     useEffect(() => {
         setIsMounted(true);
         const unsub = listenToStoreStatus(setIsStoreOpen);
+
+        // Pre-load Cashfree SDK
+        const initCashfree = async () => {
+            try {
+                const cf = await load({ 
+                    mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
+                });
+                setCashfree(cf);
+                console.log('[Checkout] Cashfree SDK initialized');
+            } catch (err) {
+                console.warn('[Checkout] Failed to pre-load Cashfree SDK:', err);
+            }
+        };
+        initCashfree();
+
         return () => unsub();
     }, []);
 
@@ -207,27 +223,43 @@ export default function CheckoutPage() {
                 true // isPlacingOrder
             ).catch(err => console.error('[Checkout] Background profile update failed:', err));
 
-            // Set session to render Cashfree checkout
-            toast.loading('Redirecting to payment gateway...', { id: 'cf-loading' });
-            
-            // Clear cart early since order is technically placed as pending_payment
-            clearCart();
-            
-            // Clear cart early since order is technically placed as pending_payment
-            clearCart();
-            
             // Use Cashfree SDK to open the checkout integrated experience
             if (data.session?.payload?.payment_session_id) {
-                const cashfree = await load({ 
-                  mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
-                });
-                
-                await cashfree.checkout({
-                    paymentSessionId: data.session.payload.payment_session_id,
-                    redirectTarget: "_self", // Preferred for mobile/integrated web
-                });
+                // MOBILE BYPASS: For mobile, avoid SDK overlay (which is often blocked)
+                // perform direct redirect to the session-based checkout URL.
+                if (window.innerWidth < 768 && data.session.paymentUrl) {
+                    console.log('[Checkout] Mobile detected, performing direct redirect to avoid blocking.');
+                    clearCart();
+                    window.location.href = data.session.paymentUrl;
+                    return;
+                }
+
+                try {
+                    const cfInstance = cashfree || await load({ 
+                        mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
+                    });
+                    
+                    // Delay cart clearing until we're fairly certain the SDK is taking over
+                    // If SDK fails, items remain in cart
+                    await cfInstance.checkout({
+                        paymentSessionId: data.session.payload.payment_session_id,
+                        redirectTarget: "_top", // Changed from _self for better mobile/integrated web stability
+                    });
+                    
+                    // Clear cart after SDK is triggered
+                    clearCart();
+                } catch (sdkError) {
+                    console.warn('[Checkout] Cashfree SDK failure, falling back to direct redirect:', sdkError);
+                    if (data.session.paymentUrl) {
+                        clearCart(); // Clear cart as we're definitely redirecting now
+                        window.location.href = data.session.paymentUrl;
+                    } else {
+                        throw new Error('Payment gateway failed to initialize.');
+                    }
+                }
             } else if (data.session?.paymentUrl) {
                 // Fallback to direct redirect if session id is missing for some reason
+                clearCart();
                 window.location.href = data.session.paymentUrl;   
             } else {
                 throw new Error('No payment session received');
@@ -267,7 +299,7 @@ export default function CheckoutPage() {
 
             <Header variant="checkout" checkoutStep={step} />
 
-            <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex-1 max-w-5xl mx-auto w-full px-2 sm:px-4 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6 items-start">
                 {/* Left: Step content */}
                 <div className="flex-1">
 
@@ -285,18 +317,19 @@ export default function CheckoutPage() {
                             </div>
 
                             {items.length === 0 ? (
-                                <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-                                    <div className="text-5xl mb-4">🛒</div>
-                                    <p className="text-gray-500 font-medium">Your cart is empty</p>
+                                <div className="bg-white rounded-xl border border-gray-100 p-8 sm:p-12 text-center shadow-sm">
+                                    <div className="w-16 h-16 bg-gray-50 text-3xl rounded-full flex items-center justify-center mx-auto mb-4">🛒</div>
+                                    <h2 className="text-lg font-bold text-gray-900 mb-1">Your cart is empty</h2>
+                                    <p className="text-gray-400 text-sm mb-6">Add something tasty from the menu!</p>
                                     <button
                                         onClick={() => router.push('/menu')}
-                                        className="mt-4 text-red-500 font-semibold text-sm hover:text-red-600"
+                                        className="bg-red-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-600 transition-all text-sm shadow-md"
                                     >
-                                        Browse menu →
+                                        Browse Menu
                                     </button>
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+                                <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 shadow-sm overflow-hidden">
                                     {items.map((item) => (
                                         <div key={item.product.id} className="flex items-center gap-4 p-4">
                                             <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">

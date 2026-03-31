@@ -19,17 +19,19 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Allow Next.js inline scripts and eval in dev; restrict to 'self' in prod
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://apis.google.com https://www.googletagmanager.com",
       // Allow Google Fonts and inline styles (for Tailwind/CSS-in-JS)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Google Fonts files
       "font-src 'self' https://fonts.gstatic.com",
-      // Images: self, data URIs, Unsplash, Firebase Storage
-      "img-src 'self' blob: data: https://images.unsplash.com https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com https://pub-*.r2.dev https:",
-      // API connections: Firebase, Google APIs, Upstash Redis, Local Print Server
-      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.upstash.io https://localhost:9443 http://127.0.0.1:9100 http://localhost:9100",
+      // Images: self, data URIs, Unsplash, Firebase Storage, and R2 (fixed wildcard)
+      "img-src 'self' blob: data: https://images.unsplash.com https://firebasestorage.googleapis.com https://*.public.blob.vercel-storage.com https://*.r2.dev https:",
+      // API connections: Firebase, Google APIs, Upstash Redis, Local Print Server, Cashfree
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://*.upstash.io https://localhost:9443 http://127.0.0.1:9100 http://localhost:9100 https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com",
       // Allow Web Workers for Firebase SDK
       "worker-src blob:",
+      // Allow frames from Cashfree for the checkout experience
+      "frame-src 'self' https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://*.firebaseapp.com",
     ].join('; '),
   },
 ];

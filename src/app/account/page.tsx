@@ -10,6 +10,7 @@ import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
 import { Order, Address } from '@/types';
 import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { load } from '@cashfreepayments/cashfree-js';
 
 type SidebarTab = 'orders' | 'addresses';
 
@@ -59,6 +60,23 @@ export default function AccountPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [addresses, setAddresses] = useState<AddressWithFields[]>([]);
     const [dataLoading, setDataLoading] = useState(false);
+    const [cashfree, setCashfree] = useState<any>(null);
+
+    // Pre-load Cashfree SDK on mount
+    useEffect(() => {
+        const initCashfree = async () => {
+            try {
+                const cf = await load({ 
+                    mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
+                });
+                setCashfree(cf);
+                console.log('[Account] Cashfree SDK initialized');
+            } catch (err) {
+                console.warn('[Account] Failed to pre-load Cashfree SDK:', err);
+            }
+        };
+        initCashfree();
+    }, []);
 
     // ── Edit address state ───────────────────────────────────────────────────
     const [isEditing, setIsEditing] = useState(false);
@@ -121,6 +139,62 @@ export default function AccountPage() {
         await signOut();
         toast.success('Signed out successfully');
         router.push('/');
+    };
+
+    const handleRetryPayment = async (orderId: string) => {
+        const loadingToast = toast.loading('Initiating payment...');
+        try {
+            const token = await user?.getIdToken();
+            const res = await fetch('/api/payment/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ orderId })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to initiate payment');
+
+            if (data.session?.payload?.payment_session_id) {
+                // MOBILE BYPASS: For mobile, avoid SDK overlay (which is often blocked)
+                // perform direct redirect to the session-based checkout URL.
+                if (window.innerWidth < 768 && data.session.paymentUrl) {
+                    console.log('[Account] Mobile detected, performing direct redirect to avoid blocking.');
+                    window.location.href = data.session.paymentUrl;
+                    toast.dismiss(loadingToast);
+                    return;
+                }
+
+                try {
+                    const cfInstance = cashfree || await load({ 
+                        mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
+                    });
+                    
+                    await cfInstance.checkout({
+                        paymentSessionId: data.session.payload.payment_session_id,
+                        redirectTarget: "_top", // Switched from _self for better mobile/integrated web stability
+                    });
+                    toast.dismiss(loadingToast);
+                } catch (sdkError) {
+                    console.warn('[Account] SDK failure, falling back to redirect:', sdkError);
+                    if (data.session.paymentUrl) {
+                        window.location.href = data.session.paymentUrl;
+                    } else {
+                        throw new Error('Payment gateway failed to initialize.');
+                    }
+                }
+            } else if (data.session?.paymentUrl) {
+                window.location.href = data.session.paymentUrl;
+            } else {
+                throw new Error('No payment session received');
+            }
+        } catch (err: any) {
+            console.error('[Account] Retry payment failed:', err);
+            toast.error(err.message || 'Failed to retry payment');
+            toast.dismiss(loadingToast);
+        }
     };
 
     if (loading) {
@@ -312,6 +386,17 @@ export default function AccountPage() {
                                                                 <span className="text-xs font-bold text-red-500 group-hover:underline">
                                                                     Track →
                                                                 </span>
+                                                            )}
+                                                            {order.status === 'pending_payment' && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRetryPayment(order.id);
+                                                                    }}
+                                                                    className="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                                                                >
+                                                                    PAY NOW
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </div>

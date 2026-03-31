@@ -56,6 +56,7 @@ export class CashfreeProvider implements PaymentProvider {
         });
 
         const data = await response.json();
+        console.log(`[Cashfree] Order Created: ${data.order_id}, Session: ${data.payment_session_id}`);
 
         if (!response.ok) {
             console.error('[Cashfree] Create Order Error:', data);
@@ -65,8 +66,8 @@ export class CashfreeProvider implements PaymentProvider {
         // For Orders API, we get payment_session_id
         // Hosted URL can be constructed if needed for direct redirect, but SDK is better
         const hostedUrl = this.environment === 'PRODUCTION' 
-            ? `https://payments.cashfree.com/order/${data.order_id}`
-            : `https://payments-test.cashfree.com/order/${data.order_id}`;
+            ? `https://payments.cashfree.com/pg/view/checkout?payment_session_id=${data.payment_session_id}`
+            : `https://sandbox.cashfree.com/pg/view/checkout?payment_session_id=${data.payment_session_id}`;
 
         return {
             transactionId: orderId, 
