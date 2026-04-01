@@ -56,25 +56,28 @@ export class CashfreeProvider implements PaymentProvider {
         });
 
         const data = await response.json();
-        console.log(`[Cashfree] Order Created: ${data.order_id}, Session: ${data.payment_session_id}`);
-
+        
         if (!response.ok) {
             console.error('[Cashfree] Create Order Error:', data);
             throw new Error(`Cashfree order creation failed: ${data.message || response.statusText}`);
         }
 
-        // For Orders API, we get payment_session_id
-        // Hosted URL can be constructed if needed for direct redirect, but SDK is better
-        const hostedUrl = this.environment === 'PRODUCTION' 
-            ? `https://payments.cashfree.com/pg/view/checkout?payment_session_id=${data.payment_session_id}`
-            : `https://sandbox.cashfree.com/pg/view/checkout?payment_session_id=${data.payment_session_id}`;
+        const sessionId = String(data.payment_session_id || '');
+        console.log(`[Cashfree] Session Created: ${sessionId}`);
+
+        // Construct hosted checkout URL
+        const checkoutBase = this.environment === 'PRODUCTION' 
+            ? 'https://payments.cashfree.com/pg/view/checkout'
+            : 'https://sandbox.cashfree.com/pg/view/checkout';
+            
+        const hostedUrl = `${checkoutBase}?payment_session_id=${sessionId}`;
 
         return {
             transactionId: orderId, 
-            paymentUrl: hostedUrl, // Redirect URL for hosted checkout
+            paymentUrl: hostedUrl,
             payload: {
-                order_id: data.order_id || '',
-                payment_session_id: data.payment_session_id || '',
+                order_id: String(data.order_id || ''),
+                payment_session_id: sessionId,
                 cf_order_id: String(data.cf_order_id || '')
             }
         };

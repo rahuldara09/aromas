@@ -225,14 +225,8 @@ export default function CheckoutPage() {
 
             // Use Cashfree SDK to open the checkout integrated experience
             if (data.session?.payload?.payment_session_id) {
-                // MOBILE BYPASS: For mobile, avoid SDK overlay (which is often blocked)
-                // perform direct redirect to the session-based checkout URL.
-                if (window.innerWidth < 768 && data.session.paymentUrl) {
-                    console.log('[Checkout] Mobile detected, performing direct redirect to avoid blocking.');
-                    clearCart();
-                    window.location.href = data.session.paymentUrl;
-                    return;
-                }
+                const sessionId = data.session.payload.payment_session_id;
+                console.log('[Checkout] Initiating Cashfree SDK redirect with Session ID:', sessionId);
 
                 try {
                     const cfInstance = cashfree || await load({ 
@@ -240,27 +234,18 @@ export default function CheckoutPage() {
                     });
                     
                     // Delay cart clearing until we're fairly certain the SDK is taking over
-                    // If SDK fails, items remain in cart
+                    // Using _self forces a full page redirect instead of an in-app modal
                     await cfInstance.checkout({
-                        paymentSessionId: data.session.payload.payment_session_id,
-                        redirectTarget: "_top", // Changed from _self for better mobile/integrated web stability
+                        paymentSessionId: sessionId,
+                        redirectTarget: "_self", 
                     });
                     
                     // Clear cart after SDK is triggered
                     clearCart();
                 } catch (sdkError) {
-                    console.warn('[Checkout] Cashfree SDK failure, falling back to direct redirect:', sdkError);
-                    if (data.session.paymentUrl) {
-                        clearCart(); // Clear cart as we're definitely redirecting now
-                        window.location.href = data.session.paymentUrl;
-                    } else {
-                        throw new Error('Payment gateway failed to initialize.');
-                    }
+                    console.error('[Checkout] Cashfree SDK failure:', sdkError);
+                    throw new Error('Payment gateway failed to initialize.');
                 }
-            } else if (data.session?.paymentUrl) {
-                // Fallback to direct redirect if session id is missing for some reason
-                clearCart();
-                window.location.href = data.session.paymentUrl;   
             } else {
                 throw new Error('No payment session received');
             }

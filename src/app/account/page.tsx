@@ -158,35 +158,24 @@ export default function AccountPage() {
             if (!res.ok) throw new Error(data.error || 'Failed to initiate payment');
 
             if (data.session?.payload?.payment_session_id) {
-                // MOBILE BYPASS: For mobile, avoid SDK overlay (which is often blocked)
-                // perform direct redirect to the session-based checkout URL.
-                if (window.innerWidth < 768 && data.session.paymentUrl) {
-                    console.log('[Account] Mobile detected, performing direct redirect to avoid blocking.');
-                    window.location.href = data.session.paymentUrl;
-                    toast.dismiss(loadingToast);
-                    return;
-                }
+                const sessionId = data.session.payload.payment_session_id;
+                console.log('[Account] Initiating Cashfree SDK redirect with Session ID:', sessionId);
 
                 try {
                     const cfInstance = cashfree || await load({ 
                         mode: (process.env.NEXT_PUBLIC_CASHFREE_ENVIRONMENT?.toLowerCase() || 'sandbox') as "sandbox" | "production"
                     });
                     
+                    // Using _self forces a full page redirect instead of an in-app modal
                     await cfInstance.checkout({
-                        paymentSessionId: data.session.payload.payment_session_id,
-                        redirectTarget: "_top", // Switched from _self for better mobile/integrated web stability
+                        paymentSessionId: sessionId,
+                        redirectTarget: "_self", 
                     });
                     toast.dismiss(loadingToast);
                 } catch (sdkError) {
-                    console.warn('[Account] SDK failure, falling back to redirect:', sdkError);
-                    if (data.session.paymentUrl) {
-                        window.location.href = data.session.paymentUrl;
-                    } else {
-                        throw new Error('Payment gateway failed to initialize.');
-                    }
+                    console.error('[Account] SDK failure:', sdkError);
+                    throw new Error('Payment gateway failed to initialize.');
                 }
-            } else if (data.session?.paymentUrl) {
-                window.location.href = data.session.paymentUrl;
             } else {
                 throw new Error('No payment session received');
             }
