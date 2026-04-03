@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Vyapar Business",
+    "slug": "vyapar-business",
+    "version": "1.0.4",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0052cc"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vyapar.business"
+    },
+    "android": {
+      "package": "com.vyapar.business",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0052cc"
+      },
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a83260b1-fee7-4b7d-9a36-2c1a0096a786"
+      }
+    }
+  }
+}
