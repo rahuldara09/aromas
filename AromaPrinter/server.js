@@ -34,24 +34,36 @@ let isConnected = false;
 // ── DETECT PRINTER (WINDOWS ASYNC) ────────────────────────────────
 function getWindowsPrinter() {
   return new Promise((resolve) => {
-    exec("wmic printer get name", (err, stdout) => {
-      if (err) {
-        console.log("WMIC ERROR:", err);
-        return resolve(null);
+    // Primary method: PowerShell (most reliable on modern Windows)
+    const psCmd = 'powershell -Command "Get-Printer | Select-Object -ExpandProperty Name"';
+    
+    exec(psCmd, (err, stdout) => {
+      let printers = [];
+      
+      if (!err && stdout) {
+        printers = stdout.split('\r\n').map(p => p.trim()).filter(p => p);
       }
 
-      const printers = stdout
-        .split("\n")
-        .map(p => p.trim())
-        .filter(p =>
-          p &&
-          p !== "Name" &&
-          !p.toLowerCase().includes("pdf") &&
-          !p.toLowerCase().includes("onenote")
-        );
+      // Fallback: wmic (legacy Windows)
+      if (printers.length === 0) {
+        try {
+          const wmicOut = execSync('wmic printer get name', { encoding: 'utf-8' });
+          printers = wmicOut.split('\n').map(p => p.trim()).filter(p => p && p !== 'Name');
+        } catch (e) {}
+      }
 
-      console.log("Detected printers:", printers);
-      resolve(printers.length > 0 ? printers[0] : null);
+      console.log("🔍 [DEBUG] ALL PRINTERS DETECTED:", printers);
+
+      const filtered = printers.filter(p =>
+        p &&
+        !p.toLowerCase().includes("pdf") &&
+        !p.toLowerCase().includes("onenote") &&
+        !p.toLowerCase().includes("microsoft") &&
+        !p.toLowerCase().includes("fax")
+      );
+
+      console.log("✅ [DEBUG] FILTERED POS PRINTERS:", filtered);
+      resolve(filtered.length > 0 ? filtered[0] : null);
     });
   });
 }
@@ -188,7 +200,7 @@ app.get('/status', async (req, res) => {
     printerName: printerName || null,
     username: os.userInfo().username,
     server: 'aroma-print-server',
-    version: '2.2.0',
+    version: '2.3.0',
     platform: os.platform()
   });
 });
@@ -236,7 +248,7 @@ app.post('/print', async (req, res) => {
 
 // ── START ──────────────────────────────────────────────────────────
 async function start() {
-  console.log(`\n🖨️  Aroma Print Server v2.2 (${os.platform()})`);
+  console.log(`\n🖨️  Aroma Print Server v2.3 (${os.platform()})`);
   console.log('─'.repeat(48));
 
   if (isWindows) {
