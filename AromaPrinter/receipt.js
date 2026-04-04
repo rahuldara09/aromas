@@ -79,8 +79,8 @@ function formatReceiptText(order, token) {
 
   return `
                   AROMA DHABA
-          Hostel 1 Canteen, IIM Ahmedabad
-               Vastrapur, Ahmedabad 380015
+          IIM Mumbai Campus, Powai
+       Mumbai, Maharashtra 400087
   ${divider('-')}
   Date : ${date}       Bill No. : ${token}
   Type : ${typeLabel.padEnd(10)}   Payment  : ${paymentLabel}
@@ -116,8 +116,8 @@ function formatReceiptRaw(order, token) {
     CMD.INIT,
     CMD.CENTER,
     'AROMA DHABA' + NL,
-    'Near Dorm 15, IIM Ahmedabad' + NL,
-    'Vastrapur, Ahmedabad 380015' + NL,
+    'IIM Mumbai Campus, Powai' + NL,
+    'Mumbai, Maharashtra 400087' + NL,
     '------------ Tax Invoice -------------' + NL, NL,
     CMD.LEFT,
     `Date : ${date}       Bill No. : ${token}` + NL,

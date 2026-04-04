@@ -7,8 +7,8 @@ import { Order } from '@/types';
 // The browser must communicate directly with the local print server over HTTP.
 // Because the local print server now explicitly broadcasts `Access-Control-Allow-Private-Network: true`,
 // Chrome will perfectly allow it to fetch from `127.0.0.1:9100`!
-const PRINTER_API_URL = 'http://127.0.0.1:9100/print';
-const PRINTER_HEALTH_URL = 'http://127.0.0.1:9100';
+const PRINTER_API_URL = 'http://localhost:9100/print';
+const PRINTER_HEALTH_URL = 'http://localhost:9100';
 const PRINT_TIMEOUT_MS = 5000;
 
 
@@ -31,27 +31,15 @@ export function useThermalPrinter() {
     const checkHealth = useCallback(async () => {
         try {
             const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 3000);
-            const res = await fetch(`${PRINTER_HEALTH_URL}/status`, {
+            const timer = setTimeout(() => ctrl.abort(), 2000);
+            const res = await fetch(`${PRINTER_HEALTH_URL}/health`, {
                 method: 'GET',
                 signal: ctrl.signal,
             });
             clearTimeout(timer);
             setIsConnected(res.ok);
         } catch {
-            // Service unreachable or /health not defined — try a lightweight OPTIONS
-            try {
-                const ctrl2 = new AbortController();
-                const timer2 = setTimeout(() => ctrl2.abort(), 3000);
-                await fetch(PRINTER_API_URL, {
-                    method: 'OPTIONS',
-                    signal: ctrl2.signal,
-                });
-                clearTimeout(timer2);
-                setIsConnected(true);
-            } catch {
-                setIsConnected(false);
-            }
+            setIsConnected(false);
         }
     }, []);
 
@@ -59,8 +47,8 @@ export function useThermalPrinter() {
         // Initial check
         checkHealth();
 
-        // Re-check every 10 seconds so the banner updates when the service starts/stops
-        const interval = setInterval(checkHealth, 10_000);
+        // Re-check every 5 seconds so the settings status is responsive
+        const interval = setInterval(checkHealth, 5_000);
         return () => clearInterval(interval);
     }, [checkHealth]);
 

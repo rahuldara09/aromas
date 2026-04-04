@@ -139,6 +139,10 @@ app.get('/status', (req, res) => {
   });
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.post('/print', async (req, res) => {
   const { order, token } = req.body;
 
