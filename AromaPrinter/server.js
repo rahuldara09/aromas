@@ -31,44 +31,32 @@ let printerName = null;
 let isConnected = false;
 
 // ── DETECT PRINTER ───────────────────────────────────────────────
-function detectPrinter() {
-  if (isWindows) {
-    return detectWindowsPrinter();
-  }
-  return detectMacPrinter();
+// ── DETECT PRINTER (WINDOWS ASYNC) ────────────────────────────────
+function getWindowsPrinter() {
+  return new Promise((resolve) => {
+    exec("wmic printer get name", (err, stdout) => {
+      if (err) {
+        console.log("WMIC ERROR:", err);
+        return resolve(null);
+      }
+
+      const printers = stdout
+        .split("\n")
+        .map(p => p.trim())
+        .filter(p =>
+          p &&
+          p !== "Name" &&
+          !p.toLowerCase().includes("pdf") &&
+          !p.toLowerCase().includes("onenote")
+        );
+
+      console.log("Detected printers:", printers);
+      resolve(printers.length > 0 ? printers[0] : null);
+    });
+  });
 }
 
-function detectWindowsPrinter() {
-  try {
-    const stdout = execSync('wmic printer get name', { encoding: 'utf-8' });
-    const printers = stdout
-      .split('\n')
-      .map(p => p.trim())
-      .filter(p => 
-        p && 
-        p !== 'Name' && 
-        !p.toLowerCase().includes('pdf') && 
-        !p.toLowerCase().includes('onenote') &&
-        !p.toLowerCase().includes('microsoft') &&
-        !p.toLowerCase().includes('document')
-      );
-
-    if (printers.length > 0) {
-      printerName = printers[0];
-      isConnected = true;
-      console.log(`✅ Found Windows printer: ${printerName}`);
-    } else {
-      printerName = null;
-      isConnected = false;
-      console.log('⚠️  No POS/Thermal printer detected via wmic');
-    }
-  } catch (err) {
-    console.log('⚠️  Windows printer detection failed:', err.message);
-    isConnected = false;
-  }
-}
-
-function detectMacPrinter() {
+function detectMacPrinterSync() {
   try {
     // Get default printer
     const output = execSync('lpstat -d 2>/dev/null', { encoding: 'utf-8' }).trim();
@@ -76,7 +64,6 @@ function detectMacPrinter() {
     if (match) {
       printerName = match[1].trim();
       isConnected = true;
-      console.log(`✅ Found printer: ${printerName}`);
       return;
     }
 
@@ -86,14 +73,10 @@ function detectMacPrinter() {
     if (posMatch) {
       printerName = posMatch[1];
       isConnected = true;
-      console.log(`✅ Found POS printer: ${printerName}`);
       return;
     }
-
-    console.log('⚠️  No POS printer detected via CUPS');
     isConnected = false;
   } catch (err) {
-    console.log('⚠️  CUPS not available:', err.message);
     isConnected = false;
   }
 }
@@ -191,16 +174,21 @@ app.use(express.json());
 
 // ── ROUTES ────────────────────────────────────────────────────────
 
-app.get('/status', (req, res) => {
-  // Re-check printer on each status call
-  detectPrinter();
+app.get('/status', async (req, res) => {
+  if (isWindows) {
+    const printer = await getWindowsPrinter();
+    printerName = printer;
+    isConnected = !!printer;
+  } else {
+    detectMacPrinterSync();
+  }
   
   res.json({
     connected: isConnected,
     printerName: printerName || null,
     username: os.userInfo().username,
     server: 'aroma-print-server',
-    version: '2.1.0',
+    version: '2.2.0',
     platform: os.platform()
   });
 });
@@ -248,10 +236,16 @@ app.post('/print', async (req, res) => {
 
 // ── START ──────────────────────────────────────────────────────────
 async function start() {
-  console.log(`\n🖨️  Aroma Print Server v2.1 (${os.platform()})`);
+  console.log(`\n🖨️  Aroma Print Server v2.2 (${os.platform()})`);
   console.log('─'.repeat(48));
 
-  detectPrinter();
+  if (isWindows) {
+    const printer = await getWindowsPrinter();
+    printerName = printer;
+    isConnected = !!printer;
+  } else {
+    detectMacPrinterSync();
+  }
 
   // HTTP server
   http.createServer(app).listen(HTTP_PORT, () => {
