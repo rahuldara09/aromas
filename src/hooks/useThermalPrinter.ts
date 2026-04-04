@@ -38,7 +38,8 @@ export function useThermalPrinter() {
             });
             clearTimeout(timer);
             setIsConnected(res.ok);
-        } catch {
+        } catch (err) {
+            console.warn('Printer health check failed:', err);
             setIsConnected(false);
         }
     }, []);
