@@ -15,8 +15,12 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync, exec } = require('child_process');
+const { print: printToPrinter } = require('pdf-to-printer');
 const { formatReceiptText, formatReceiptRaw } = require('./receipt');
+
+const isWindows = os.platform() === 'win32';
 
 const app = express();
 const HTTP_PORT = 9100;
@@ -26,8 +30,45 @@ const HTTPS_PORT = 9443;
 let printerName = null;
 let isConnected = false;
 
-// ── DETECT CUPS PRINTER ───────────────────────────────────────────
+// ── DETECT PRINTER ───────────────────────────────────────────────
 function detectPrinter() {
+  if (isWindows) {
+    return detectWindowsPrinter();
+  }
+  return detectMacPrinter();
+}
+
+function detectWindowsPrinter() {
+  try {
+    const stdout = execSync('wmic printer get name', { encoding: 'utf-8' });
+    const printers = stdout
+      .split('\n')
+      .map(p => p.trim())
+      .filter(p => 
+        p && 
+        p !== 'Name' && 
+        !p.toLowerCase().includes('pdf') && 
+        !p.toLowerCase().includes('onenote') &&
+        !p.toLowerCase().includes('microsoft') &&
+        !p.toLowerCase().includes('document')
+      );
+
+    if (printers.length > 0) {
+      printerName = printers[0];
+      isConnected = true;
+      console.log(`✅ Found Windows printer: ${printerName}`);
+    } else {
+      printerName = null;
+      isConnected = false;
+      console.log('⚠️  No POS/Thermal printer detected via wmic');
+    }
+  } catch (err) {
+    console.log('⚠️  Windows printer detection failed:', err.message);
+    isConnected = false;
+  }
+}
+
+function detectMacPrinter() {
   try {
     // Get default printer
     const output = execSync('lpstat -d 2>/dev/null', { encoding: 'utf-8' }).trim();
@@ -57,15 +98,38 @@ function detectPrinter() {
   }
 }
 
-// ── PRINT VIA CUPS ────────────────────────────────────────────────
-function printViaCUPS(rawData, token) {
-  return new Promise((resolve, reject) => {
-    const tmpFile = path.join('/tmp', `aroma_receipt_${token}_${Date.now()}.bin`);
-    
-    // Write raw ESC/POS data to temp file
-    const buffer = Buffer.from(rawData.join(''), 'binary');
-    fs.writeFileSync(tmpFile, buffer);
+// ── PRINT LOGIC ──────────────────────────────────────────────────
+async function printReceipt(rawData, token) {
+  const tmpDir = os.tmpdir();
+  const tmpFile = path.join(tmpDir, `aroma_receipt_${token}_${Date.now()}.bin`);
+  
+  // Write raw ESC/POS data to temp file
+  const buffer = Buffer.from(rawData.join(''), 'binary');
+  fs.writeFileSync(tmpFile, buffer);
 
+  if (isWindows) {
+    return printViaWindows(tmpFile);
+  } else {
+    return printViaCUPS(tmpFile);
+  }
+}
+
+function printViaWindows(filePath) {
+  return new Promise((resolve, reject) => {
+    printToPrinter(filePath, { printer: printerName })
+      .then(() => {
+        try { fs.unlinkSync(filePath); } catch {}
+        resolve("Windows Print Job Sent");
+      })
+      .catch(err => {
+        try { fs.unlinkSync(filePath); } catch {}
+        reject(err);
+      });
+  });
+}
+
+function printViaCUPS(tmpFile) {
+  return new Promise((resolve, reject) => {
     // Print using lp with raw option
     const cmd = `lp -d "${printerName}" -o raw "${tmpFile}"`;
     exec(cmd, (err, stdout, stderr) => {
@@ -129,13 +193,15 @@ app.use(express.json());
 
 app.get('/status', (req, res) => {
   // Re-check printer on each status call
-  if (!isConnected) detectPrinter();
+  detectPrinter();
   
   res.json({
     connected: isConnected,
     printerName: printerName || null,
+    username: os.userInfo().username,
     server: 'aroma-print-server',
-    version: '2.0.0',
+    version: '2.1.0',
+    platform: os.platform()
   });
 });
 
@@ -164,10 +230,10 @@ app.post('/print', async (req, res) => {
     });
   }
 
-  // Print via CUPS
+  // Print command
   try {
     const rawData = formatReceiptRaw(order, token);
-    const result = await printViaCUPS(rawData, token);
+    const result = await printReceipt(rawData, token);
     console.log(`🖨️  Printed #${token} → ${printerName} (${result})`);
     res.json({ success: true, printed: true });
   } catch (err) {
@@ -182,7 +248,7 @@ app.post('/print', async (req, res) => {
 
 // ── START ──────────────────────────────────────────────────────────
 async function start() {
-  console.log('\n🖨️  Aroma Print Server v2.0');
+  console.log(`\n🖨️  Aroma Print Server v2.1 (${os.platform()})`);
   console.log('─'.repeat(48));
 
   detectPrinter();

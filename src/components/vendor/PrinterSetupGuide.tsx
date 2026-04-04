@@ -71,7 +71,7 @@ const AdvancedStep = ({ title, command, description }: { title: string, command:
 );
 
 export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuideProps) {
-    const { isConnected } = useThermalPrinter();
+    const { isConnected, username: systemUsername } = useThermalPrinter();
     const [activeTab, setActiveTab] = useState<'mac' | 'windows'>('mac');
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [manuallyShowSetup, setManuallyShowSetup] = useState(false);
@@ -84,6 +84,13 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
         }
     }, [isOpen]);
 
+    // Auto-fill username if server is connected and provides it
+    useEffect(() => {
+        if (isConnected && systemUsername) {
+            setUsername(systemUsername);
+        }
+    }, [isConnected, systemUsername]);
+
     if (!isOpen) return null;
 
     const showSetupSteps = !isConnected || manuallyShowSetup;
@@ -95,6 +102,7 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
         mac: {
             folderPath: getPath('/Users/<your-username>/Documents/vyapar_printer'),
             cdCommand: getPath('cd ~/Documents/vyapar_printer'),
+            pm2Commands: `npm install -g pm2\npm2 start server.js --name vyapar_printer\npm2 startup\npm2 save`,
             downloadLinks: [
                 { label: 'Download .dmg (Recommended)', href: '/downloads/vyapar_printer_mac.dmg', primary: true },
                 { label: 'Download .zip (Alternative)', href: '/downloads/vyapar_printer_mac.zip', primary: false }
@@ -103,6 +111,7 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
         windows: {
             folderPath: getPath('C:\\Users\\<your-username>\\Documents\\vyapar_printer'),
             cdCommand: getPath('cd %USERPROFILE%\\Documents\\vyapar_printer'),
+            pm2Commands: `npm install -g pm2 pm2-windows-startup\npm2 start server.js --name vyapar_printer\npm2-startup install\npm2 save`,
             downloadLinks: [
                 { label: 'Download for Windows (.zip)', href: '/downloads/vyapar_printer_win.zip', primary: true }
             ]
@@ -290,8 +299,8 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
                                                 <span className="text-[9px] font-black bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">PM2 READY</span>
                                             </div>
                                             <div className="bg-gray-900 p-3 rounded-lg border border-gray-800 flex items-start justify-between group">
-                                                <code className="text-[10px] font-mono text-gray-300 whitespace-pre">npm install -g pm2{"\n"}pm2 start server.js --name vyapar_printer{"\n"}pm2 startup{"\n"}pm2 save</code>
-                                                <CopyButton text={`npm install -g pm2\npm2 start server.js --name vyapar_printer\npm2 startup\npm2 save`} />
+                                                <code className="text-[10px] font-mono text-gray-300 whitespace-pre">{current.pm2Commands}</code>
+                                                <CopyButton text={current.pm2Commands} />
                                             </div>
                                         </div>
                                     </div>

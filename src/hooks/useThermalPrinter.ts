@@ -8,7 +8,7 @@ import { Order } from '@/types';
 // Because the local print server now explicitly broadcasts `Access-Control-Allow-Private-Network: true`,
 // Chrome will perfectly allow it to fetch from `127.0.0.1:9100`!
 const PRINTER_API_URL = 'http://localhost:9100/print';
-const PRINTER_HEALTH_URL = 'http://localhost:9100';
+const PRINTER_STATUS_URL = 'http://localhost:9100/status';
 const PRINT_TIMEOUT_MS = 5000;
 
 
@@ -25,6 +25,8 @@ const PRINT_TIMEOUT_MS = 5000;
 export function useThermalPrinter() {
     const [isConnected, setIsConnected] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
+    const [printerName, setPrinterName] = useState<string | null>(null);
+    const [username, setUsername] = useState<string | null>(null);
 
     // ─── HEALTH CHECK ────────────────────────────────────────────────────────
     // Ping the printer service on mount and periodically to keep isConnected fresh.
@@ -32,12 +34,20 @@ export function useThermalPrinter() {
         try {
             const ctrl = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 2000);
-            const res = await fetch(`${PRINTER_HEALTH_URL}/health`, {
+            const res = await fetch(PRINTER_STATUS_URL, {
                 method: 'GET',
                 signal: ctrl.signal,
             });
             clearTimeout(timer);
-            setIsConnected(res.ok);
+            
+            if (res.ok) {
+                const data = await res.json();
+                setIsConnected(data.connected);
+                setPrinterName(data.printerName);
+                if (data.username) setUsername(data.username);
+            } else {
+                setIsConnected(false);
+            }
         } catch (err) {
             console.warn('Printer health check failed:', err);
             setIsConnected(false);
@@ -100,7 +110,8 @@ export function useThermalPrinter() {
 
     return {
         isConnected,
-        printerName: isConnected ? 'Local Printer Service' : null,
+        printerName,
+        username,
         printKOT,
         isPrinting,
     };

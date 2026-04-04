@@ -19,7 +19,8 @@
     "escpos": "^3.0.0-alpha.6",
     "escpos-network": "^3.0.0-alpha.4",
     "escpos-usb": "^3.0.0-alpha.4",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "pdf-to-printer": "^1.1.0"
   },
   "devDependencies": {
     "pkg": "^5.8.1"
