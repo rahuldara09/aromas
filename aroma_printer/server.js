@@ -161,15 +161,25 @@ function getOrCreateCert() {
   }
 }
 
-// ── MIDDLEWARE ─────────────────────────────────────────────────────
-
-// Browser Privacy Network fix (CRITICAL: Must be before cors())
+// Robust CORS & Private Network Access (PNA) middleware
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Support specific origins for stricter loopback access
+  if (origin && (origin.includes('aromadhaba.in') || origin.includes('localhost'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
+  // Mandatory for Chrome's Private Network Access preflights (OPTIONS)
+  // Also keeps loopback access alive for GET/POST
   res.header('Access-Control-Allow-Private-Network', 'true');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.set('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
+
   if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     return res.sendStatus(204);
   }
   next();

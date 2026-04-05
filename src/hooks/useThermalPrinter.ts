@@ -5,11 +5,12 @@ import { Order } from '@/types';
 
 
 // The browser must communicate directly with the local print server.
-// To handle Mixed Content (HTTPS site talking to localhost):
+// To handle Mixed Content and Private Network Access (PNA) blocks:
 // 1. Use port 9100 for local development (HTTP).
 // 2. Use port 9443 for production (HTTPS).
+// 3. Use 127.0.0.1 instead of 'localhost' for better PNA preflight stability.
 const isPageSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
-const PRINTER_BASE_URL = isPageSecure ? 'https://localhost:9443' : 'http://localhost:9100';
+const PRINTER_BASE_URL = isPageSecure ? 'https://127.0.0.1:9443' : 'http://127.0.0.1:9100';
 
 const PRINTER_API_URL = `${PRINTER_BASE_URL}/print`;
 const PRINTER_STATUS_URL = `${PRINTER_BASE_URL}/status`;
