@@ -682,7 +682,7 @@ export default function VendorKanban() {
                                     </div>
                                     <button onClick={handlePosConfirm} disabled={posCartItems.length === 0 || posSubmitting}
                                         className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-extrabold text-base transition-all min-h-[56px] ${posCartItems.length > 0 && !posSubmitting ? 'bg-red-500 hover:bg-red-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
-                                        {posSubmitting ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '✓ Confirm & Print'}
+                                        {posSubmitting ? <span className="w-5 h-5 border-[3px] border-white/60 border-t-white rounded-full animate-spin" /> : '✓ Confirm & Print'}
                                     </button>
                                 </div>
                             </div>
@@ -968,10 +968,17 @@ export default function VendorKanban() {
                                     <button
                                         onClick={handlePosConfirm}
                                         disabled={posCartItems.length === 0 || posSubmitting}
-                                        className={`relative w-full overflow-hidden flex items-center justify-center gap-2 py-3.5 rounded-xl font-extrabold text-base transition-all duration-300 ${posCartItems.length > 0 && !posSubmitting ? (confirmPending ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 scale-[1.02] ring-4 ring-indigo-500/20' : 'bg-red-500 hover:bg-red-600 text-white shadow-sm hover:shadow') : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                        className={`relative w-full overflow-hidden flex items-center justify-center gap-2 py-3.5 rounded-xl font-extrabold text-base transition-all duration-300 ${posSubmitting ? 'bg-emerald-500 text-white shadow-sm' : (posCartItems.length > 0 ? (confirmPending ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 scale-[1.02] ring-4 ring-indigo-500/20' : 'bg-red-500 hover:bg-red-600 text-white shadow-sm hover:shadow') : 'bg-gray-100 text-gray-400 cursor-not-allowed')}`}
                                     >
-                                        {confirmPending && <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none" />}
-                                        {posSubmitting ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>
+                                        {confirmPending && (
+                                            <motion.div
+                                                initial={{ width: '100%' }}
+                                                animate={{ width: '0%' }}
+                                                transition={{ duration: 0.9, ease: 'linear' }}
+                                                className="absolute bottom-0 left-0 h-1 bg-white z-10"
+                                            />
+                                         )}
+                                        {posSubmitting ? <span className="w-5 h-5 border-[3px] border-white/60 border-t-white rounded-full animate-spin" /> : <>
                                             {confirmPending ? 'Enter again to confirm' : '✓ Confirm & Print'}
                                             {!confirmPending && <span className="text-[10px] font-bold bg-black/15 text-white/90 px-1.5 py-0.5 rounded ml-1 transition-opacity">Ctrl+Enter</span>}
                                         </>}
