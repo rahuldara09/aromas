@@ -100,20 +100,20 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
 
     const steps = {
         mac: {
-            folderPath: getPath('/Users/<your-username>/Documents/vyapar_printer'),
-            cdCommand: getPath('cd ~/Documents/vyapar_printer'),
-            pm2Commands: `npm install -g pm2\npm2 start server.js --name vyapar_printer\npm2 startup\npm2 save`,
+            folderPath: getPath('/Users/<your-username>/Documents/aroma_printer'),
+            cdCommand: getPath('cd ~/Documents/aroma_printer'),
+            pm2Commands: `npm install -g pm2\npm2 start server.js --name aroma_printer\npm2 startup\npm2 save`,
             downloadLinks: [
-                { label: 'Download .dmg (Recommended)', href: '/downloads/vyapar_printer_mac.dmg', primary: true },
-                { label: 'Download .zip (Alternative)', href: '/downloads/vyapar_printer_mac.zip', primary: false }
+                { label: 'Download .dmg (Recommended)', href: '/downloads/aroma_printer_mac.dmg', primary: true },
+                { label: 'Download .zip (Alternative)', href: '/downloads/aroma_printer_mac.zip', primary: false }
             ]
         },
         windows: {
-            folderPath: getPath('C:\\Users\\<your-username>\\Documents\\vyapar_printer'),
-            cdCommand: getPath('cd %USERPROFILE%\\Documents\\vyapar_printer'),
-            pm2Commands: `npm install -g pm2 pm2-windows-startup\npm2 start server.js --name vyapar_printer\npm2-startup install\npm2 save`,
+            folderPath: getPath('C:\\Users\\<your-username>\\Documents\\aroma_printer'),
+            cdCommand: getPath('cd %USERPROFILE%\\Documents\\aroma_printer'),
+            pm2Commands: `npm install -g pm2 pm2-windows-startup\npm2 start server.js --name aroma_printer\npm2-startup install\npm2 save`,
             downloadLinks: [
-                { label: 'Download for Windows (.zip)', href: '/downloads/vyapar_printer_win.zip', primary: true }
+                { label: 'Download for Windows (.zip)', href: '/downloads/aroma_printer_win.zip', primary: true }
             ]
         }
     };
@@ -262,7 +262,7 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
                                         <div className="flex-1 space-y-3">
                                             <p className="text-xs font-black dark:text-gray-200">Download & Move Folder</p>
                                             <div className="flex flex-col gap-2">
-                                                <a href="/downloads/vyapar_printer.zip" download className="flex items-center justify-center gap-2 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-black uppercase tracking-tight text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors w-full sm:w-auto self-start px-4">
+                                                <a href="/downloads/aroma_printer.zip" download className="flex items-center justify-center gap-2 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-black uppercase tracking-tight text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors w-full sm:w-auto self-start px-4">
                                                     <Download size={14}/> Download Source Code (.zip)
                                                 </a>
                                                 <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Extract and move the folder to:</p>
@@ -339,12 +339,12 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
                                 />
                                 <AdvancedStep 
                                     title="View Logs" 
-                                    command="pm2 logs vyapar_printer" 
+                                    command="pm2 logs aroma_printer" 
                                     description="Debug failures in real-time."
                                 />
                                 <AdvancedStep 
                                     title="Control PM2" 
-                                    command="pm2 restart vyapar_printer" 
+                                    command="pm2 restart aroma_printer" 
                                     description="Stop, restart or delete service."
                                 />
                                 <AdvancedStep 
@@ -395,7 +395,7 @@ export default function PrinterSetupGuide({ isOpen, onClose }: PrinterSetupGuide
 
                 {/* Footer */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center px-8">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-tight">vyapar_printer v2.6 • PRO MODAL</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-tight">aroma_printer v4.0.1 • PRO MODAL</p>
                     <div className="flex gap-4">
                         <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tight flex items-center gap-1">
                             <Activity size={10} /> {isConnected ? 'Service Connected' : 'Waiting for Service...'}

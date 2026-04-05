@@ -33,7 +33,7 @@ export function useThermalPrinter() {
     const checkHealth = useCallback(async () => {
         try {
             const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 2000);
+            const timer = setTimeout(() => ctrl.abort(), 5000);
             const res = await fetch(PRINTER_STATUS_URL, {
                 method: 'GET',
                 signal: ctrl.signal,
