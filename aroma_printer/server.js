@@ -20,6 +20,7 @@ const { formatReceiptText, formatReceiptRaw } = require('./receipt');
 
 const app = express();
 const HTTP_PORT = 9100;
+const PHYSICAL_PRINT_DELAY_MS = 2000; // Delay to allow thermal printer to finish
 
 // Robust Windows check
 const isWindows = os.platform() === 'win32' || process.platform === 'win32';
@@ -211,7 +212,12 @@ app.post('/print', async (req, res) => {
       await printViaCUPS(rawData, token);
     }
 
+
     console.log(`🖨️ Printed #${token} → ${printerName}`);
+
+    // Wait for physical printing to complete to improve UX
+    await new Promise(r => setTimeout(r, PHYSICAL_PRINT_DELAY_MS));
+
     res.json({ success: true, printed: true });
   } catch (err) {
     console.error('❌ Print failed:', err.message);
