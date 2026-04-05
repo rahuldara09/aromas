@@ -4,13 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Order } from '@/types';
 
 
-// The browser must communicate directly with the local print server.
-// To handle Mixed Content and Private Network Access (PNA) blocks:
-// 1. Use port 9100 for local development (HTTP).
-// 2. Use port 9443 for production (HTTPS).
-// 3. Use 127.0.0.1 instead of 'localhost' for better PNA preflight stability.
-const isPageSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
-const PRINTER_BASE_URL = isPageSecure ? 'https://127.0.0.1:9443' : 'http://127.0.0.1:9100';
+// Use 127.0.0.1 to take advantage of the fact that modern browsers 
+// consider loopback requests secure, allowing Mixed Content (HTTP from HTTPS).
+const PRINTER_BASE_URL = 'http://127.0.0.1:9100';
 
 const PRINTER_API_URL = `${PRINTER_BASE_URL}/print`;
 const PRINTER_STATUS_URL = `${PRINTER_BASE_URL}/status`;
@@ -42,8 +38,6 @@ export function useThermalPrinter() {
             const res = await fetch(PRINTER_STATUS_URL, {
                 method: 'GET',
                 signal: ctrl.signal,
-                // @ts-ignore - Required for PNA (Private Network Access) on modern Chrome
-                targetAddressSpace: 'local',
             });
             clearTimeout(timer);
             
@@ -89,8 +83,6 @@ export function useThermalPrinter() {
                             token: _tokenNum,
                         }),
                         signal: ctrl.signal,
-                        // @ts-ignore - Required for PNA (Private Network Access) on modern Chrome
-                        targetAddressSpace: 'local',
                     });
                 } catch (err: any) {
                     // AbortError = timeout; other errors = service down

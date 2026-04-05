@@ -11,7 +11,6 @@
 
 const express = require('express');
 const cors = require('cors');
-const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +20,6 @@ const { formatReceiptText, formatReceiptRaw } = require('./receipt');
 
 const app = express();
 const HTTP_PORT = 9100;
-const HTTPS_PORT = 9443;
 
 // Robust Windows check
 const isWindows = os.platform() === 'win32' || process.platform === 'win32';
@@ -135,93 +133,7 @@ function printViaCUPS(rawData, token) {
   });
 }
 
-// ── SSL CERTIFICATES ──────────────────────────────────────────────
-// This ensures port 9443 starts even if the user doesn't have OpenSSL installed.
-const FALLBACK_KEY = `-----BEGIN PRIVATE KEY-----
-MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC6E6Dk+X6H8R1j
-ejN+4Vf/I6X38A6o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nB
-vH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q
-2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v
-3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9
-jT5z1O6v3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nBvH1p
-Q1z2w2/9jT5z1O6v3g2o5z0Q2nB7v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q2nB7
-v1nBvH1pQ1z2w2/9jT5z1O6v3g2o5z0Q=="
------END PRIVATE KEY-----`;
-
-const FALLBACK_CERT = `-----BEGIN CERTIFICATE-----
-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
-Y0+c9Tur94NqOc9ENpwe79Zwbx9aUNLS
------END CERTIFICATE-----`;
-
-function getOrCreateCert() {
-  const certDir = path.join(__dirname, '.certs');
-  const keyPath = path.join(certDir, 'key.pem');
-  const certPath = path.join(certDir, 'cert.pem');
-
-  // 1. Try to load existing files
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    try {
-      return { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) };
-    } catch (err) {}
-  }
-
-  // 2. Try to generate with openssl if available
-  if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
-  try {
-    execSync(`openssl req -x509 -newkey rsa:2048 -keyout "${keyPath}" -out "${certPath}" -days 3650 -nodes -subj "/CN=localhost"`, { stdio: 'ignore' });
-    return { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) };
-  } catch (err) {
-    // 3. Ultimate Fallback: Use built-in cert text
-    console.log('💡 Note: OpenSSL not found. Using built-in fallback certificate for HTTPS.');
-    return { 
-      key: FALLBACK_KEY, 
-      cert: FALLBACK_CERT 
-    };
-  }
-}
-
+// ── HTTP SERVER ONLY ───────────────────────────────────────────────────
 // Robust CORS & Private Network Access (PNA) middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -246,7 +158,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
 app.use(express.json());
 
 // ── ROUTES ────────────────────────────────────────────────────────
@@ -322,14 +233,6 @@ function start() {
   http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
     console.log(`\n🚀 HTTP  → http://localhost:${HTTP_PORT}`);
   });
-
-  const certs = getOrCreateCert();
-  if (certs) {
-    https.createServer(certs, app).listen(HTTPS_PORT, '0.0.0.0', () => {
-      console.log(`🔒 HTTPS → https://localhost:${HTTPS_PORT}`);
-    });
-  }
-
   console.log(`\n   GET  /status  → printer status`);
   console.log(`   POST /print   → print receipt`);
 
