@@ -42,6 +42,8 @@ export function useThermalPrinter() {
             const res = await fetch(PRINTER_STATUS_URL, {
                 method: 'GET',
                 signal: ctrl.signal,
+                // @ts-ignore - Required for PNA (Private Network Access) on modern Chrome
+                targetAddressSpace: 'local',
             });
             clearTimeout(timer);
             
@@ -87,6 +89,8 @@ export function useThermalPrinter() {
                             token: _tokenNum,
                         }),
                         signal: ctrl.signal,
+                        // @ts-ignore - Required for PNA (Private Network Access) on modern Chrome
+                        targetAddressSpace: 'local',
                     });
                 } catch (err: any) {
                     // AbortError = timeout; other errors = service down
