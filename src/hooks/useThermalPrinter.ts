@@ -4,11 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { Order } from '@/types';
 
 
-// The browser must communicate directly with the local print server over HTTP.
-// Because the local print server now explicitly broadcasts `Access-Control-Allow-Private-Network: true`,
-// Chrome will perfectly allow it to fetch from `127.0.0.1:9100`!
-const PRINTER_API_URL = 'http://localhost:9100/print';
-const PRINTER_STATUS_URL = 'http://localhost:9100/status';
+// The browser must communicate directly with the local print server.
+// To handle Mixed Content (HTTPS site talking to localhost):
+// 1. Use port 9100 for local development (HTTP).
+// 2. Use port 9443 for production (HTTPS).
+const isPageSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+const PRINTER_BASE_URL = isPageSecure ? 'https://localhost:9443' : 'http://localhost:9100';
+
+const PRINTER_API_URL = `${PRINTER_BASE_URL}/print`;
+const PRINTER_STATUS_URL = `${PRINTER_BASE_URL}/status`;
 const PRINT_TIMEOUT_MS = 5000;
 
 
