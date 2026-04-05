@@ -101,7 +101,7 @@ async function printViaWindows(rawData, token) {
 // ── MAC PRINTING (VIA CUPS) ───────────────────────
 function printViaCUPS(rawData, token) {
   return new Promise((resolve, reject) => {
-    const tmpFile = path.join('/tmp', `receipt_${token}.bin`);
+    const tmpFile = path.join(os.tmpdir(), `receipt_${token}.bin`);
     const buffer = Buffer.from(rawData.join(''), 'binary');
 
     fs.writeFileSync(tmpFile, buffer);
