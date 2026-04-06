@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
             orderData = {
                 userId: uid,
                 customerPhone: data.customerPhone.startsWith('+91') ? data.customerPhone : `+91${data.customerPhone}`,
+                customerEmail: data.customerEmail || '',
                 items: data.items,
                 itemTotal: serverItemTotal,
                 dukanFee: data.dukanFee,

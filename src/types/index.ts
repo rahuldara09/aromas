@@ -61,6 +61,7 @@ export interface Order {
   userId: string;
   orderType?: 'online' | 'pos';
   customerPhone?: string;
+  customerEmail?: string;
   items: OrderItem[];
   itemTotal: number;
   dukanFee: number;
@@ -115,4 +116,38 @@ export interface User {
   uid: string;
   phoneNumber: string;
   createdAt: Date;
+}
+
+export interface UserAddress {
+  id: string;
+  name: string;
+  mobile: string;
+  type: 'Home' | 'Hostel' | 'Other';
+  hostelNumber?: string;
+  roomNumber?: string;
+  landmark?: string;
+  instructions?: string;
+  city: string;
+  pincode: string;
+  isDefault?: boolean;
+}
+
+export interface UserProfile {
+  phone: string;
+  name: string;
+  email?: string;
+  profileImageURL?: string;
+  lastHostel: string;
+  lastRoom: string;
+  totalOrders: number;
+  foodPreference?: 'Veg' | 'Non-Veg' | 'Vegan';
+  birthday?: string;
+  landmark?: string;
+  instructions?: string;
+  pincode?: string;
+  city?: string;
+  state?: string;
+  addresses?: UserAddress[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }

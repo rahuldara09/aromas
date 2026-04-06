@@ -186,6 +186,7 @@ export default function CheckoutPage() {
                 },
                 body: JSON.stringify({
                     customerPhone: phoneNumber ? (phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`) : '',
+                    customerEmail: user.email || '',
                     items: orderItems,
                     itemTotal: subtotal,
                     dukanFee,

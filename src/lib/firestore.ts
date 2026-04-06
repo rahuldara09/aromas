@@ -11,9 +11,10 @@ import {
     setDoc,
     serverTimestamp,
     onSnapshot,
+    writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Category, Product, Address, Order, OrderItem } from '@/types';
+import { Category, Product, Address, Order, OrderItem, UserProfile, UserAddress } from '@/types';
 
 // Detect if real Firebase credentials have been provided
 function isFirebaseConfigured(): boolean {
@@ -114,52 +115,38 @@ export async function getProductsByCategory(categoryId: string): Promise<Product
 
 // ─── Orders ────────────────────────────────────────────────────────────────────
 
-export async function getUserOrders(customerPhone: string): Promise<Order[]> {
+export async function getUserOrders(customerPhone: string, customerEmail?: string | null): Promise<Order[]> {
     if (!isFirebaseConfigured()) return [];
     try {
-        const formattedPhone = customerPhone.startsWith('+91') ? customerPhone : `+91${customerPhone}`;
-        // First try with orderBy (requires composite index in Firestore Console)
-        const q = query(
-            collection(db, 'orders'),
-            where('customerPhone', '==', formattedPhone),
-            orderBy('orderDate', 'desc')
-        );
+        let q;
+        if (customerEmail) {
+            q = query(collection(db, 'orders'), where('customerEmail', '==', customerEmail), orderBy('orderDate', 'desc'));
+        } else {
+            const formattedPhone = customerPhone.startsWith('+91') ? customerPhone : `+91${customerPhone}`;
+            q = query(collection(db, 'orders'), where('customerPhone', '==', formattedPhone), orderBy('orderDate', 'desc'));
+        }
         const snap = await getDocs(q);
         return snap.docs.map((d) => {
             const data = d.data();
-            return {
-                id: d.id,
-                ...data,
-                orderDate: data.orderDate?.toDate?.() ?? new Date(),
-            } as Order;
+            return { id: d.id, ...data, orderDate: data.orderDate?.toDate?.() ?? new Date() } as Order;
         });
     } catch (err: unknown) {
         const msg = (err as { message?: string }).message ?? '';
-        console.warn('[Firestore] getUserOrders: index not ready, using fallback without orderBy.');
-
-        // If the error is a missing index, fall back to a simple query (no orderBy)
-        // This ensures orders display even before the composite index is created.
         if (msg.includes('index') || msg.includes('requires an index')) {
-            console.warn('[Firestore] Composite index missing — falling back to unordered query.');
             try {
-                const formattedPhone = customerPhone.startsWith('+91') ? customerPhone : `+91${customerPhone}`;
-                const fallbackQ = query(
-                    collection(db, 'orders'),
-                    where('customerPhone', '==', formattedPhone)
-                );
+                let fallbackQ;
+                if (customerEmail) {
+                    fallbackQ = query(collection(db, 'orders'), where('customerEmail', '==', customerEmail));
+                } else {
+                    const formattedPhone = customerPhone.startsWith('+91') ? customerPhone : `+91${customerPhone}`;
+                    fallbackQ = query(collection(db, 'orders'), where('customerPhone', '==', formattedPhone));
+                }
                 const fallbackSnap = await getDocs(fallbackQ);
                 const results = fallbackSnap.docs.map((d) => {
                     const data = d.data();
-                    return {
-                        id: d.id,
-                        ...data,
-                        orderDate: data.orderDate?.toDate?.() ?? new Date(),
-                    } as Order;
+                    return { id: d.id, ...data, orderDate: data.orderDate?.toDate?.() ?? new Date() } as Order;
                 });
-                // Sort client-side as a temporary measure
-                return results.sort((a, b) =>
-                    new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
-                );
+                return results.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
             } catch (fallbackErr) {
                 console.error('[Firestore] Fallback query also failed:', fallbackErr);
             }
@@ -301,16 +288,6 @@ export function listenToOrder(orderId: string, callback: (order: Order | null) =
 
 // ─── Users (Phone-based) ──────────────────────────────────────────────────────
 
-export interface UserProfile {
-    phone: string;
-    name: string;
-    lastHostel: string;
-    lastRoom: string;
-    totalOrders: number;
-    email?: string;
-    createdAt?: Date;
-}
-
 /**
  * Fetch a user document directly by Phone Number (fast — no query needed).
  * Since we migrated from UID to Phone Number as primary key.
@@ -326,11 +303,17 @@ export async function getUserByPhone(phone: string): Promise<UserProfile | null>
         return {
             phone: data.phone ?? formatted,
             name: data.name ?? '',
+            email: data.email ?? '',
+            profileImageURL: data.profileImageURL ?? '',
             lastHostel: data.lastHostel ?? '',
             lastRoom: data.lastRoom ?? '',
             totalOrders: data.totalOrders ?? 0,
+            foodPreference: data.foodPreference,
+            birthday: data.birthday,
+            addresses: data.addresses ?? [],
             createdAt: data.createdAt?.toDate?.(),
-        };
+            updatedAt: data.updatedAt?.toDate?.(),
+        } as UserProfile;
     } catch {
         return null;
     }
@@ -396,37 +379,86 @@ export async function upsertUserProfile(
     name: string,
     lastHostel: string,
     lastRoom: string,
-    isFirstOrder: boolean
+    isFirstOrder: boolean,
+    extraFields: Partial<UserProfile> = {}
 ): Promise<void> {
     if (!isFirebaseConfigured()) return;
     try {
         const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
         const userRef = doc(db, 'users', formatted);
         const snap = await getDoc(userRef);
+        
+        const baseData = {
+            phone: formatted,
+            name,
+            lastHostel,
+            lastRoom,
+            updatedAt: Timestamp.now(),
+            ...extraFields
+        };
+
         if (snap.exists()) {
             const current = snap.data();
             await setDoc(userRef, {
-                phone: formatted,
-                name,
-                lastHostel,
-                lastRoom,
+                ...baseData,
                 totalOrders: isFirstOrder ? (current.totalOrders ?? 0) : (current.totalOrders ?? 0) + 1,
-                updatedAt: Timestamp.now(),
             }, { merge: true });
         } else {
             await setDoc(userRef, {
-                phone: formatted,
-                name,
-                lastHostel,
-                lastRoom,
+                ...baseData,
                 totalOrders: isFirstOrder ? 0 : 1,
                 createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
             });
         }
-    } catch {
-        // Silently fail
+    } catch (err) {
+        console.error('[Firestore] upsertUserProfile failed:', err);
     }
+}
+
+/**
+ * Unified update for a user's profile.
+ * Syncs the data to both the 'email_...' keyed document and the '+91...' keyed document.
+ */
+export async function updateUserProfileUnified(
+    email: string | null,
+    phone: string,
+    data: Partial<UserProfile>
+): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+    try {
+        const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
+        const updatedAt = Timestamp.now();
+        const baseData = { ...data, phone: formattedPhone, updatedAt };
+        
+        const batch = writeBatch(db);
+
+        // 1. Update/Create phone-keyed document
+        const phoneRef = doc(db, 'users', formattedPhone);
+        batch.set(phoneRef, baseData, { merge: true });
+
+        // 2. Update/Create email-keyed document (if email exists)
+        if (email) {
+            const normalizedEmail = email.toLowerCase().trim();
+            const emailRef = doc(db, 'users', `email_${normalizedEmail}`);
+            batch.set(emailRef, { ...baseData, email: normalizedEmail }, { merge: true });
+        }
+
+        await batch.commit();
+        console.log('[Firestore] Unified profile update successful');
+    } catch (err) {
+        console.error('[Firestore] updateUserProfileUnified failed:', err);
+        throw err;
+    }
+}
+
+/**
+ * Update specific fields in a user's profile (Legacy - Phone only).
+ */
+export async function updateUserProfileData(
+    phone: string,
+    data: Partial<UserProfile>
+): Promise<void> {
+    return updateUserProfileUnified(null, phone, data);
 }
 
 /**
@@ -442,12 +474,17 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         return {
             phone: data.phone ?? '',
             name: data.name ?? '',
+            email: data.email ?? email,
+            profileImageURL: data.profileImageURL ?? '',
             lastHostel: data.lastHostel ?? '',
             lastRoom: data.lastRoom ?? '',
             totalOrders: data.totalOrders ?? 0,
-            email: data.email ?? email,
+            foodPreference: data.foodPreference,
+            birthday: data.birthday,
+            addresses: data.addresses ?? [],
             createdAt: data.createdAt?.toDate?.(),
-        };
+            updatedAt: data.updatedAt?.toDate?.(),
+        } as UserProfile;
     } catch {
         return null;
     }
@@ -462,6 +499,7 @@ export async function upsertUserProfileByEmail(
     phone: string,
     lastHostel: string,
     lastRoom: string,
+    extraFields: Partial<UserProfile> = {}
 ): Promise<void> {
     if (!isFirebaseConfigured()) return;
     try {
@@ -469,30 +507,29 @@ export async function upsertUserProfileByEmail(
         const key = `email_${normalizedEmail}`;
         const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
         const userRef = doc(db, 'users', key);
+        
+        const baseData = {
+            email: normalizedEmail,
+            phone: formatted,
+            name,
+            lastHostel,
+            lastRoom,
+            updatedAt: Timestamp.now(),
+            ...extraFields
+        };
+
         const snap = await getDoc(userRef);
         if (snap.exists()) {
-            await setDoc(userRef, {
-                email: normalizedEmail,
-                phone: formatted,
-                name,
-                lastHostel,
-                lastRoom,
-                updatedAt: Timestamp.now(),
-            }, { merge: true });
+            await setDoc(userRef, baseData, { merge: true });
         } else {
             await setDoc(userRef, {
-                email: normalizedEmail,
-                phone: formatted,
-                name,
-                lastHostel,
-                lastRoom,
+                ...baseData,
                 totalOrders: 0,
                 createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
             });
         }
-    } catch {
-        // Silently fail
+    } catch (err) {
+        console.error('[Firestore] upsertUserProfileByEmail failed:', err);
     }
 }
 

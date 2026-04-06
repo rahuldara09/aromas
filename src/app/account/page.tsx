@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import Banner from '@/components/layout/Banner';
 import Header from '@/components/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserOrders, getUserAddresses, updateUserAddress } from '@/lib/firestore';
+import { getUserOrders, getUserAddresses, updateUserAddress, updateUserProfileUnified } from '@/lib/firestore';
 import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
-import { Order, Address } from '@/types';
-import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X } from 'lucide-react';
+import { Order, Address, UserProfile, UserAddress } from '@/types';
+import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X, User, Calendar, Leaf, UtensilsCrossed, Plus, Home, Building, HelpCircle, Mail, Phone, Camera, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { load } from '@cashfreepayments/cashfree-js';
 
-type SidebarTab = 'orders' | 'addresses';
+type SidebarTab = 'orders' | 'addresses' | 'profile';
 
 const STATUS_COLORS: Record<string, string> = {
     Delivered: 'text-green-600',
@@ -51,6 +51,48 @@ function formatDate(date: Date): string {
     }).format(new Date(date));
 }
 
+// ── Shared UI Components ─────────────────────────────────────────────────────
+
+const FloatingInput = ({ label, value, onChange, type = 'text', readOnly = false, icon: Icon }: any) => {
+    const [focused, setFocused] = useState(false);
+    const hasValue = value !== undefined && value !== null && value.toString().length > 0;
+
+    return (
+        <div className="relative">
+            <div className={`
+                flex items-center border rounded-xl transition-all duration-200 bg-white group
+                ${focused ? 'border-red-500 ring-4 ring-red-50' : 'border-gray-100 hover:border-gray-200'}
+                ${readOnly ? 'bg-gray-50 border-gray-50' : ''}
+            `}>
+                {Icon && (
+                    <div className="pl-3">
+                        <Icon size={16} className={focused ? 'text-red-500' : 'text-gray-400'} />
+                    </div>
+                )}
+                <input
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    onFocus={() => !readOnly && setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    readOnly={readOnly}
+                    className="w-full px-3 py-2.5 text-gray-900 bg-transparent focus:outline-none placeholder-transparent text-sm font-medium"
+                    placeholder={label}
+                />
+            </div>
+            <label className={`
+                absolute left-3 transition-all duration-200 pointer-events-none px-1 bg-white
+                ${(focused || hasValue) 
+                    ? `-top-2 text-[10px] uppercase tracking-wider font-bold ${focused ? 'text-red-500' : 'text-gray-500'}` 
+                    : `top-3 text-sm font-medium text-gray-400`}
+                ${Icon ? 'ml-6' : ''}
+            `}>
+                {label}
+            </label>
+        </div>
+    );
+};
+
 type AddressWithFields = Address & { hostel?: string; room?: string };
 
 export default function AccountPage() {
@@ -61,6 +103,13 @@ export default function AccountPage() {
     const [addresses, setAddresses] = useState<AddressWithFields[]>([]);
     const [dataLoading, setDataLoading] = useState(false);
     const [cashfree, setCashfree] = useState<any>(null);
+
+    // Default to profile if incomplete
+    useEffect(() => {
+        if (!loading && user && !phoneNumber) {
+            setActiveTab('profile');
+        }
+    }, [loading, user, phoneNumber]);
 
     // Pre-load Cashfree SDK on mount
     useEffect(() => {
@@ -214,25 +263,32 @@ export default function AccountPage() {
                 </div>
 
                 {/* ── MOBILE: horizontal tab bar ───────────────────────────── */}
-                <div className="md:hidden flex border-b border-gray-200 mb-4">
+                <div className="md:hidden flex border-b border-gray-200 mb-4 overflow-x-auto no-scrollbar">
                     <button
                         onClick={() => setActiveTab('orders')}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'orders' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'orders' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
                             }`}
                     >
                         <ListOrdered size={16} /> My Orders
                     </button>
                     <button
                         onClick={() => setActiveTab('addresses')}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'addresses' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'addresses' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
                             }`}
                     >
                         <MapPin size={16} /> Addresses
                     </button>
+                    <button
+                        onClick={() => setActiveTab('profile')}
+                        className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all ${activeTab === 'profile' ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500'
+                            }`}
+                    >
+                        <User size={16} /> My Profile
+                    </button>
                     {isLoggedIn && (
                         <button
                             onClick={handleSignOut}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 ml-auto"
+                            className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-gray-500 ml-auto"
                         >
                             <LogOut size={16} /> Sign out
                         </button>
@@ -263,6 +319,16 @@ export default function AccountPage() {
                             >
                                 <MapPin size={18} />
                                 My addresses
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('profile')}
+                                className={`w-full flex items-center gap-3 px-5 py-4 text-sm font-medium border-l-4 transition-all ${activeTab === 'profile'
+                                    ? 'border-red-500 bg-red-50 text-red-600'
+                                    : 'border-transparent text-gray-700 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <User size={18} />
+                                My profile
                             </button>
                             {isLoggedIn && (
                                 <button
@@ -305,14 +371,14 @@ export default function AccountPage() {
                                         </div>
                                     ) : !phoneNumber ? (
                                         <div className="text-center py-16">
-                                            <div className="text-5xl mb-4">👤</div>
+                                            <div className="text-5xl mb-4 text-gray-100">👤</div>
                                             <p className="text-gray-800 font-semibold text-lg mb-1">Complete your profile</p>
-                                            <p className="text-gray-400 text-sm mb-6">Add your name, phone &amp; hostel to place and track orders</p>
+                                            <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">Add your phone number to track orders and more</p>
                                             <button
-                                                onClick={openAuthModal}
-                                                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-sm"
+                                                onClick={() => setActiveTab('profile')}
+                                                className="bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 px-10 rounded-xl transition-all text-sm shadow-lg shadow-red-100"
                                             >
-                                                Complete Profile →
+                                                Go to Profile →
                                             </button>
                                         </div>
                                     ) : dataLoading ? (
@@ -515,10 +581,174 @@ export default function AccountPage() {
                                     )}
                                 </div>
                             )}
+
+                            {/* ── MY PROFILE ── */}
+                            {activeTab === 'profile' && isLoggedIn && (
+                                <ProfileTab user={user} userProfile={userProfile} onSignOut={handleSignOut} />
+                            )}
                         </div>
                     </main>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: UserProfile | null, onSignOut: () => void }) {
+    const { setUserProfile, setPhoneNumber } = useAuth();
+    const [name, setName] = useState(userProfile?.name || '');
+    const [email, setEmail] = useState(userProfile?.email || user?.email || '');
+    const [phone, setPhone] = useState(userProfile?.phone || '');
+    const [birthday, setBirthday] = useState(userProfile?.birthday || '');
+    const [hostel, setHostel] = useState(userProfile?.lastHostel || '');
+    const [hostelSearch, setHostelSearch] = useState(userProfile?.lastHostel || '');
+    const [showHostelHints, setShowHostelHints] = useState(false);
+    const [room, setRoom] = useState(userProfile?.lastRoom || '');
+    const [pincode, setPincode] = useState(userProfile?.pincode || '400087');
+    const [city, setCity] = useState(userProfile?.city || 'Mumbai');
+    const [state, setState] = useState(userProfile?.state || 'Maharashtra');
+    const [saving, setSaving] = useState(false);
+
+    // Filtered hostels for the searchable dropdown
+    const filteredHostels = IIM_MUMBAI_HOSTELS.filter(h => 
+        h.toLowerCase().includes(hostelSearch.toLowerCase())
+    );
+
+    // Auto-fill logic for Pincode
+    useEffect(() => {
+        if (pincode === '400087') {
+            setCity('Mumbai');
+            setState('Maharashtra');
+        }
+    }, [pincode]);
+
+    // Sync if userProfile changes
+    useEffect(() => {
+        if (userProfile) {
+            setName(userProfile.name || '');
+            setEmail(userProfile.email || user?.email || '');
+            setPhone(userProfile.phone || '');
+            setBirthday(userProfile.birthday || '');
+            setHostel(userProfile.lastHostel || '');
+            setHostelSearch(userProfile.lastHostel || '');
+            setRoom(userProfile.lastRoom || '');
+            setPincode(userProfile.pincode || '400087');
+            setCity(userProfile.city || 'Mumbai');
+            setState(userProfile.state || 'Maharashtra');
+        }
+    }, [userProfile, user]);
+
+    const handleSave = async () => {
+        if (!name.trim()) return toast.error('Name is mandatory');
+        if (!phone.trim()) return toast.error('Phone is mandatory');
+        
+        setSaving(true);
+        try {
+            const updatedData = {
+                name,
+                email,
+                birthday,
+                lastHostel: hostel,
+                lastRoom: room,
+                pincode,
+                city,
+                state
+            };
+            
+            // 1. Save to Firestore (Dual-Sync)
+            await updateUserProfileUnified(email, phone, updatedData);
+            
+            // 2. Update local state immediately
+            setUserProfile({
+                ...userProfile,
+                ...updatedData,
+                phone: phone.startsWith('+91') ? phone : `+91${phone}`,
+                totalOrders: userProfile?.totalOrders ?? 0
+            });
+            setPhoneNumber(phone.startsWith('+91') ? phone : `+91${phone}`);
+
+            toast.success('Profile updated successfully! ✨');
+        } catch (err) {
+            toast.error('Failed to update profile');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-6 space-y-4 animate-in fade-in duration-500 max-w-5xl mx-auto overflow-hidden">
+            {/* 1. Compact Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h2 className="text-lg font-bold text-gray-900">Complete Your Profile</h2>
+                <button 
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white font-bold px-6 py-2 rounded-xl text-sm transition-all"
+                >
+                    {saving ? 'Saving...' : 'SAVE PROFILE'}
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                {/* ROW 1: Basic Info */}
+                <FloatingInput label="Full Name" value={name} onChange={(e: any) => setName(e.target.value)} icon={User} />
+                <FloatingInput label="Phone Number" value={phone} onChange={(e: any) => setPhone(e.target.value)} icon={Phone} />
+                <FloatingInput label="Email Address" value={email} readOnly={true} icon={Mail} />
+
+                {/* ROW 2: DOB & Hostel & Room */}
+                <FloatingInput label="Date of Birth" value={birthday} onChange={(e: any) => setBirthday(e.target.value)} type="date" icon={Calendar} />
+                
+                {/* Searchable Hostel Input */}
+                <div className="relative group">
+                    <FloatingInput 
+                        label="Hostel Name" 
+                        value={hostelSearch} 
+                        onChange={(e: any) => {
+                            setHostelSearch(e.target.value);
+                            setHostel(e.target.value); 
+                            setShowHostelHints(true);
+                        }} 
+                        icon={Building} 
+                    />
+                    {showHostelHints && hostelSearch.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-40 overflow-y-auto no-scrollbar py-1">
+                            {filteredHostels.length > 0 ? (
+                                filteredHostels.map(h => (
+                                    <button 
+                                        key={h} 
+                                        className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 hover:text-red-500 transition-colors"
+                                        onClick={() => {
+                                            setHostel(h);
+                                            setHostelSearch(h);
+                                            setShowHostelHints(false);
+                                        }}
+                                    >
+                                        {h}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-4 py-2 text-[10px] text-gray-400 font-bold italic">
+                                    Press Enter to add "{hostelSearch}"
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {showHostelHints && (
+                        <div className="fixed inset-0 z-0" onClick={() => setShowHostelHints(false)} />
+                    )}
+                </div>
+
+                <FloatingInput label="Room No." value={room} onChange={(e: any) => setRoom(e.target.value)} icon={Home} />
+
+                {/* ROW 3: Pincode & Location Detail */}
+                <FloatingInput label="Pincode" value={pincode} onChange={(e: any) => setPincode(e.target.value)} icon={MapPin} />
+                <FloatingInput label="City" value={city} onChange={(e: any) => setCity(e.target.value)} icon={Building} />
+                <FloatingInput label="State" value={state} onChange={(e: any) => setState(e.target.value)} icon={Filter} />
+            </div>
+            
+            <p className="text-[10px] text-gray-400 text-center uppercase tracking-widest font-bold">
+                 ⚡ Fast Deliveries for IIM Mumbai Campus
+            </p>
         </div>
     );
 }

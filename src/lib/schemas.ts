@@ -22,6 +22,7 @@ export const DeliveryAddressSchema = z.object({
 // ─── Full Order Schema ────────────────────────────────────────────────────────
 export const CreateOrderSchema = z.object({
     customerPhone: z.string(),
+    customerEmail: z.string().email().optional().or(z.literal('')),
     items: z.array(OrderItemSchema).min(1, 'Order must have at least one item').max(30),
     itemTotal: z.number().positive().max(50000),
     dukanFee: z.number().min(0).max(1000),
