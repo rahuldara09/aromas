@@ -16,23 +16,17 @@ type ModalStep = 'email' | 'otp' | 'profile';
 
 export default function AuthModal() {
     const router = useRouter();
-    const { isAuthModalOpen, closeAuthModal, setUserProfile, setPhoneNumber, setSessionEmail, user, sessionEmail, userProfile } = useAuth();
+    const { isAuthModalOpen, closeAuthModal, setUserProfile, setPhoneNumber, setSessionEmail, user, isLoggedIn, sessionEmail, userProfile } = useAuth();
 
     const [step, setStep] = useState<ModalStep>('email');
     const [loading, setLoading] = useState(false);
 
-    // If user is already Firebase-authenticated but has no profile → skip to profile step
+    // Ensure modal starts at email step and closes if already fully logged in
     useEffect(() => {
-        if (isAuthModalOpen && user && !userProfile) {
-            // Restore email from session if available
-            if (sessionEmail) setEmail(sessionEmail);
-            setStep('profile');
-        } else if (isAuthModalOpen && user && userProfile?.phone) {
-            // Fully logged in — nothing to do, close modal
+        if (isAuthModalOpen && isLoggedIn && userProfile?.phone) {
             closeAuthModal();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthModalOpen]);
+    }, [isAuthModalOpen, isLoggedIn, userProfile, closeAuthModal]);
 
     // Step 1 – email (single field, smart suggestions)
     const [email, setEmail] = useState('');
@@ -68,13 +62,6 @@ export default function AuthModal() {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Step 3 – Profile
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [hostel, setHostel] = useState('');
-    const [room, setRoom] = useState('');
-    const profileValid = name.trim() !== '' && phone.length === 10 && hostel !== '' && room.trim() !== '';
-
     // Reset on close
     useEffect(() => {
         if (!isAuthModalOpen) {
@@ -84,7 +71,6 @@ export default function AuthModal() {
             setOtp(Array(6).fill(''));
             setOtpError('');
             setResendCooldown(0);
-            setName(''); setPhone(''); setHostel(''); setRoom('');
             setLoading(false);
         }
     }, [isAuthModalOpen]);
@@ -189,25 +175,6 @@ export default function AuthModal() {
         if (otp.every(d => d !== '') && step === 'otp') handleVerifyOtp(otp);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [otp, step]);
-
-    // ── Step 3: Save profile ─────────────────────────────────────────────────────
-    const handleProfileSave = async () => {
-        if (!profileValid) return;
-        setLoading(true);
-        try {
-            await upsertUserProfileByEmail(email.trim().toLowerCase(), name.trim(), phone, hostel, room.trim());
-            const profile = { phone: `+91${phone}`, name: name.trim(), lastHostel: hostel, lastRoom: room.trim(), totalOrders: 0, email: email.trim().toLowerCase() };
-            setUserProfile(profile);
-            setPhoneNumber(`+91${phone}`);
-            toast.success('Welcome to Aroma Dhaba! 🎉');
-            closeAuthModal();
-            router.push('/checkout');
-        } catch {
-            toast.error('Could not save profile. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const maskedEmail = email
         ? email.replace(/(.{2})(.*)(@.*)/, (_, a, _b, c) => `${a}***${c}`)
@@ -363,66 +330,6 @@ export default function AuthModal() {
                                     </button>
                                 )}
                             </p>
-                        </div>
-                    )}
-
-                    {/* ── STEP 3: PROFILE ── */}
-                    {step === 'profile' && (
-                        <div className="space-y-4">
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-gray-800">One-time profile setup</p>
-                                <p className="text-xs text-gray-400 mt-0.5">Just this once — we&apos;ll remember you!</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Your Name <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Full name" autoFocus
-                                        className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mobile Number <span className="text-red-500">*</span></label>
-                                <div className="flex">
-                                    <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-600 text-sm font-semibold">+91</span>
-                                    <div className="relative flex-1">
-                                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input type="tel" maxLength={10} value={phone}
-                                            onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                            placeholder="10-digit number"
-                                            className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-r-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Hostel <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <Home size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                    <select value={hostel} onChange={e => setHostel(e.target.value)}
-                                        className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition bg-white">
-                                        <option value="">Select your hostel</option>
-                                        {IIM_MUMBAI_HOSTELS.map((h: string) => <option key={h} value={h}>{h}</option>)}
-                                    </select>
-                                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Room Number <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <Hash size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input type="text" value={room} onChange={e => setRoom(e.target.value)} placeholder="e.g. 102"
-                                        className="w-full pl-9 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 transition" />
-                                </div>
-                            </div>
-
-                            <button id="auth-profile-save-btn" onClick={handleProfileSave} disabled={!profileValid || loading}
-                                className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-500/20">
-                                {loading ? <Loader2 size={16} className="animate-spin" /> : 'Proceed to Order →'}
-                            </button>
                         </div>
                     )}
                 </div>

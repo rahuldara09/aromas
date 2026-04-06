@@ -26,7 +26,7 @@ const CHECKOUT_STEPS = [
 export default function Header({ variant = 'default', checkoutStep = 1 }: HeaderProps) {
     const router = useRouter();
     const totalItems = useCartStore((s) => s.totalItems());
-    const { user, openAuthModal } = useAuth();
+    const { user, isLoggedIn, openAuthModal } = useAuth();
 
     // ── Hydration fix ──────────────────────────────────────────────────────────
     // totalItems reads from localStorage (Zustand persist) which is unavailable
@@ -210,7 +210,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                         <ShoppingCart size={18} className="text-gray-700" />
                     </Link>
                     <button
-                        onClick={user ? () => router.push('/account') : openAuthModal}
+                        onClick={isLoggedIn ? () => router.push('/account') : openAuthModal}
                         className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
                         aria-label="Account"
                     >
@@ -344,7 +344,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                                 <span>Cart</span>
                             </Link>
                             <button
-                                onClick={user ? () => router.push('/account') : openAuthModal}
+                                onClick={isLoggedIn ? () => router.push('/account') : openAuthModal}
                                 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors"
                             >
                                 <User size={16} />
@@ -461,7 +461,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                                 <span className="hidden sm:inline">Cart</span>
                             </Link>
                             <button
-                                onClick={user ? () => router.push('/account') : openAuthModal}
+                                onClick={isLoggedIn ? () => router.push('/account') : openAuthModal}
                                 className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-red-500 transition-colors"
                             >
                                 <User size={17} />
@@ -518,7 +518,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                         <div className="px-6 pt-6 border-t border-gray-100">
                              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">My Account</p>
                              <button
-                                onClick={() => { setMobileMenuOpen(false); user ? router.push('/account') : openAuthModal(); }}
+                                onClick={() => { setMobileMenuOpen(false); isLoggedIn ? router.push('/account') : openAuthModal(); }}
                                 className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg hover:bg-gray-800 transition-all"
                              >
                                 <User size={18} />

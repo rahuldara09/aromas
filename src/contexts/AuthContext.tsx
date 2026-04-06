@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearUserEmail();
     };
 
-    const isLoggedIn = !!user;
+    const isLoggedIn = !!user && !user.isAnonymous;
 
     return (
         <AuthContext.Provider

@@ -97,7 +97,7 @@ type AddressWithFields = Address & { hostel?: string; room?: string };
 
 export default function AccountPage() {
     const router = useRouter();
-    const { user, phoneNumber, userProfile, signOut, loading, openAuthModal } = useAuth();
+    const { user, isLoggedIn, phoneNumber, userProfile, signOut, loading, openAuthModal } = useAuth();
     const [activeTab, setActiveTab] = useState<SidebarTab>('orders');
     const [orders, setOrders] = useState<Order[]>([]);
     const [addresses, setAddresses] = useState<AddressWithFields[]>([]);
@@ -106,10 +106,10 @@ export default function AccountPage() {
 
     // Default to profile if incomplete
     useEffect(() => {
-        if (!loading && user && !phoneNumber) {
+        if (!loading && isLoggedIn && !phoneNumber) {
             setActiveTab('profile');
         }
-    }, [loading, user, phoneNumber]);
+    }, [loading, isLoggedIn, phoneNumber]);
 
     // Pre-load Cashfree SDK on mount
     useEffect(() => {
@@ -244,7 +244,7 @@ export default function AccountPage() {
     }
 
     // isLoggedIn: just Firebase auth — phone comes later from profile
-    const isLoggedIn = !!user;
+    // Removed local calculation to use AuthContext.isLoggedIn
 
     return (
         <div className="min-h-screen bg-gray-50">
