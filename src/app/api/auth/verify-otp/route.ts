@@ -31,6 +31,19 @@ export async function POST(request: NextRequest) {
         // Issue a Firebase custom token for this user email
         // UID is derived from email for consistency
         const uid = `user_${normalizedEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+        // Ensure the Firebase user account exists and has the correct email property
+        // This ensures firebaseUser.email is available on the client side
+        try {
+            await adminAuth.updateUser(uid, { email: normalizedEmail });
+        } catch (err: any) {
+            if (err.code === 'auth/user-not-found') {
+                await adminAuth.createUser({ uid, email: normalizedEmail });
+            } else {
+                throw err;
+            }
+        }
+
         const customToken = await adminAuth.createCustomToken(uid, { email: normalizedEmail });
 
         return NextResponse.json({ success: true, token: customToken, email: normalizedEmail });
