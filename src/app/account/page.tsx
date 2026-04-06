@@ -647,9 +647,11 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
     const handleSave = async () => {
         if (!name.trim()) return toast.error('Name is mandatory');
         
-        // Phone validation (10 digits)
+        // Phone validation (10 digits or with country code)
         const purePhone = phone.replace(/\D/g, '');
-        if (purePhone.length !== 10) return toast.error('Please enter a valid 10-digit phone number');
+        const isValidPhone = purePhone.length === 10 || (purePhone.length === 12 && purePhone.startsWith('91'));
+        
+        if (!isValidPhone) return toast.error('Please enter a valid 10-digit phone number');
         
         if (!birthday) return toast.error('Birthday is mandatory');
         if (!hostel.trim()) return toast.error('Hostel name is mandatory');
