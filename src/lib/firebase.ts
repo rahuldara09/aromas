@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,11 +14,9 @@ const firebaseConfig = {
 // Prevent duplicate app initialization in dev (HMR)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-if (getApps().length === 1) {
-    // Initialization block kept for potential future init logic
-    // but without console prints to keep logs clean
-}
-
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Use initializeFirestore with long polling to fix Safari access control issues
+export const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+});
 export default app;
