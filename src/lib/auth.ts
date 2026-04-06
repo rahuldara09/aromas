@@ -10,15 +10,15 @@ const SESSION_DURATION_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
 export function saveSessionPhone(phone: string): void {
     if (typeof window === 'undefined') return;
     const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
-    sessionStorage.setItem(PHONE_SESSION_KEY, formatted);
+    localStorage.setItem(PHONE_SESSION_KEY, formatted);
 }
 export function getSessionPhone(): string | null {
     if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem(PHONE_SESSION_KEY);
+    return localStorage.getItem(PHONE_SESSION_KEY);
 }
 export function clearSessionPhone(): void {
     if (typeof window === 'undefined') return;
-    sessionStorage.removeItem(PHONE_SESSION_KEY);
+    localStorage.removeItem(PHONE_SESSION_KEY);
 }
 
 /**
