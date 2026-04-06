@@ -174,7 +174,9 @@ export default function AuthModal() {
                 closeAuthModal();
                 router.push('/checkout');
             } else {
-                setStep('profile');
+                toast.success('Login successful! Let\'s complete your profile. ✨');
+                closeAuthModal();
+                router.push('/account');
             }
         } catch {
             setOtpError('Network error. Please try again.');

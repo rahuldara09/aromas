@@ -640,7 +640,21 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
 
     const handleSave = async () => {
         if (!name.trim()) return toast.error('Name is mandatory');
-        if (!phone.trim()) return toast.error('Phone is mandatory');
+        
+        // Phone validation (10 digits)
+        const purePhone = phone.replace(/\D/g, '');
+        if (purePhone.length !== 10) return toast.error('Please enter a valid 10-digit phone number');
+        
+        if (!birthday) return toast.error('Birthday is mandatory');
+        if (!hostel.trim()) return toast.error('Hostel name is mandatory');
+        if (!room.trim()) return toast.error('Room number is mandatory');
+        
+        // Pincode validation (6 digits)
+        const purePincode = pincode.toString().replace(/\D/g, '');
+        if (purePincode.length !== 6) return toast.error('Please enter a valid 6-digit Pincode');
+        
+        if (!city.trim()) return toast.error('City is mandatory');
+        if (!state.trim()) return toast.error('State is mandatory');
         
         setSaving(true);
         try {
@@ -691,17 +705,17 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
                 {/* ROW 1: Basic Info */}
-                <FloatingInput label="Full Name" value={name} onChange={(e: any) => setName(e.target.value)} icon={User} />
-                <FloatingInput label="Phone Number" value={phone} onChange={(e: any) => setPhone(e.target.value)} icon={Phone} />
+                <FloatingInput label="Full Name *" value={name} onChange={(e: any) => setName(e.target.value)} icon={User} />
+                <FloatingInput label="Phone Number *" value={phone} onChange={(e: any) => setPhone(e.target.value)} icon={Phone} />
                 <FloatingInput label="Email Address" value={email} readOnly={true} icon={Mail} />
 
                 {/* ROW 2: DOB & Hostel & Room */}
-                <FloatingInput label="Date of Birth" value={birthday} onChange={(e: any) => setBirthday(e.target.value)} type="date" icon={Calendar} />
+                <FloatingInput label="Date of Birth *" value={birthday} onChange={(e: any) => setBirthday(e.target.value)} type="date" icon={Calendar} />
                 
                 {/* Searchable Hostel Input */}
                 <div className="relative group">
                     <FloatingInput 
-                        label="Hostel Name" 
+                        label="Hostel Name *" 
                         value={hostelSearch} 
                         onChange={(e: any) => {
                             setHostelSearch(e.target.value);
@@ -738,12 +752,12 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
                     )}
                 </div>
 
-                <FloatingInput label="Room No." value={room} onChange={(e: any) => setRoom(e.target.value)} icon={Home} />
+                <FloatingInput label="Room No. *" value={room} onChange={(e: any) => setRoom(e.target.value)} icon={Home} />
 
                 {/* ROW 3: Pincode & Location Detail */}
-                <FloatingInput label="Pincode" value={pincode} onChange={(e: any) => setPincode(e.target.value)} icon={MapPin} />
-                <FloatingInput label="City" value={city} onChange={(e: any) => setCity(e.target.value)} icon={Building} />
-                <FloatingInput label="State" value={state} onChange={(e: any) => setState(e.target.value)} icon={Filter} />
+                <FloatingInput label="Pincode *" value={pincode} onChange={(e: any) => setPincode(e.target.value)} icon={MapPin} />
+                <FloatingInput label="City *" value={city} onChange={(e: any) => setCity(e.target.value)} icon={Building} />
+                <FloatingInput label="State *" value={state} onChange={(e: any) => setState(e.target.value)} icon={Filter} />
             </div>
             
             <p className="text-[10px] text-gray-400 text-center uppercase tracking-widest font-bold">
