@@ -88,12 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setIsAuthModalOpen(false);
                 }
             } else {
-                // No Firebase session — clear all state
+                // No Firebase session — clear in-memory state
                 setPhoneNumber(null);
                 setSessionEmail(null);
                 setUserProfile(null);
-                clearSessionPhone();
-                clearUserEmail();
+                // Note: We don't clear localStorage/sessionStorage here,
+                // as that should only happen on explicit sign out. 
+                // This prevents Safari from wiping session data during its slow start.
             }
 
             setLoading(false);
