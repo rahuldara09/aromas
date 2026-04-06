@@ -52,56 +52,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [sessionEmail, setSessionEmail] = useState<string | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
+    // 1. Manage Firebase Auth Session
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {
-                // Try to restore phone (anonymous/vendor sessions)
+                // Restore session info from localStorage immediately
                 const savedPhone = getSessionPhone();
                 if (savedPhone) setPhoneNumber(savedPhone);
 
-                // Try to restore email-based session
                 let emailToUse = getUserEmail();
-                
-                // Fallback: If localStorage email is missing but Firebase has it, use that
                 if (!emailToUse && firebaseUser.email) {
                     emailToUse = firebaseUser.email;
-                    saveUserEmail(emailToUse); // Sync back to localStorage for 60-day persistence
+                    saveUserEmail(emailToUse);
                 }
-
-                if (emailToUse) {
-                    setSessionEmail(emailToUse);
-                    // Load user profile by email (if not already loaded)
-                    if (!userProfile) {
-                        const profile = await getUserByEmail(emailToUse);
-                        if (profile) {
-                            setUserProfile(profile);
-                            if (profile.phone) setPhoneNumber(profile.phone);
-                            // Only auto-close modal if profile is already complete
-                            setIsAuthModalOpen(false);
-                        }
-                        // If no profile found, leave modal open so profile step shows
-                    }
-                } else {
-                    // Non-email sessions (e.g. anonymous) — close modal as before
-                    setIsAuthModalOpen(false);
-                }
+                if (emailToUse) setSessionEmail(emailToUse);
             } else {
-                // No Firebase session — clear in-memory state
+                // No active Firebase session — reset in-memory state
                 setPhoneNumber(null);
                 setSessionEmail(null);
                 setUserProfile(null);
-                // Note: We don't clear localStorage/sessionStorage here,
-                // as that should only happen on explicit sign out. 
-                // This prevents Safari from wiping session data during its slow start.
             }
 
-            setLoading(false);
+            // Mark initial auth check as done, but loading might continue if we're fetching a profile
+            if (!firebaseUser) setLoading(false);
         });
+
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // 2. Fetch User Profile whenever sessionEmail or User changes
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (user && sessionEmail && !userProfile) {
+                try {
+                    const profile = await getUserByEmail(sessionEmail);
+                    if (profile) {
+                        setUserProfile(profile);
+                        if (profile.phone) {
+                            setPhoneNumber(profile.phone);
+                            saveSessionPhone(profile.phone); // Keep localStorage in sync
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user profile:', error);
+                } finally {
+                    setLoading(false);
+                }
+            } else if (user && !sessionEmail) {
+                // If we have a user but no session email yet, we're likely still initializing
+                // If it's an anonymous user, we can stop loading
+                if (user.isAnonymous) setLoading(false);
+            } else if (!user) {
+                // No user — loading is handled by the auth effect
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [user, sessionEmail, userProfile]);
 
     const handleSignOut = async () => {
         await signOutUser();
