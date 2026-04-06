@@ -596,10 +596,10 @@ export default function AccountPage() {
 }
 
 function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: UserProfile | null, onSignOut: () => void }) {
-    const { setUserProfile, setPhoneNumber } = useAuth();
-    const [name, setName] = useState(userProfile?.name || '');
+    const { setUserProfile, setPhoneNumber, phoneNumber } = useAuth();
+    const [name, setName] = useState(userProfile?.name || user?.displayName || '');
     const [email, setEmail] = useState(userProfile?.email || user?.email || '');
-    const [phone, setPhone] = useState(userProfile?.phone || '');
+    const [phone, setPhone] = useState(userProfile?.phone || phoneNumber || '');
     const [birthday, setBirthday] = useState(userProfile?.birthday || '');
     const [hostel, setHostel] = useState(userProfile?.lastHostel || '');
     const [hostelSearch, setHostelSearch] = useState(userProfile?.lastHostel || '');
@@ -623,12 +623,12 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
         }
     }, [pincode]);
 
-    // Sync if userProfile changes
+    // Sync if userProfile or auth changes
     useEffect(() => {
         if (userProfile) {
-            setName(userProfile.name || '');
+            setName(userProfile.name || user?.displayName || '');
             setEmail(userProfile.email || user?.email || '');
-            setPhone(userProfile.phone || '');
+            setPhone(userProfile.phone || phoneNumber || '');
             setBirthday(userProfile.birthday || '');
             setHostel(userProfile.lastHostel || '');
             setHostelSearch(userProfile.lastHostel || '');
@@ -636,8 +636,13 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
             setPincode(userProfile.pincode || '400087');
             setCity(userProfile.city || 'Mumbai');
             setState(userProfile.state || 'Maharashtra');
+        } else {
+            // Fallback to session info while waiting for Firestore
+            if (user?.displayName) setName(user.displayName);
+            if (user?.email) setEmail(user.email);
+            if (phoneNumber) setPhone(phoneNumber);
         }
-    }, [userProfile, user]);
+    }, [userProfile, user, phoneNumber]);
 
     const handleSave = async () => {
         if (!name.trim()) return toast.error('Name is mandatory');
