@@ -6,6 +6,7 @@ import Banner from '@/components/layout/Banner';
 import Header from '@/components/layout/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserOrders, getUserAddresses, updateUserAddress, updateUserProfileUnified } from '@/lib/firestore';
+import { saveSessionPhone } from '@/lib/auth';
 import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
 import { Order, Address, UserProfile, UserAddress } from '@/types';
 import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X, User, Calendar, Leaf, UtensilsCrossed, Plus, Home, Building, HelpCircle, Mail, Phone, Camera, Smartphone } from 'lucide-react';
@@ -672,14 +673,18 @@ function ProfileTab({ user, userProfile, onSignOut }: { user: any, userProfile: 
             // 1. Save to Firestore (Dual-Sync)
             await updateUserProfileUnified(email, phone, updatedData);
             
+            
             // 2. Update local state immediately
+            const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
+            saveSessionPhone(formattedPhone);
+
             setUserProfile({
                 ...userProfile,
                 ...updatedData,
-                phone: phone.startsWith('+91') ? phone : `+91${phone}`,
+                phone: formattedPhone,
                 totalOrders: userProfile?.totalOrders ?? 0
             });
-            setPhoneNumber(phone.startsWith('+91') ? phone : `+91${phone}`);
+            setPhoneNumber(formattedPhone);
 
             toast.success('Profile updated successfully! ✨');
         } catch (err) {

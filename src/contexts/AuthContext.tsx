@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { signOutUser, getSessionPhone, clearSessionPhone, getUserEmail, clearUserEmail } from '@/lib/auth';
-import { getUserByEmail } from '@/lib/firestore';
+import { signOutUser, getSessionPhone, clearSessionPhone, getUserEmail, clearUserEmail, saveSessionPhone, saveUserEmail } from '@/lib/auth';
+import { getUserByEmail, updateUserProfileUnified } from '@/lib/firestore';
 import { UserProfile } from '@/types';
 
 interface AuthContextType {
@@ -62,12 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (savedPhone) setPhoneNumber(savedPhone);
 
                 // Try to restore email-based session
-                const savedEmail = getUserEmail();
-                if (savedEmail) {
-                    setSessionEmail(savedEmail);
+                let emailToUse = getUserEmail();
+                
+                // Fallback: If localStorage email is missing but Firebase has it, use that
+                if (!emailToUse && firebaseUser.email) {
+                    emailToUse = firebaseUser.email;
+                    saveUserEmail(emailToUse); // Sync back to localStorage for 60-day persistence
+                }
+
+                if (emailToUse) {
+                    setSessionEmail(emailToUse);
                     // Load user profile by email (if not already loaded)
                     if (!userProfile) {
-                        const profile = await getUserByEmail(savedEmail);
+                        const profile = await getUserByEmail(emailToUse);
                         if (profile) {
                             setUserProfile(profile);
                             if (profile.phone) setPhoneNumber(profile.phone);
