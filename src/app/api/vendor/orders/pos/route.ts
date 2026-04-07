@@ -1,5 +1,5 @@
 // src/app/api/vendor/orders/pos/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { adminDb } from '@/lib/firebaseAdmin'; // assume admin Firestore instance
 import { rateLimit, getClientIp, tooManyRequests } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
@@ -18,12 +18,12 @@ const PosOrderSchema = z.object({
   paymentMethod: z.enum(['Cash', 'UPI']),
 });
 
-export async function POST(req: Request) {
-  const ip = getClientIp();
+export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
   // Simple rate limit: 5 POS orders per minute per IP
   const rl = await rateLimit(`posOrders:${ip}`, 5, 60_000);
   if (rl.success === false) {
-    return tooManyRequests(rl);
+    return tooManyRequests(rl.resetAt);
   }
 
   const body = await req.json();
@@ -56,8 +56,19 @@ export async function POST(req: Request) {
 
   // Create POS order using server-side logic (reuse vendor lib)
   const { createPOSOrder } = await import('@/lib/vendor');
+  const posItems = items.map((i, idx) => {
+    const snap = snapshots[idx];
+    const data = snap.data() as any;
+    return {
+      productId: i.productId,
+      quantity: i.quantity,
+      name: data.name ?? '',
+      price: data.price,
+      imageURL: data.imageURL ?? '',
+    };
+  });
   const orderId = await createPOSOrder(
-    items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+    posItems,
     totalAmount,
     totalAmount,
     paymentMethod as 'Cash' | 'UPI'
