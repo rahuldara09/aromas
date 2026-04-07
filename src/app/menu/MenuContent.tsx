@@ -172,7 +172,11 @@ export default function MenuContent() {
                     ) : (
                         <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                             {activeProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
+                                <ProductCard 
+                                    key={product.id} 
+                                    product={product} 
+                                    categoryName={activeCategoryName} 
+                                />
                             ))}
                         </div>
                     )}
@@ -206,7 +210,11 @@ export default function MenuContent() {
                 ) : (
                     <div className="px-3 pb-28 grid grid-cols-2 gap-3 min-[420px]:grid-cols-2 max-[380px]:grid-cols-1">
                         {activeProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} />
+                            <ProductCard 
+                                key={product.id} 
+                                product={product} 
+                                categoryName={activeCategoryName} 
+                            />
                         ))}
                     </div>
                 )}

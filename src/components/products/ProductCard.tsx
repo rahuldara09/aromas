@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 
 interface ProductCardProps {
     product: Product;
+    categoryName?: string;
 }
 
 /**
@@ -40,51 +41,25 @@ function getVegStatus(name: string): 'veg' | 'nonveg' | null {
     return null;
 }
 
-/** Indian-standard Veg badge: white square (green border) + filled green circle */
+/** Standard Veg badge: white rounded square + green border + green circle */
 function VegBadge() {
     return (
-        <span
-            title="Veg"
-            style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 17,
-                height: 17,
-                border: '1.5px solid #2e7d32',
-                borderRadius: 2,
-                backgroundColor: '#fff',
-                flexShrink: 0,
-            }}
-        >
-            <span style={{ display: 'block', width: 9, height: 9, borderRadius: '50%', backgroundColor: '#2e7d32' }} />
-        </span>
+        <div className="flex items-center justify-center w-5 h-5 border-[1.5px] border-[#008F4C] rounded-md bg-white">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#008F4C]" />
+        </div>
     );
 }
 
-/** Indian-standard Non-Veg badge: white square (dark red border) + red upward triangle */
+/** Standard Non-Veg badge: white rounded square + red border + red circle */
 function NonVegBadge() {
     return (
-        <span
-            title="Non-Veg"
-            style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 17,
-                height: 17,
-                border: '1.5px solid #8b1a1a',
-                borderRadius: 2,
-                backgroundColor: '#fff',
-                flexShrink: 0,
-            }}
-        >
-            <span style={{ display: 'block', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: '7px solid #b71c1c' }} />
-        </span>
+        <div className="flex items-center justify-center w-5 h-5 border-[1.5px] border-[#EB2D2D] rounded-md bg-white">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#EB2D2D]" />
+        </div>
     );
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, categoryName }: ProductCardProps) {
     const addItem = useCartStore((s) => s.addItem);
     const cartItems = useCartStore((s) => s.items);
     const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -108,83 +83,91 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     return (
         <div
-            className={`flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden transition-shadow h-full
-                ${isOut ? 'opacity-60 grayscale-[0.5] pointer-events-none' : 'hover:shadow-md active:shadow-sm'}`}
+            className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 h-full
+                ${isOut ? 'opacity-60 grayscale-[0.5] pointer-events-none' : 'hover:translate-y-[-2px]'}`}
         >
-            {/* ── Product image: 1:1 square ratio ──────────────────────────── */}
-            <div className={`relative w-full aspect-square bg-gray-50 flex-shrink-0 overflow-hidden ${isOut ? 'grayscale opacity-75' : ''}`}>
-                {product.imageURL && !imgError ? (
-                    <img
-                        src={product.imageURL}
-                        alt={product.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover"
-                        onError={() => setImgError(true)}
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">🍽</div>
-                )}
+            {/* ── Visual Container for Image (Gray bg, High rounding) ──────────────── */}
+            <div className="relative group bg-[#F5F6F8] rounded-[32px] p-4 aspect-square flex items-center justify-center overflow-hidden mb-3 border border-gray-100/50 shadow-sm">
+                <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-inner ${isOut ? 'grayscale opacity-75' : ''}`}>
+                    {product.imageURL && !imgError ? (
+                        <img
+                            src={product.imageURL}
+                            alt={product.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={() => setImgError(true)}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300 bg-white/50 animate-pulse">🍽</div>
+                    )}
+                </div>
 
-                {/* Veg / Non-Veg badge — top-right */}
+                {/* Veg / Non-Veg badge — top-right overlapping the gray container slightly */}
                 {vegStatus && (
-                    <span style={{ position: 'absolute', top: 6, right: 6, zIndex: 10, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}>
+                    <div className="absolute top-4 right-4 z-10 shadow-sm scale-90 sm:scale-100">
                         {vegStatus === 'veg' ? <VegBadge /> : <NonVegBadge />}
-                    </span>
+                    </div>
                 )}
             </div>
 
-            {/* ── Product info ─────────────────────────────────────────────── */}
-            <div className="flex flex-col flex-1 p-2.5 sm:p-3">
-                {/* Name: max 2 lines, ellipsis */}
-                <h3 className="font-medium text-gray-900 text-[13px] sm:text-sm leading-snug line-clamp-2 min-h-[2.4rem] mb-auto">
+            {/* ── Product details ────────────────────────────────────────── */}
+            <div className="flex flex-col flex-1 px-1">
+                {/* Category: Small, uppercase, gray */}
+                <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate">
+                    {categoryName || 'Menu Item'}
+                </span>
+
+                {/* Name: Dark, bold, larger */}
+                <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight mb-1 line-clamp-2 min-h-[2.5rem]">
                     {product.name}
                 </h3>
 
-                {/* Footer Row: price + ADD button */}
-                <div className="flex items-center justify-between mt-2 gap-1">
+                {/* Unit: Regular, small, gray */}
+                <p className="text-[12px] text-gray-500 font-medium mb-3">1 unit</p>
+
+                {/* Footer: Price + Button (Functional section) */}
+                <div className="flex items-center justify-between mt-auto gap-2">
                     {!isOut && (
-                        <p className="text-gray-900 font-bold text-sm whitespace-nowrap">₹{product.price}</p>
+                        <p className="text-[#1A1C1E] font-black text-sm sm:text-base italic">₹{product.price}</p>
                     )}
 
                     <div className={isOut ? 'w-full' : 'flex-shrink-0'}>
                         {isOut ? (
-                            <div className="w-full text-center text-[10px] font-extrabold text-gray-400 uppercase tracking-widest py-1.5 bg-gray-100 rounded-lg border border-gray-200">
+                            <div className="w-full text-center text-[10px] font-extrabold text-gray-400 uppercase tracking-widest py-1.5 bg-gray-50 rounded-lg border border-gray-100">
                                 Out of Stock
                             </div>
                         ) : qty > 0 ? (
-                            /* ── Quantity stepper (Zomato-style) ── */
-                            <div className="flex items-center border border-red-400 rounded-lg overflow-hidden h-7">
+                            <div className="flex items-center border border-red-500/30 bg-red-50/50 rounded-lg overflow-hidden h-7 sm:h-8 shadow-sm">
                                 <button
                                     onClick={() => updateQuantity(product.id, qty - 1)}
-                                    className="w-7 h-full flex items-center justify-center text-red-500 hover:bg-red-50 active:bg-red-100 font-bold text-base transition-colors touch-manipulation"
+                                    className="w-7 sm:w-8 h-full flex items-center justify-center text-red-600 hover:bg-red-100 active:bg-red-200 font-bold text-lg transition-colors touch-manipulation"
                                     aria-label="Decrease quantity"
                                 >
                                     −
                                 </button>
-                                <span className="text-xs font-semibold text-gray-800 min-w-[20px] text-center tabular-nums">
+                                <span className="text-xs sm:text-sm font-bold text-gray-900 min-w-[18px] text-center tabular-nums">
                                     {qty}
                                 </span>
                                 <button
                                     onClick={() => updateQuantity(product.id, qty + 1)}
-                                    className="w-7 h-full flex items-center justify-center text-red-500 hover:bg-red-50 active:bg-red-100 font-bold text-base transition-colors touch-manipulation"
+                                    className="w-7 sm:w-8 h-full flex items-center justify-center text-red-600 hover:bg-red-100 active:bg-red-200 font-bold text-lg transition-colors touch-manipulation"
                                     aria-label="Increase quantity"
                                 >
                                     +
                                 </button>
                             </div>
                         ) : (
-                            /* ── ADD button ── */
                             <button
                                 onClick={handleAdd}
-                                className={`flex items-center justify-center gap-1 px-2.5 h-7 rounded-lg border text-xs font-bold transition-all duration-200 touch-manipulation
+                                className={`flex items-center justify-center gap-1.5 px-3 sm:px-4 h-7 sm:h-8 rounded-lg text-[11px] sm:text-xs font-black tracking-wide transition-all duration-300 touch-manipulation shadow-sm
                                     ${justAdded
-                                        ? 'bg-green-50 border-green-400 text-green-600'
-                                        : 'border-red-400 text-red-500 hover:bg-red-50 active:bg-red-100'
+                                        ? 'bg-green-500 text-white border-green-500 translate-y-[-1px]'
+                                        : 'bg-white border-red-500/20 text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white'
                                     }`}
                                 aria-label={`Add ${product.name} to cart`}
                             >
-                                {justAdded ? <Check size={12} /> : <Plus size={12} />}
+                                {justAdded ? <Check size={12} strokeWidth={3} /> : <Plus size={12} strokeWidth={3} />}
                                 {justAdded ? 'Added' : 'ADD'}
                             </button>
                         )}

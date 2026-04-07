@@ -57,10 +57,11 @@ const nextConfig: NextConfig = {
   },
 
   // ── Image Domains ─────────────────────────────────────────────────────────
-  images: {
+    images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
       { protocol: 'https', hostname: '*.r2.dev' },
     ],

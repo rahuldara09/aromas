@@ -180,7 +180,7 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
             <div className="md:hidden px-4 h-14 flex items-center justify-between gap-1">
                 {/* Logo & Hamburger - grouped together */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                    <button 
+                    <button
                         onClick={() => setMobileMenuOpen(true)}
                         className="p-1 -ml-1 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                         aria-label="Open Menu"
@@ -445,12 +445,8 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                             <Link href="/categories" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
                                 Categories
                             </Link>
-                            <Link href="/about" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
-                                About
-                            </Link>
-                            <Link href="/contact" className="text-sm font-semibold text-gray-700 hover:text-red-500 transition-colors">
-                                Contact
-                            </Link>
+
+
                             <Link href="/checkout" className="relative flex items-center gap-1.5 text-sm text-gray-700 hover:text-red-500 transition-colors">
                                 {displayCount > 0 && (
                                     <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-[10px] font-black tracking-tighter rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center">
@@ -483,31 +479,31 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                                 <X size={24} />
                             </button>
                         </div>
-                        
+
                         <nav className="flex-1 px-4 space-y-1">
-                            <Link 
-                                href="/categories" 
+                            <Link
+                                href="/categories"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
                             >
                                 Categories
                             </Link>
-                            <Link 
-                                href="/about" 
+                            <Link
+                                href="/about"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
                             >
                                 About Us
                             </Link>
-                            <Link 
-                                href="/contact" 
+                            <Link
+                                href="/contact"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
                             >
                                 Contact Us
                             </Link>
-                            <Link 
-                                href="/blog" 
+                            <Link
+                                href="/blog"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center gap-4 px-4 py-3 text-base font-bold text-gray-900 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
                             >
@@ -516,14 +512,14 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                         </nav>
 
                         <div className="px-6 pt-6 border-t border-gray-100">
-                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">My Account</p>
-                             <button
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">My Account</p>
+                            <button
                                 onClick={() => { setMobileMenuOpen(false); isLoggedIn ? router.push('/account') : openAuthModal(); }}
                                 className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg hover:bg-gray-800 transition-all"
-                             >
+                            >
                                 <User size={18} />
                                 {user ? 'View Account' : 'Log in / Sign up'}
-                             </button>
+                            </button>
                         </div>
                     </div>
                 </div>

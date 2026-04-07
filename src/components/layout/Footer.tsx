@@ -5,31 +5,28 @@ export default function Footer() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="bg-[#0f1115] text-gray-300 mt-auto pt-20 pb-8 relative overflow-hidden">
-            {/* Subtle decorative background blur */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-24 bg-red-500/10 blur-[100px] rounded-full pointer-events-none" />
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+        <footer className="bg-[#F8FAFC] text-slate-600 mt-auto pt-24 pb-12 border-t border-slate-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-20">
 
                     {/* Brand & Mission - Takes up more space on large screens */}
-                    <div className="lg:col-span-5 space-y-6">
-                        <Link href="/" className="inline-block">
-                            <span className="text-3xl font-black tracking-tighter text-white flex items-center gap-2" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)' }}>
-                                <UtensilsCrossed className="text-red-500" size={28} />
-                                aromas<span className="text-gray-400 font-medium tracking-tight">dhaba</span>
+                    <div className="lg:col-span-5 space-y-7">
+                        <Link href="/" className="inline-block hover:opacity-80 transition-opacity">
+                            <span className="text-3xl font-black tracking-tighter text-gray-900 flex items-center gap-2" style={{ fontFamily: 'var(--font-geist-sans, sans-serif)' }}>
+                                <UtensilsCrossed className="text-red-500" size={30} />
+                                aromas<span className="text-red-500 font-medium tracking-tight">dhaba</span>
                             </span>
                         </Link>
-                        <p className="text-gray-400 max-w-sm text-sm leading-relaxed font-medium">
-                            Serving the <strong>IIM Mumbai Campus</strong>. Aroma Dhaba IIM Mumbai delivers delicious, hot, and hygienic food right to your dorm.
+                        <p className="text-[#64748B] max-w-sm text-sm leading-relaxed font-semibold">
+                            Serving the <strong className="text-gray-900">IIM Mumbai Campus</strong>. Aroma Dhaba IIM Mumbai delivers delicious, hot, and hygienic food right to your dorm.
                         </p>
 
                         {/* Social Links */}
                         <div className="flex items-center gap-4 pt-4">
-                            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-red-500 hover:text-white transition-all duration-300 border border-white/10">
+                            <a href="#" className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 border border-slate-200 shadow-sm">
                                 <Instagram size={18} />
                             </a>
-                            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-blue-500 hover:text-white transition-all duration-300 border border-white/10">
+                            <a href="#" className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-all duration-300 border border-slate-200 shadow-sm">
                                 <Facebook size={18} />
                             </a>
                         </div>
@@ -37,57 +34,57 @@ export default function Footer() {
 
                     {/* Quick Links */}
                     <div className="lg:col-span-2">
-                        <h3 className="text-white font-bold mb-6 text-sm tracking-wider uppercase flex items-center gap-2">Explore <span className="w-8 h-px bg-white/10"></span></h3>
+                        <h3 className="text-gray-900 font-bold mb-7 text-sm tracking-wide capitalize flex items-center gap-2">Explore <span className="w-6 h-[2px] bg-red-500/10 hidden lg:block"></span></h3>
                         <ul className="space-y-4">
-                             <li><Link href="/" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Home</Link></li>
-                             <li><Link href="/about" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">About Us</Link></li>
-                             <li><Link href="/contact" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Contact Us</Link></li>
-                             <li><Link href="/blog" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Campus Blog</Link></li>
-                             <li><Link href="/account" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">My Account</Link></li>
+                             <li><Link href="/" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Home</Link></li>
+                             <li><Link href="/about" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">About Us</Link></li>
+                             <li><Link href="/contact" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Contact Us</Link></li>
+                             <li><Link href="/blog" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Campus Blog</Link></li>
+                             <li><Link href="/account" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">My Account</Link></li>
                         </ul>
                     </div>
 
                     {/* Legal */}
                     <div className="lg:col-span-2">
-                        <h3 className="text-white font-bold mb-6 text-sm tracking-wider uppercase flex items-center gap-2">Legal <span className="w-8 h-px bg-white/10"></span></h3>
+                        <h3 className="text-gray-900 font-bold mb-7 text-sm tracking-wide capitalize flex items-center gap-2">Legal <span className="w-6 h-[2px] bg-red-500/10 hidden lg:block"></span></h3>
                         <ul className="space-y-4">
-                            <li><Link href="/legal/privacy-policy" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Privacy Policy</Link></li>
-                            <li><Link href="/legal/refund-policy" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Refund Policy</Link></li>
-                            <li><Link href="/legal/terms-and-conditions" className="text-sm font-medium text-gray-400 hover:text-white hover:translate-x-1 inline-block transition-all">Terms & Conditions</Link></li>
+                            <li><Link href="/legal/privacy-policy" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Privacy Policy</Link></li>
+                            <li><Link href="/legal/refund-policy" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Refund Policy</Link></li>
+                            <li><Link href="/legal/terms-and-conditions" className="text-sm font-semibold text-[#64748B] hover:text-red-500 hover:translate-x-1 inline-block transition-all">Terms & Conditions</Link></li>
                         </ul>
                     </div>
 
                     {/* Contact Info */}
                     <div className="lg:col-span-3">
-                        <h3 className="text-white font-bold mb-6 text-sm tracking-wider uppercase flex items-center gap-2">Reach Us <span className="w-8 h-px bg-white/10"></span></h3>
-                        <div className="space-y-5">
-                            <a href="tel:+919892820940" className="flex items-start gap-3 group">
-                                <span className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-500/20 group-hover:border-red-500/30 transition-colors">
-                                    <Phone size={14} className="text-red-400" />
+                        <h3 className="text-gray-900 font-bold mb-7 text-sm tracking-wide capitalize flex items-center gap-2">Reach Us <span className="w-6 h-[2px] bg-red-500/10 hidden lg:block"></span></h3>
+                        <div className="space-y-6">
+                            <a href="tel:+919892820940" className="flex items-start gap-4 group">
+                                <span className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors shadow-sm">
+                                    <Phone size={15} className="text-red-500" />
                                 </span>
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-500 font-medium mb-0.5">Call for orders</span>
-                                    <span className="text-sm font-semibold text-gray-300 group-hover:text-white transition-colors">+91 98928 20940</span>
+                                    <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Call for orders</span>
+                                    <span className="text-sm font-bold text-gray-900 group-hover:text-red-500 transition-colors tracking-tight">+91 98928 20940</span>
                                 </div>
                             </a>
 
-                            <a href="mailto:aromasdhaba@gmail.com" className="flex items-start gap-3 group">
-                                <span className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-500/20 group-hover:border-red-500/30 transition-colors">
-                                    <Mail size={14} className="text-red-400" />
+                            <a href="mailto:aromasdhaba@gmail.com" className="flex items-start gap-4 group">
+                                <span className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors shadow-sm">
+                                    <Mail size={15} className="text-red-500" />
                                 </span>
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-500 font-medium mb-0.5">Email us</span>
-                                    <span className="text-sm font-semibold text-gray-300 group-hover:text-white transition-colors">aromasdhaba@gmail.com</span>
+                                    <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Email us</span>
+                                    <span className="text-sm font-bold text-gray-900 group-hover:text-red-500 transition-colors tracking-tight">aromasdhaba@gmail.com</span>
                                 </div>
                             </a>
 
-                            <div className="flex items-start gap-3 group">
-                                <span className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-red-500/20 group-hover:border-red-500/30 transition-colors">
-                                    <MapPin size={14} className="text-red-400" />
+                            <div className="flex items-start gap-4 group">
+                                <span className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:border-red-200 transition-colors shadow-sm">
+                                    <MapPin size={15} className="text-red-500" />
                                 </span>
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-500 font-medium mb-0.5">Location</span>
-                                    <Link href="/contact" className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors leading-relaxed">
+                                    <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Location</span>
+                                    <Link href="/contact" className="text-sm font-semibold text-gray-900 group-hover:text-red-500 transition-colors leading-relaxed tracking-tight">
                                         IIM Mumbai Campus, Powai<br />
                                         Mumbai, Maharashtra 400087
                                     </Link>
@@ -99,12 +96,12 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <p className="text-xs font-medium text-gray-500 flex items-center gap-1.5 flex-wrap justify-center">
+                <div className="pt-10 border-t border-slate-200/60 flex flex-col items-center justify-center gap-6">
+                    <p className="text-xs font-bold text-slate-400 text-center tracking-tight">
                         &copy; {currentYear} Aromas Delight Catering Service. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-white/5 py-1.5 px-3 rounded-full border border-white/5">
-                        Made with <Heart size={12} className="text-red-500 fill-red-500" /> at <span className="text-gray-300 font-bold ml-1">IIM Mumbai</span>
+                    <div className="flex items-center gap-3 text-xs font-bold text-[#64748B] py-2 px-4 rounded-2xl bg-white border border-slate-200 shadow-sm transition-transform hover:scale-105 duration-300">
+                        Made with <Heart size={14} className="text-red-500 fill-red-500" /> at <span className="text-gray-900 font-black tracking-tight ml-1">IIM Mumbai</span>
                     </div>
                 </div>
             </div>
