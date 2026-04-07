@@ -1,4 +1,5 @@
 import { db } from './firebase';
+import { logger } from './logger';
 import {
     collection,
     doc,
@@ -123,7 +124,7 @@ export async function updateOrderStatus(
                     updates.prep_time = Math.max(1, Math.floor((Date.now() - start.getTime()) / 60_000));
                 }
             }
-        } catch (e) { console.error('Failed to calc prep_time:', e); }
+        } catch (e) { logger.error('Failed to calc prep_time:', e); }
     }
 
     await updateDoc(orderRef, updates);
@@ -211,7 +212,7 @@ async function callProductsApi(
     });
     if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: res.statusText }));
-        console.error(`[vendor API] ${method} /api/products → HTTP ${res.status}`, errData);
+        logger.error(`[vendor API] ${method} /api/products → HTTP ${res.status}`, errData);
         throw new Error(errData.error ?? `API error ${res.status}`);
     }
     return res;

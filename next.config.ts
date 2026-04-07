@@ -19,7 +19,7 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Allow Next.js inline scripts and eval in dev; restrict to 'self' in prod
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://apis.google.com https://www.googletagmanager.com",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://apis.google.com https://www.googletagmanager.com https://va.vercel-scripts.com",
       // Allow Google Fonts and inline styles (for Tailwind/CSS-in-JS)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Google Fonts files
