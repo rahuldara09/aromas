@@ -45,13 +45,8 @@ export default function OrderSummaryPanel({
                         <span>₹{subtotal}</span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-600">
-                        <span>Dukan</span>
+                        <span>Delivery + Packing</span>
                         <span>₹{dukanFee}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Delivery fee</span>
-                        <span className="text-gray-400 line-through text-xs mr-1">₹0</span>
-                        <span className="text-green-600 font-medium">FREE</span>
                     </div>
 
                     <div className="border-t border-gray-100 pt-2.5">

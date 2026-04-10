@@ -75,8 +75,9 @@ export default function CartSidebar() {
                                 <span>Subtotal</span><span>₹{subtotal}</span>
                             </div>
                             <div className="flex justify-between text-xs text-gray-500">
-                                <span>Dukan fee</span><span>₹{dukanFee}</span>
+                                <span>Delivery + Packing</span><span>₹{dukanFee}</span>
                             </div>
+
                             <div className="flex justify-between text-xs font-bold text-gray-900 pt-1 border-t border-gray-100">
                                 <span>Total</span><span>₹{grandTotal}</span>
                             </div>
