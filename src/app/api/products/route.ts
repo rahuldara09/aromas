@@ -34,11 +34,13 @@ async function verifyVendor(req: NextRequest): Promise<{ uid: string; phone: str
     // The client sends the phone via x-vendor-phone header instead.
     let tokenPhone: string | undefined;
 
+    let tokenEmail: string | undefined;
+
     try {
         const decoded = await adminAuth.verifyIdToken(idToken);
         uid = decoded.uid;
         tokenPhone = decoded.phone_number;
-        console.log(`[vendor API] token verified uid=${uid} tokenPhone=${tokenPhone}`);
+        tokenEmail = decoded.email;
     } catch (err) {
         console.error('[vendor API] token verification failed:', err);
         return NextResponse.json({ error: 'Invalid or expired authentication token.' }, { status: 401 });
@@ -47,7 +49,6 @@ async function verifyVendor(req: NextRequest): Promise<{ uid: string; phone: str
     // Phone supplied by client (from AuthContext.phoneNumber stored in sessionStorage)
     const clientPhone = req.headers.get('x-vendor-phone') ?? undefined;
     const phone = tokenPhone ?? clientPhone;
-    console.log(`[vendor API] clientPhone=${clientPhone} effectivePhone=${phone}`);
 
     // Helper: check if a Firestore doc qualifies as a vendor doc
     function isVendorDoc(data: FirebaseFirestore.DocumentData | undefined): boolean {
@@ -70,18 +71,21 @@ async function verifyVendor(req: NextRequest): Promise<{ uid: string; phone: str
         }
     }
 
-    console.log('[vendor API] checking vendor doc keys:', keysToTry);
+    if (tokenEmail) {
+        const normalizedEmail = tokenEmail.toLowerCase().trim();
+        keysToTry.push(normalizedEmail);
+        keysToTry.push(`email_${normalizedEmail}`);
+    }
+
+
 
     for (const key of keysToTry) {
         const snap = await adminDb.collection('vendors').doc(key).get();
-        console.log(`[vendor API] key="${key}" exists=${snap.exists} data=${JSON.stringify(snap.data())}`);
         if (snap.exists && isVendorDoc(snap.data())) {
-            console.log(`[vendor API] vendor confirmed via key="${key}"`);
             return { uid, phone: phone ?? uid };
         }
     }
 
-    console.error(`[vendor API] 403 — no vendor doc found. uid=${uid} phone=${phone} triedKeys=${keysToTry}`);
     return NextResponse.json({ error: 'Forbidden. Vendor role required.' }, { status: 403 });
 }
 

@@ -19,10 +19,12 @@ async function verifyVendor(req: NextRequest): Promise<string | NextResponse> {
 
     let uid: string;
     let tokenPhone: string | undefined;
+    let tokenEmail: string | undefined;
     try {
         const decoded = await adminAuth.verifyIdToken(authHeader.slice(7));
         uid = decoded.uid;
         tokenPhone = decoded.phone_number;
+        tokenEmail = decoded.email;
     } catch {
         return NextResponse.json({ error: 'Invalid or expired token.' }, { status: 401 });
     }
@@ -42,6 +44,12 @@ async function verifyVendor(req: NextRequest): Promise<string | NextResponse> {
         if (raw.startsWith('+91') && raw.length === 13) keysToTry.push(raw.slice(3));
         else if (/^\d{10}$/.test(raw)) keysToTry.push(`+91${raw}`);
         if (raw.startsWith('+') && !keysToTry.includes(raw.slice(1))) keysToTry.push(raw.slice(1));
+    }
+
+    if (tokenEmail) {
+        const normalizedEmail = tokenEmail.toLowerCase().trim();
+        keysToTry.push(normalizedEmail);
+        keysToTry.push(`email_${normalizedEmail}`);
     }
 
     for (const key of keysToTry) {
