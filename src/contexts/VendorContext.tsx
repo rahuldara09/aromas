@@ -166,9 +166,9 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
             const idToken = await user!.getIdToken();
             await toggleStoreStatus(newVal, idToken, phoneNumber ?? '');
             toast.success(newVal ? 'Store is OPEN' : 'Store is CLOSED', { style: { borderRadius: '14px', fontWeight: 600 } });
-        } catch {
+        } catch (error: any) {
             setIsStoreOpen(!newVal);
-            toast.error('Failed to toggle store');
+            toast.error(error?.message || 'Failed to toggle store');
         }
     };
 

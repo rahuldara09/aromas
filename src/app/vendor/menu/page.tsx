@@ -38,8 +38,8 @@ export default function VendorMenu() {
             } else {
                 toast.error(`${product.name} marked Out-of-Stock`);
             }
-        } catch {
-            toast.error('Failed to update stock');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to update stock');
         }
     };
 
@@ -49,8 +49,8 @@ export default function VendorMenu() {
             const idToken = await user!.getIdToken();
             await deleteProduct(product.id, idToken, phoneNumber ?? '');
             toast.success(`${product.name} deleted`);
-        } catch {
-            toast.error('Failed to delete item');
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to delete item');
         }
     };
 
@@ -90,8 +90,8 @@ export default function VendorMenu() {
             }
 
             closeModal();
-        } catch (error) {
-            toast.error(editingProduct ? 'Failed to update item' : 'Failed to add item');
+        } catch (error: any) {
+            toast.error(error?.message || (editingProduct ? 'Failed to update item' : 'Failed to add item'));
             console.error(error);
         } finally {
             setIsSubmitting(false);
