@@ -79,7 +79,7 @@ export default function VendorDashboardHome() {
     // ─── CHART DATA (Weekly Earnings) ───────────────────────────────────
     const weeklyData = useMemo(() => {
         // Initialize last 7 days array
-        const data = [];
+        const data: { name: string; earnings: number }[] = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
