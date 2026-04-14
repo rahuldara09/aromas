@@ -1074,13 +1074,13 @@ export default function VendorKanban() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-white border-b border-gray-200 text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">
-                                        <th className="px-3 py-4 pl-1">ORDER DETAILS</th>
-                                        <th className="px-3 py-4">CUSTOMER</th>
-                                        <th className="px-3 py-4">SOURCE</th>
-                                        <th className="px-3 py-4">ITEMS</th>
-                                        <th className="px-3 py-4">STATUS</th>
-                                        <th className="px-3 py-4 text-right pr-6">TOTAL</th>
+                                    <tr className="bg-slate-50 border-y border-gray-100 text-[11px] font-black text-slate-500 uppercase tracking-[0.05em]">
+                                        <th className="px-5 py-4 pl-1">ID & TIME</th>
+                                        <th className="px-5 py-4">CUSTOMER</th>
+                                        <th className="px-5 py-4 text-center">SOURCE</th>
+                                        <th className="px-5 py-4">ORDER CONTENT</th>
+                                        <th className="px-5 py-4">STATUS</th>
+                                        <th className="px-5 py-4 text-right pr-6">TOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-[14px]">
@@ -1094,10 +1094,11 @@ export default function VendorKanban() {
                                             const dateDisplay = isToday ? 'Today' : new Date(order.orderDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                                             
                                             // Handle status colors
-                                            let statusCls = "bg-gray-100 text-gray-600";
-                                            if (order.status === 'Delivered') statusCls = "bg-green-100 text-green-700";
-                                            if (order.status === 'Dispatched') statusCls = "bg-red-50 text-red-600";
-                                            if (order.status === 'Preparing') statusCls = "bg-slate-200 text-slate-700";
+                                            let statusCls = "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200";
+                                            if (order.status === 'Delivered') statusCls = "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200";
+                                            if (order.status === 'Dispatched') statusCls = "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
+                                            if (order.status === 'Preparing') statusCls = "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200";
+                                            if (order.status === 'Cancelled') statusCls = "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
                                             
                                             // Split items
                                             const mainItems = order.items.slice(0, 2);
@@ -1108,14 +1109,14 @@ export default function VendorKanban() {
                                             const initial = custName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
 
                                             return (
-                                                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer group" onClick={() => setSelectedOrderDetails(order)}>
-                                                    <td className="px-3 py-4 pl-1">
-                                                        <div className="font-bold text-gray-900 text-[13px]">#ORD-{order.id.slice(0, 4).toUpperCase()}</div>
-                                                        <div className="text-[12px] font-medium text-gray-500 mt-0.5">{dateDisplay}, {timeString}</div>
+                                                <tr key={order.id} className="hover:bg-slate-50/80 transition-all border-b border-gray-100/60 cursor-pointer group" onClick={() => setSelectedOrderDetails(order)}>
+                                                    <td className="px-5 py-5 pl-1">
+                                                        <div className="font-extrabold text-[#1e293b] text-[13px] tracking-tight whitespace-nowrap">ORD-{order.id.slice(0, 8).toUpperCase()}</div>
+                                                        <div className="text-[11px] font-semibold text-slate-400 mt-1 flex items-center gap-1.5"><Clock size={10} strokeWidth={2.5}/> {dateDisplay}, {timeString}</div>
                                                     </td>
-                                                    <td className="px-3 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 text-[10px] font-black flex items-center justify-center shrink-0">
+                                                    <td className="px-5 py-5">
+                                                        <div className="flex items-center gap-3.5">
+                                                            <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 text-[11px] font-black flex items-center justify-center shrink-0 border border-slate-200/50">
                                                                 {initial}
                                                             </div>
                                                             <div>
@@ -1124,23 +1125,23 @@ export default function VendorKanban() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-3 py-4">
+                                                    <td className="px-5 py-5 text-center">
                                                         {isPOS ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[11px] font-bold">
-                                                                <StoreIcon size={12} /> In-Store
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">
+                                                                <StoreIcon size={11} /> POS
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[11px] font-bold">
-                                                                <Globe size={12} /> Online
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-wider">
+                                                                <Globe size={11} /> ONLINE
                                                             </span>
                                                         )}
                                                     </td>
-                                                    <td className="px-3 py-4 max-w-[200px]">
-                                                        <div className="text-[13px] font-semibold text-slate-700 leading-snug">
+                                                    <td className="px-5 py-5 max-w-[240px]">
+                                                        <div className="text-[13px] font-bold text-slate-600 leading-snug truncate">
                                                             {mainItems.map(i => `${i.quantity}x ${i.name}`).join(', ')}
                                                         </div>
                                                         {remainingItemsCount > 0 && (
-                                                            <div className="text-[11px] font-semibold text-gray-400 mt-0.5">+{remainingItemsCount} more item{remainingItemsCount>1?'s':''}</div>
+                                                            <div className="text-[10px] font-bold text-indigo-400 mt-1.5 uppercase tracking-wider">+{remainingItemsCount} more items</div>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-4">

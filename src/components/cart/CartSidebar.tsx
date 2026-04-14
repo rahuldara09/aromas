@@ -1,6 +1,7 @@
 'use client';
 
 import { ShoppingCart, AlertTriangle, Loader2 } from 'lucide-react';
+import EmptyCart from './EmptyCart';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { useState, useEffect } from 'react';
@@ -38,11 +39,7 @@ export default function CartSidebar() {
                 </div>
 
                 {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                        <AlertTriangle size={28} className="text-yellow-400 mb-3" />
-                        <p className="text-sm font-semibold text-gray-700">Your cart is empty</p>
-                        <p className="text-xs text-gray-400 mt-1">Looks like you haven&apos;t made your choice yet.</p>
-                    </div>
+                    <EmptyCart compact={true} />
                 ) : (
                     <div>
                         <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">

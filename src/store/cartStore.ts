@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, Product } from '@/types';
 
-const DUKAN_FEE = 8;
+const DUKAN_FEE = 0;
 
 interface CartStore {
     items: CartItem[];

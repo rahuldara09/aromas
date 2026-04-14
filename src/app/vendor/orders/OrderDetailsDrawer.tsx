@@ -276,6 +276,32 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
                                         </div>
                                     )}
                                 </div>
+                                
+                                {/* Cashfree Audit Section */}
+                                {!isPOS && order.payment_details && (
+                                    <div className="bg-gray-50/50 px-4 py-6 border-b border-gray-100">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="block text-[13px] text-gray-500 font-black tracking-widest uppercase">Payment Audit</span>
+                                            <div className="h-[1px] flex-1 bg-gray-200"></div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                                            {[
+                                                { label: 'CF Payment ID', value: order.payment_details.cf_payment_id },
+                                                { label: 'Bank Reference', value: order.payment_details.bank_reference },
+                                                { label: 'Auth ID', value: order.payment_details.auth_id },
+                                                { label: 'Gateway Group', value: order.payment_details.payment_group },
+                                                { label: 'Transaction Time', value: order.payment_details.payment_time },
+                                                { label: 'Method Type', value: typeof order.payment_details.payment_method === 'object' ? Object.keys(order.payment_details.payment_method)[0] : order.payment_details.payment_method },
+                                            ].map((item, i) => item.value ? (
+                                                <div key={i} className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">{item.label}</span>
+                                                    <span className="text-[13px] font-semibold text-gray-700 break-all leading-tight">{item.value}</span>
+                                                </div>
+                                            ) : null)}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Your Details */}
                                 <div className="bg-white px-4 py-6 border-b border-gray-100 mb-16">

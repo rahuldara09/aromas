@@ -37,19 +37,19 @@ export default function ContactPage() {
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Registered Address</p>
                   <p className="text-gray-700 leading-relaxed">
-                    Near Hostel 15<br />
-                    IIM Mumbai Campus, Powai<br />
-                    Mumbai, Maharashtra<br />
-                    PIN: 400087
+                    M/s Indian Institute of Management Mumbai<br />
+                    Vihar Lake Road, Near The Residence Hotel<br />
+                    NITIE Admin Block, Powai<br />
+                    Mumbai, Maharashtra – 400087 (State Code: 27)
                   </p>
                 </div>
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Operational Address</p>
                   <p className="text-gray-700 leading-relaxed">
-                    Near Hostel 15<br />
-                    IIM Mumbai Campus, Powai<br />
-                    Mumbai, Maharashtra<br />
-                    PIN: 400087
+                    M/s Indian Institute of Management Mumbai<br />
+                    Vihar Lake Road, Near The Residence Hotel<br />
+                    NITIE Admin Block, Powai<br />
+                    Mumbai, Maharashtra – 400087 (State Code: 27)
                   </p>
                 </div>
               </div>

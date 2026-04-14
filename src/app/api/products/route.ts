@@ -86,7 +86,18 @@ async function verifyVendor(req: NextRequest): Promise<{ uid: string; phone: str
         }
     }
 
-    return NextResponse.json({ error: 'Forbidden. Vendor role required.' }, { status: 403 });
+    if (tokenEmail) {
+        const vendorSnap = await adminDb.collection('vendors')
+            .where('email', '==', tokenEmail.toLowerCase().trim())
+            .where('isVendor', '==', true)
+            .limit(1)
+            .get();
+        if (!vendorSnap.empty) {
+            return { uid, phone: phone ?? uid };
+        }
+    }
+
+    return NextResponse.json({ error: `Forbidden. Vendor role required. Tried keys: ${keysToTry.join(', ')}` }, { status: 403 });
 }
 
 

@@ -13,6 +13,7 @@ export interface PaymentVerification {
     amount: number;
     currency: string;
     providerRawStatus: string; // The original status string from the provider
+    rawPayload?: Record<string, any>; // Full payload from provider for auditing
 }
 
 export interface PaymentProvider {

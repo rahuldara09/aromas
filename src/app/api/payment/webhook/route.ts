@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
                 payment_transaction_id: verification.transactionId,
                 payment_amount: verification.amount,
                 payment_verified_at: FieldValue.serverTimestamp(),
+                payment_details: verification.rawPayload || {},
                 updatedAt: FieldValue.serverTimestamp()
             });
             console.log(`[webhook] Order ${verification.orderId} payment successful & verified. Marked as Placed.`);

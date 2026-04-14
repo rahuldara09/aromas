@@ -127,6 +127,7 @@ export class CashfreeProvider implements PaymentProvider {
             amount: parseFloat(paymentObj.payment_amount || orderIdObj.link_amount || orderIdObj.order_amount),
             currency: paymentObj.payment_currency || 'INR',
             providerRawStatus: paymentObj.payment_status || parsedBody.type,
+            rawPayload: paymentObj
         };
     }
 }

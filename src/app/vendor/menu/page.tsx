@@ -20,6 +20,8 @@ export default function VendorMenu() {
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemCategory, setNewItemCategory] = useState('');
     const [newItemImage, setNewItemImage] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const filteredProducts = products.filter(p =>
@@ -60,6 +62,8 @@ export default function VendorMenu() {
         setNewItemPrice(product.price.toString());
         setNewItemCategory((product as any).category || product.categoryId);
         setNewItemImage(product.imageURL);
+        setImageFile(null);
+        setImagePreview(product.imageURL || '');
         setIsAddModalOpen(true);
     };
 
@@ -72,13 +76,44 @@ export default function VendorMenu() {
 
         setIsSubmitting(true);
         try {
+            let finalImageUrl = newItemImage || '';
+
+            // Upload to Cloudinary if a new file is selected
+            if (imageFile) {
+                const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+                
+                if (!cloudName || !uploadPreset) {
+                    toast.error('Cloudinary configuration is missing from environment variables.');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                formData.append('upload_preset', uploadPreset);
+
+                const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadRes.ok) {
+                    const errorData = await uploadRes.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || 'Failed to upload image to Cloudinary');
+                }
+
+                const uploadData = await uploadRes.json();
+                finalImageUrl = uploadData.secure_url;
+            }
+
             const idToken = await user!.getIdToken();
             const data = {
                 name: newItemName,
                 price: parseFloat(newItemPrice),
                 categoryId: newItemCategory.toLowerCase().replace(/\s+/g, '-'),
                 category: newItemCategory,
-                imageURL: newItemImage || '',
+                imageURL: finalImageUrl,
             };
 
             if (editingProduct) {
@@ -105,6 +140,8 @@ export default function VendorMenu() {
         setNewItemPrice('');
         setNewItemCategory('');
         setNewItemImage('');
+        setImageFile(null);
+        setImagePreview('');
     };
 
     return (
@@ -312,14 +349,42 @@ export default function VendorMenu() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Image URL (Optional)</label>
-                                <input
-                                    type="url"
-                                    value={newItemImage}
-                                    onChange={(e) => setNewItemImage(e.target.value)}
-                                    placeholder="https://example.com/image.jpg"
-                                    className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-all placeholder:text-gray-400"
-                                />
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Product Image (Optional)</label>
+                                
+                                {imagePreview && (
+                                    <div className="mb-4 relative w-full h-40 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 group">
+                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setImageFile(null);
+                                                setImagePreview('');
+                                                setNewItemImage('');
+                                            }}
+                                            className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                {!imagePreview && (
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setImageFile(file);
+                                                    setImagePreview(URL.createObjectURL(file));
+                                                    setNewItemImage(''); // clear existing URL if they pick a new file
+                                                }
+                                            }}
+                                            className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white font-medium focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-all text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-500/10 dark:file:text-red-400"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="pt-4 flex gap-3">

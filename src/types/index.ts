@@ -95,6 +95,16 @@ export interface Order {
     completed?: Date;
     cancelled?: Date;
   };
+  payment_details?: {
+    cf_payment_id?: string;
+    payment_method?: any;
+    bank_reference?: string;
+    auth_id?: string;
+    payment_group?: string;
+    payment_time?: string;
+    payment_message?: string;
+    [key: string]: any;
+  };
   prep_time?: number; // In minutes
   cancel_reason?: string;
   cancelled_by?: string;

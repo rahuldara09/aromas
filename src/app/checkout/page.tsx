@@ -14,6 +14,7 @@ import { load } from '@cashfreepayments/cashfree-js';
 // import PayUForm from '@/components/checkout/PayUForm';
 import toast from 'react-hot-toast';
 import { Trash2, CreditCard, ChevronDown, CheckCircle2 } from 'lucide-react';
+import EmptyCart from '@/components/cart/EmptyCart';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -303,17 +304,7 @@ export default function CheckoutPage() {
                             </div>
 
                             {items.length === 0 ? (
-                                <div className="bg-white rounded-xl border border-gray-100 p-8 sm:p-12 text-center shadow-sm">
-                                    <div className="w-16 h-16 bg-gray-50 text-3xl rounded-full flex items-center justify-center mx-auto mb-4">🛒</div>
-                                    <h2 className="text-lg font-bold text-gray-900 mb-1">Your cart is empty</h2>
-                                    <p className="text-gray-400 text-sm mb-6">Add something tasty from the menu!</p>
-                                    <button
-                                        onClick={() => router.push('/menu')}
-                                        className="bg-red-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-600 transition-all text-sm shadow-md"
-                                    >
-                                        Browse Menu
-                                    </button>
-                                </div>
+                                <EmptyCart />
                             ) : (
                                 <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 shadow-sm overflow-hidden">
                                     {items.map((item) => (

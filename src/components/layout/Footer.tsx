@@ -85,8 +85,8 @@ export default function Footer() {
                                 <div className="flex flex-col">
                                     <span className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Location</span>
                                     <Link href="/contact" className="text-sm font-semibold text-gray-900 group-hover:text-red-500 transition-colors leading-relaxed tracking-tight">
-                                        IIM Mumbai Campus, Powai<br />
-                                        Mumbai, Maharashtra 400087
+                                        NITIE Admin Block, IIM Mumbai<br />
+                                        Powai, Mumbai – 400087
                                     </Link>
                                 </div>
                             </div>
@@ -100,9 +100,6 @@ export default function Footer() {
                     <p className="text-xs font-bold text-slate-400 text-center tracking-tight">
                         &copy; {currentYear} Aromas Delight Catering Service. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-3 text-xs font-bold text-[#64748B] py-2 px-4 rounded-2xl bg-white border border-slate-200 shadow-sm transition-transform hover:scale-105 duration-300">
-                        Made with <Heart size={14} className="text-red-500 fill-red-500" /> at <span className="text-gray-900 font-black tracking-tight ml-1">IIM Mumbai</span>
-                    </div>
                 </div>
             </div>
         </footer>

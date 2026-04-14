@@ -33,6 +33,8 @@ import {
     ClipboardList,
     Utensils,
     PanelLeftClose,
+    Globe,
+    ArrowUpRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -146,85 +148,74 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
             )}
 
             {/* ═══ MOBILE SLIDE-IN DRAWER ═══ */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#fafafa] border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1c1c1e] flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 {/* Drawer Header */}
-                <div className="h-24 flex items-center justify-between px-6 border-b border-transparent">
+                <div className="h-24 flex items-center justify-between px-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm overflow-hidden bg-white border border-gray-100">
+                        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm overflow-hidden bg-[#2a2a2e] border border-white/10">
                             <Image src="/favicon.png" alt="Aromas Logo" width={40} height={40} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col justify-center whitespace-nowrap overflow-hidden text-left">
-                            <span className="font-bold text-[18px] tracking-tight text-slate-900 leading-none mb-1">
+                            <span className="font-bold text-[18px] tracking-tight text-white leading-none mb-1">
                                 Aromas
                             </span>
-                            <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase leading-none">
+                            <span className="text-[10px] font-bold text-white/40 tracking-widest uppercase leading-none">
                                 VENDOR DASHBOARD
                             </span>
                         </div>
                     </div>
                     <button
                         onClick={() => setMobileDrawerOpen(false)}
-                        className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors"
                     >
                         <XIcon size={18} />
                     </button>
                 </div>
 
                 {/* Store Toggle in drawer */}
-                <div className="px-4 py-3 border-b border-gray-100">
-                    <button onClick={(e) => { e.stopPropagation(); toggleStore(); }} className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-extrabold text-[12px] uppercase tracking-wider transition-colors border ${isStoreOpen ? 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100' : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isStoreOpen ? 'bg-red-600' : 'bg-gray-400'}`} />
+                <div className="px-4 py-3 border-b border-white/10">
+                    <button onClick={(e) => { e.stopPropagation(); toggleStore(); }} className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-extrabold text-[12px] uppercase tracking-wider transition-colors ${isStoreOpen ? 'bg-[#e8450a]/20 text-[#e8450a] hover:bg-[#e8450a]/30' : 'bg-white/10 text-white/40 hover:bg-white/15'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isStoreOpen ? 'bg-[#e8450a]' : 'bg-white/30'}`} />
                         {isStoreOpen ? 'Accepting Orders' : 'Store Closed'}
                     </button>
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex-1 px-3 py-6 space-y-2">
+                <nav className="flex-1 px-2 py-4 space-y-0.5">
                     {navItems.map(item => (
                         <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={item.active} badge={item.badge} collapsed={false} />
                     ))}
                 </nav>
 
                 {/* Sign Out */}
-                <div className="p-4 space-y-4 mt-auto mb-4 border-t border-gray-100">
+                <div className="p-4 mt-auto border-t border-white/10">
                     <button
                         onClick={handleSignOut}
-                        className="flex items-center gap-3 px-4 py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 w-full text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
                     >
-                        <LogOut size={20} className="text-[#d92d20]" />
+                        <LogOut size={18} className="text-[#e8450a]" />
                         Logout
                     </button>
-
-                    <div className="flex items-center gap-3 px-4 py-2 mt-2">
-                        <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
-                            {/* Generic Chef Picture Placeholder */}
-                            <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=100&h=100&fit=crop" alt="Marcus Vane" className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-[14px] text-slate-900 truncate">Marcus Vane</span>
-                            <span className="text-[12px] text-slate-500 truncate">Executive Chef</span>
-                        </div>
-                    </div>
                 </div>
             </aside>
 
-            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-64' : 'w-20'} bg-[#fafafa] border-r border-gray-100 flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
+            <aside className={`hidden lg:flex ${sidebarOpen ? 'w-64' : 'w-[72px]'} bg-[#1c1c1e] flex-col flex-shrink-0 z-20 transition-all duration-300 ease-in-out`}>
                 {/* Logo Area */}
-                <div className="h-28 flex items-center px-6 min-w-0 border-b border-transparent">
-                    <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 overflow-hidden bg-white border border-gray-100 ${!sidebarOpen ? 'hover:scale-105 cursor-pointer' : ''}`} onClick={() => !sidebarOpen && setSidebarOpen(true)} title={!sidebarOpen ? "Expand Sidebar" : ""}>
+                <div className="h-28 flex items-center px-5 min-w-0">
+                    <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 overflow-hidden bg-[#2a2a2e] border border-white/10 ${!sidebarOpen ? 'hover:scale-105 cursor-pointer' : ''}`} onClick={() => !sidebarOpen && setSidebarOpen(true)} title={!sidebarOpen ? "Expand Sidebar" : ""}>
                         <Image src="/favicon.png" alt="Aromas Logo" width={40} height={40} className="w-full h-full object-cover" />
                     </div>
                     {sidebarOpen && (
                         <>
                             <div className="ml-3 flex flex-col justify-center whitespace-nowrap overflow-hidden text-left flex-1">
-                                <span className="font-bold text-[18px] tracking-tight text-slate-900 leading-none mb-1">
+                                <span className="font-bold text-[18px] tracking-tight text-white leading-none mb-1">
                                     Aromas
                                 </span>
-                                <span className="text-[10px] font-bold text-slate-500 tracking-widest uppercase leading-none">
+                                <span className="text-[10px] font-bold text-white/40 tracking-widest uppercase leading-none">
                                     VENDOR DASHBOARD
                                 </span>
                             </div>
-                            <button onClick={() => setSidebarOpen(false)} className="p-1.5 -mr-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors bg-white border border-transparent hover:border-slate-200" title="Collapse Sidebar">
+                            <button onClick={() => setSidebarOpen(false)} className="p-1.5 -mr-1 text-white/30 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Collapse Sidebar">
                                 <PanelLeftClose size={18} />
                             </button>
                         </>
@@ -232,23 +223,23 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex-1 px-3 py-6 space-y-2">
+                <nav className="flex-1 px-2 py-2 space-y-0.5">
                     {navItems.map(item => (
                         <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={item.active} badge={item.badge} collapsed={!sidebarOpen} />
                     ))}
                 </nav>
 
-                {/* Bottom Logout Profile Section */}
-                <div className="p-4 space-y-4 mt-auto mb-4">
+                {/* Bottom Logout Section */}
+                <div className="p-3 mt-auto border-t border-white/10">
                     <button
                         onClick={handleSignOut}
-                        className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center'} py-2.5 w-full text-[15px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors`}
+                        className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center'} py-2.5 w-full text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/10 rounded-xl transition-colors`}
                         title="Sign Out"
                     >
-                        <LogOut size={20} className="text-[#d92d20]" />
+                        <LogOut size={18} className="text-[#e8450a]" />
                         {sidebarOpen && 'Logout'}
                     </button>
-                    </div>
+                </div>
             </aside>
 
             {/* ═══ MAIN CONTENT AREA ═══ */}
@@ -314,6 +305,13 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-5 xl:gap-6 shrink-0">
+                        {/* Visit Site Button */}
+                        <Link href="/" target="_blank" className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 bg-white rounded-lg border border-gray-200 text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
+                            <Globe size={14} className="text-gray-500" />
+                            Visit Site
+                            <ArrowUpRight size={14} className="text-gray-400 ml-0.5" />
+                        </Link>
+
                         {/* Store Status Indicator */}
                         <div className="flex items-center gap-2">
                             <div className={`w-2.5 h-2.5 rounded-full ${isStoreOpen ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'}`}></div>
@@ -375,20 +373,30 @@ function NavItem({
         <Link
             href={href}
             title={collapsed ? label : undefined}
-            className={`relative flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-2.5 mx-2 rounded-[12px] transition-all ${active
-                ? 'bg-[#f1f5f9] text-slate-900 font-bold'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium'
-                }`}
+            className={`relative flex items-center ${
+                collapsed ? 'justify-center px-0 mx-2' : 'gap-3 px-4 mx-0'
+            } py-3 rounded-[10px] transition-all ${
+                active
+                    ? 'text-white font-bold'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/8 font-medium'
+            }`}
+            style={active && !collapsed ? {
+                background: 'rgba(232,69,10,0.12)',
+            } : {}}
         >
-            <span className={active ? 'text-slate-900' : 'text-slate-500'}>{icon}</span>
-            {!collapsed && <span className="text-[15px] tracking-normal">{label}</span>}
+            {/* Active left-border indicator */}
+            {active && !collapsed && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-[#e8450a]" />
+            )}
+            <span className={active ? 'text-[#e8450a]' : 'text-white/50'}>{icon}</span>
+            {!collapsed && <span className="text-[15px] tracking-normal pl-1">{label}</span>}
             {!collapsed && badge && (
-                <span className="ml-auto bg-slate-200 text-slate-700 text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
+                <span className="ml-auto bg-[#e8450a]/20 text-[#e8450a] text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
                     {badge}
                 </span>
             )}
             {collapsed && badge && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#9B1B30] rounded-full" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#e8450a] rounded-full" />
             )}
         </Link>
     );

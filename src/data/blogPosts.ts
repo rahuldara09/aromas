@@ -31,7 +31,7 @@ export const blogPosts: BlogPost[] = [
     `,
     date: 'March 25, 2026',
     author: 'Aroma Team',
-    image: '/images/hero_food.png',
+    image: '/images/hero_food3.png',
     category: 'Campus Life',
     readingTime: '5 min read'
   },
@@ -55,7 +55,7 @@ export const blogPosts: BlogPost[] = [
     `,
     date: 'March 20, 2026',
     author: 'Aroma Team',
-    image: '/images/hero_food.png',
+    image: '/images/hero_food1.png',
     category: 'Guide',
     readingTime: '4 min read'
   },
@@ -76,7 +76,7 @@ export const blogPosts: BlogPost[] = [
     `,
     date: 'March 15, 2026',
     author: 'Aroma Team',
-    image: '/images/hero_food.png',
+    image: '/images/hero_food2.png',
     category: 'Food',
     readingTime: '6 min read'
   }
