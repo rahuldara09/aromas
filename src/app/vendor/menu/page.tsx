@@ -155,7 +155,7 @@ export default function VendorMenu() {
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-2 bg-[#d92d20] hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
                 >
                     <Plus size={18} />
                     <span>Add Item</span>
@@ -164,33 +164,33 @@ export default function VendorMenu() {
 
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0">
-                <div className="bg-white rounded-[16px] p-6 shadow-sm border border-gray-100 flex flex-col justify-center min-h-[140px]">
+                <div className="bg-white rounded-[16px] p-6 shadow-sm border border-slate-200 flex flex-col justify-center min-h-[140px]">
                     <span className="text-xs font-bold text-gray-500 tracking-wider uppercase mb-2">Total Catalog Value</span>
                     <span className="text-[34px] font-black text-[#111827] mb-2 leading-none">₹{products.reduce((acc, p) => acc + p.price, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                    <div className="flex items-center text-[#d92d20] text-xs font-bold gap-1 mt-auto">
+                    <div className="flex items-center text-indigo-600 text-xs font-bold gap-1 mt-auto">
                         <TrendingUp size={14} /> 12% increase from last month
                     </div>
                 </div>
-                <div className="bg-[#f8fafc] rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-transparent">
-                    <span className="text-xs font-bold text-[#1e40af] tracking-wider uppercase mb-2">Active Items</span>
+                <div className="bg-indigo-50/50 rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-indigo-100">
+                    <span className="text-xs font-bold text-indigo-700 tracking-wider uppercase mb-2">Active Items</span>
                     <span className="text-[34px] font-black text-[#111827] mb-2 leading-none">{products.filter(p => p.isAvailable).length}</span>
-                    <div className="w-full h-1 bg-[#dbeafe] rounded-full mt-auto">
-                        <div className="h-full bg-[#d92d20] rounded-full w-[80%]"></div>
+                    <div className="w-full h-1 bg-indigo-100 rounded-full mt-auto">
+                        <div className="h-full bg-indigo-500 rounded-full w-[80%]"></div>
                     </div>
                 </div>
-                <div className="bg-[#fce7f3] rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-transparent">
-                    <span className="text-xs font-bold text-[#831843] tracking-wider uppercase mb-2">Stock Alerts</span>
-                    <span className="text-[34px] font-black text-[#9B1B30] mb-2 leading-none">{products.filter(p => !p.isAvailable).length.toString().padStart(2, '0')}</span>
-                    <span className="text-xs font-bold text-[#be185d] underline underline-offset-2 mt-auto cursor-pointer hover:text-[#9B1B30] transition-colors leading-none">View critical items</span>
+                <div className="bg-slate-100 rounded-[16px] p-6 flex flex-col justify-center min-h-[140px] border border-slate-200">
+                    <span className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-2">Stock Alerts</span>
+                    <span className="text-[34px] font-black text-slate-900 mb-2 leading-none">{products.filter(p => !p.isAvailable).length.toString().padStart(2, '0')}</span>
+                    <span className="text-xs font-bold text-indigo-600 underline underline-offset-2 mt-auto cursor-pointer hover:text-indigo-700 transition-colors leading-none">View critical items</span>
                 </div>
             </div>
 
             {/* Sticky Catalog Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 bg-[#f8f9fc] py-4 -mx-8 px-8 border-b border-gray-200/60 shadow-sm backdrop-blur-md bg-opacity-90">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 bg-slate-50 py-4 -mx-8 px-8 border-b border-slate-200/60 shadow-sm backdrop-blur-md bg-opacity-90">
                     <h3 className="text-[19px] font-bold text-[#111827]">Catalog Listings</h3>
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Search is positioned here as Filter placeholder equivalent conceptually */}
-                        <div className="flex bg-[#f1f5f9] rounded-lg items-center px-3 py-1.5 border border-indigo-50/50">
+                        <div className="flex bg-white rounded-lg items-center px-3 py-1.5 border border-slate-200">
                             <Search size={14} className="text-gray-400" />
                             <input
                                 type="text"
@@ -200,10 +200,10 @@ export default function VendorMenu() {
                                 className="bg-transparent border-none outline-none ml-2 text-xs font-bold text-[#111827] placeholder:text-gray-400 w-32"
                             />
                         </div>
-                        <button className="flex items-center gap-2 bg-[#eff6ff] text-[#1e40af] px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#dbeafe] transition-colors shadow-sm">
+                        <button className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors shadow-sm">
                             <Filter size={14} /> Filter
                         </button>
-                        <button className="flex items-center gap-2 bg-[#eff6ff] text-[#1e40af] px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#dbeafe] transition-colors shadow-sm">
+                        <button className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors shadow-sm">
                             <Download size={14} /> Export
                         </button>
                     </div>
@@ -265,7 +265,7 @@ export default function VendorMenu() {
                                         
                                         <button
                                             onClick={() => handleToggleProduct(product)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${available ? 'bg-[#d92d20]' : 'bg-[#e2e8f0]'}`}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${available ? 'bg-indigo-600' : 'bg-[#e2e8f0]'}`}
                                         >
                                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${available ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
                                         </button>
@@ -273,13 +273,13 @@ export default function VendorMenu() {
                                         <div className="flex items-center gap-3">
                                             <button
                                                 onClick={() => handleEditClick(product)}
-                                                className="text-[#64748b] hover:text-[#1e40af] transition-colors"
+                                                className="text-[#64748b] hover:text-indigo-600 transition-colors"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteProduct(product)}
-                                                className="text-[#64748b] hover:text-[#d92d20] transition-colors"
+                                                className="text-[#64748b] hover:text-rose-600 transition-colors"
                                             >
                                                 <Trash2 size={16} />
                                             </button>

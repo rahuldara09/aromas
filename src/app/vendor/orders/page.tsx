@@ -64,22 +64,24 @@ function groupByHostel(orders: Order[]): Record<string, Order[]> {
 export default function VendorKanban() {
     const { orders, products, playDispatchSound } = useVendor();
     const [preparingSearchToken, setPreparingSearchToken] = useState('');
-    const [dispatchSearchToken, setDispatchSearchToken] = useState('');
     const [kitchenYellMode, setKitchenYellMode] = useState(false);
     const { isConnected: isPrinterConnected, printKOT: printReceipt, isPrinting } = useThermalPrinter();
 
     // ── MOBILE TAB STATE & FEEDBACK ────────────────────────────────
-    const [mobileTab, setMobileTab] = useState<'new' | 'preparing' | 'dispatch' | 'pos'>('new');
+    const [mobileTab, setMobileTab] = useState<'new' | 'preparing' | 'pos'>('new');
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
-    const [isDispatchExpanded, setIsDispatchExpanded] = useState(true);
-    const [inlineFeedback, setInlineFeedback] = useState<{ id: string, token: string } | null>(null);
+    const notifyDispatch = useCallback((message: string) => {
+        toast.success(message, {
+            id: 'dispatch-notice',
+            duration: 1400,
+            style: { borderRadius: '10px', fontWeight: 600, fontSize: '13px' },
+        });
+    }, []);
 
     // ─── DERIVED DATA ──────────────────────────────────────────────────
     const tokenMap = useMemo(() => buildDailyTokens(orders), [orders]);
     const newOrders = useMemo(() => orders.filter(o => o.status === 'Placed' || o.status === 'Pending').sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()), [orders]);
     const preparingOrders = useMemo(() => orders.filter(o => o.status === 'Preparing').sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()), [orders]);
-    const dispatchOrders = useMemo(() => orders.filter(o => o.status === 'Completed'), [orders]);
-    const hostelBatches = useMemo(() => groupByHostel(dispatchOrders), [dispatchOrders]);
     const kitchenTally = useMemo(() => {
         const tally: Record<string, number> = {};
         preparingOrders.forEach(o => o.items.forEach(item => { tally[item.name] = (tally[item.name] || 0) + item.quantity; }));
@@ -109,24 +111,13 @@ export default function VendorKanban() {
     const dispatchWithUndo = useCallback((orderId: string, token: string) => {
         const run = async () => {
             try {
-                await updateOrderStatus(orderId, 'Completed');
-                setInlineFeedback({ id: orderId, token });
-                
-                // Auto dismiss after 3 seconds
-                setTimeout(() => {
-                    setInlineFeedback(prev => prev?.id === orderId ? null : prev);
-                }, 3000);
-            } catch { toast.error('Failed to move order'); }
+                await batchDispatchOrders([orderId]);
+                playDispatchSound();
+                notifyDispatch(`Delivered #${token}`);
+            } catch { toast.error('Failed to deliver order'); }
         };
         run();
-    }, [playDispatchSound]);
-
-    const handleUndoDispatch = useCallback(async (orderId: string) => {
-        try {
-            setInlineFeedback(null); // Instantly dismiss feedback
-            await updateOrderStatus(orderId, 'Preparing');
-        } catch { toast.error('Failed to undo dispatch'); }
-    }, []);
+    }, [playDispatchSound, notifyDispatch]);
 
     const handlePreparingSearchDispatch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -136,36 +127,6 @@ export default function VendorKanban() {
         if (match) { dispatchWithUndo(match.id, q); setPreparingSearchToken(''); }
         else toast.error(`Token #${q} not found in Preparing`);
     }, [preparingSearchToken, preparingOrders, tokenMap, dispatchWithUndo]);
-
-    const handleDispatchSearchDeliver = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        const q = dispatchSearchToken.trim().padStart(3, '0');
-        if (!q.trim()) return;
-        const match = dispatchOrders.find(o => tokenMap.get(o.id) === q);
-        if (match) {
-            const run = async () => {
-                try {
-                    await batchDispatchOrders([match.id]);
-                    playDispatchSound();
-                    toast.success(`Token #${q} delivered`);
-                } catch { toast.error('Deliver failed'); }
-            };
-            run();
-            setDispatchSearchToken('');
-        }
-        else toast.error(`Token #${q} not found in Dispatch`);
-    }, [dispatchSearchToken, dispatchOrders, tokenMap, playDispatchSound]);
-
-    const handleBatchDispatch = useCallback((orderIds: string[], hostel: string) => {
-        const run = async () => {
-            try {
-                await batchDispatchOrders(orderIds);
-                playDispatchSound();
-                toast.success(`${hostel} batch dispatched (${orderIds.length} orders)`);
-            } catch { toast.error('Batch dispatch failed'); }
-        };
-        run();
-    }, [playDispatchSound]);
 
     // ─── POS STATE ─────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState<'board' | 'history'>('board');
@@ -427,9 +388,9 @@ export default function VendorKanban() {
     //  RENDER
     // ═══════════════════════════════════════════════════════════════════════
     return (
-        <div className="h-full flex flex-col bg-white overflow-hidden select-none transition-colors">
+        <div className="h-full flex flex-col bg-slate-50 overflow-hidden select-none transition-colors">
             {viewMode === 'board' && (
-                <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-white border-b border-gray-200 shadow-sm z-20 flex-shrink-0 overflow-x-auto">
+                <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 bg-white border-b border-slate-200 shadow-sm z-20 flex-shrink-0 overflow-x-auto">
                     <div className="flex items-center gap-6 shrink-0 mt-1">
                         <button onClick={() => setViewMode('board')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-900 border-slate-900 pt-[3px]">
                             Live Board
@@ -438,41 +399,21 @@ export default function VendorKanban() {
                             History
                         </button>
                     </div>
-                    {/* INLINE DISPATCH FEEDBACK */}
-                    <div className="ml-auto overflow-hidden">
-                        <AnimatePresence>
-                            {inlineFeedback && (
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg whitespace-nowrap border border-gray-100"
-                                >
-                                    <span className="text-xs font-semibold text-gray-500">
-                                        <span className="font-extrabold text-gray-700 mr-1.5">#{inlineFeedback.token}</span>
-                                        Moved to pickup
-                                    </span>
-                                    <button onClick={() => handleUndoDispatch(inlineFeedback.id)} className="text-xs font-bold text-gray-400 hover:text-gray-900 underline decoration-gray-300 hover:decoration-gray-900 transition-colors ml-2">undo</button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <div className="ml-auto" />
                 </div>
             )}
 
             {viewMode === 'history' && (
-                <div className="px-5 sm:px-8 py-6 sm:py-8 flex flex-col sm:flex-row sm:items-start justify-between shrink-0 gap-4">
-                    <div>
-                        <h1 className="text-[28px] font-extrabold text-slate-900 tracking-tight leading-none">Order Management</h1>
-                        <p className="text-[15px] font-medium text-slate-500 mt-2">Track, analyze, and manage your vendor operations with<br className="hidden sm:block"/>high-precision editorial data views.</p>
-                    </div>
-                    <div className="flex items-center gap-6 shrink-0 mt-4 sm:mt-0 self-start sm:self-center">
-                        <button onClick={() => setViewMode('board')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-400 border-transparent hover:text-slate-600">
-                            Live Board
-                        </button>
-                        <button onClick={() => setViewMode('history')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-900 border-slate-900 pt-[3px]">
-                            History
-                        </button>
+                <div className="px-5 sm:px-8 py-6 sm:py-7 shrink-0">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-6 self-start">
+                            <button onClick={() => setViewMode('board')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-400 border-transparent hover:text-slate-600">
+                                Live Board
+                            </button>
+                            <button onClick={() => setViewMode('history')} className="pb-1.5 text-[15px] font-extrabold transition-all border-b-[3px] text-slate-900 border-slate-900 pt-[3px]">
+                                History
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -480,11 +421,10 @@ export default function VendorKanban() {
             {viewMode === 'board' ? (
                 <>
                     {/* ── MOBILE TAB BAR ─────────────────────────────────── */}
-                    <div className="lg:hidden flex border-b border-gray-200 bg-white  overflow-x-auto flex-shrink-0">
+                    <div className="lg:hidden flex border-b border-slate-200 bg-white overflow-x-auto flex-shrink-0">
                         {[
-                            { key: 'new', label: 'New', count: newOrders.length, color: 'text-blue-600 border-blue-500' },
+                            { key: 'new', label: 'New', count: newOrders.length, color: 'text-indigo-600 border-indigo-500' },
                             { key: 'preparing', label: 'Preparing', count: preparingOrders.length, color: 'text-amber-600 border-amber-500' },
-                            { key: 'dispatch', label: 'Dispatch', count: dispatchOrders.length, color: 'text-emerald-600 border-emerald-500' },
                             { key: 'pos', label: 'POS', count: null, color: 'text-purple-600 border-purple-500' },
                         ].map(tab => (
                             <button
@@ -509,11 +449,11 @@ export default function VendorKanban() {
                         {mobileTab === 'new' && (
                             <div className="flex flex-col bg-white  min-h-full">
                                 <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-200 flex-shrink-0">
-                                    <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-500 flex items-center justify-center"><Bell size={13} /></div>
+                                    <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center"><Bell size={13} /></div>
                                     <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">NEW ORDERS</h2>
-                                    {newOrders.length > 0 && <span className="ml-auto bg-red-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{newOrders.length}</span>}
+                                    {newOrders.length > 0 && <span className="ml-auto bg-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{newOrders.length}</span>}
                                 </div>
-                                <div className="flex-1 bg-gray-50/50 overflow-y-auto p-4 space-y-3 pb-8">
+                                <div className="flex-1 bg-slate-50 overflow-y-auto p-4 space-y-3 pb-8">
                                     {newOrders.length === 0 ? (
                                         <EmptyState emoji="🔔" text="No new orders" sub="Incoming orders appear here" />
                                     ) : (
@@ -524,7 +464,7 @@ export default function VendorKanban() {
                                                     <OrderCard order={order} token={tok} onViewDetails={() => setSelectedOrderDetails(order)}>
                                                         <div className="flex gap-2 mt-2">
                                                             <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="flex-1 py-3 rounded-xl text-gray-500 hover:bg-gray-100 font-bold text-sm ring-1 ring-inset ring-gray-300 transition-colors min-h-[44px]">Reject</button>
-                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl shadow-sm transition-colors min-h-[44px]">
+                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl shadow-sm transition-colors min-h-[44px]">
                                                                 {isPrinting ? (
                                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                                 ) : (
@@ -578,44 +518,6 @@ export default function VendorKanban() {
                                                 </button>
                                             );
                                         })
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {mobileTab === 'dispatch' && (
-                            <div className="flex flex-col bg-white  min-h-full">
-                                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 shrink-0">
-                                    <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-500 flex items-center justify-center"><Truck size={13} /></div>
-                                    <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">DISPATCH</h2>
-                                    {dispatchOrders.length > 0 && <span className="ml-auto bg-emerald-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{dispatchOrders.length}</span>}
-                                </div>
-                                <form onSubmit={handleDispatchSearchDeliver} className="px-4 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
-                                    <div className="relative">
-                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input type="text" value={dispatchSearchToken} onChange={e => setDispatchSearchToken(e.target.value)} placeholder="Token # → Enter to deliver" className="w-full pl-9 pr-8 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 text-sm font-bold placeholder:font-normal focus:outline-none focus:border-emerald-400" />
-                                    </div>
-                                </form>
-                                <div className="flex-1 p-4 space-y-3 pb-8 overflow-y-auto">
-                                    {dispatchOrders.length === 0 ? <EmptyState emoji="📦" text="No ready orders" sub="Dispatched orders appear here" /> : (
-                                        dispatchOrders.map(order => (
-                                            <div key={order.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                                                <div>
-                                                    <span className="text-3xl font-black text-gray-900 tracking-tighter">#{tokenMap.get(order.id)}</span>
-                                                    <p className="text-xs font-bold text-gray-400 mt-1">₹{order.grandTotal}</p>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button onClick={() => handleUndoDispatch(order.id)} className="flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-700 border border-gray-200 font-extrabold px-4 py-3 rounded-xl transition-all min-h-[56px]" title="Undo Dispatch">
-                                                        <RotateCcw size={16} />
-                                                        <span className="text-[9px] uppercase tracking-wide leading-none mt-0.5">Undo</span>
-                                                    </button>
-                                                    <button onClick={() => handleBatchDispatch([order.id], order.deliveryAddress?.hostelNumber || 'Pickup')} className="flex flex-col items-center gap-1 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-200 font-extrabold px-6 py-3 rounded-xl transition-all min-h-[56px]">
-                                                        <Package size={18} />
-                                                        <span className="text-[10px] uppercase tracking-wide leading-none mt-0.5">Deliver</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
                                     )}
                                 </div>
                             </div>
@@ -693,13 +595,13 @@ export default function VendorKanban() {
                     <div className="hidden lg:flex flex-1 overflow-hidden min-h-0">
 
                         {/* ── COL 1: NEW ORDERS ── */}
-                        <section className="w-1/3 flex flex-col border-r border-gray-200  min-w-0 bg-white ">
-                            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-200  flex-shrink-0 shadow-sm">
-                                <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-500 flex items-center justify-center"><Bell size={13} /></div>
+                        <section className="w-1/3 flex flex-col border-r border-slate-200 min-w-0 bg-white">
+                            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200 flex-shrink-0 bg-slate-50/60">
+                                <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center"><Bell size={13} /></div>
                                 <h2 className="font-extrabold text-sm text-gray-900  tracking-tight">NEW ORDERS</h2>
-                                {newOrders.length > 0 && <span className="ml-auto bg-red-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{newOrders.length}</span>}
+                                {newOrders.length > 0 && <span className="ml-auto bg-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{newOrders.length}</span>}
                             </div>
-                            <div className="flex-1 bg-gray-50/50  overflow-y-auto scrollbar-thin flex flex-col">
+                            <div className="flex-1 bg-slate-50 overflow-y-auto scrollbar-thin flex flex-col">
                                 {newOrders.length === 0 ? (
                                     <EmptyState emoji="🔔" text="No new orders" sub="Incoming orders appear here" />
                                 ) : (
@@ -728,7 +630,7 @@ export default function VendorKanban() {
                                                                     {isFront && (
                                                                         <div className="flex gap-2">
                                                                             <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-100 font-bold text-xs ring-1 ring-inset ring-gray-300 transition-colors">Reject</button>
-                                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold text-xs py-2 rounded-lg shadow-sm transition-colors">
+                                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-bold text-xs py-2 rounded-lg shadow-sm transition-colors">
                                                                                 {isPrinting ? (
                                                                                     <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                                                 ) : (
@@ -747,20 +649,20 @@ export default function VendorKanban() {
                                         </div>
                                         {/* Queue */}
                                         {newOrders.length > 1 && (
-                                            <div className="border-t border-gray-200 bg-white mt-2 shrink-0">
-                                                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                                            <div className="border-t border-slate-200 bg-white mt-2 shrink-0">
+                                                <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
                                                     <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Queue ({newOrders.length - 1})</span>
                                                 </div>
                                                 <div className="flex flex-col p-3 space-y-1.5">
                                                     {newOrders.slice(1).map(order => (
-                                                        <div key={order.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-white text-sm shadow-sm">
+                                                        <div key={order.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white text-sm shadow-sm">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-extrabold text-gray-900 text-base">#{tokenMap.get(order.id)}</span>
                                                                 <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md text-[10px] font-bold">{minutesElapsed(order.orderDate)}m</span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-xs text-gray-500">{order.items.length} items</span>
-                                                                <span className="font-bold text-gray-900 text-sm bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">₹{order.grandTotal}</span>
+                                                                <span className="font-bold text-slate-900 text-sm bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">₹{order.grandTotal}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -772,26 +674,25 @@ export default function VendorKanban() {
                             </div>
                         </section>
 
-                        {/* ── COL 2: PREPARING (top) + DISPATCH (bottom) ── */}
-                        <section className="w-1/3 flex flex-col border-r border-gray-200  min-w-0 bg-white ">
-                            {/* PREPARING */}
-                            <div className="flex flex-col flex-1 min-h-0 bg-gray-50/50">
-                                <div className="flex flex-col flex-shrink-0 bg-white border-b border-gray-200">
+                        {/* ── COL 2: PREPARING PRIORITY ── */}
+                        <section className="w-1/3 flex flex-col border-r border-slate-200 min-w-0 bg-white">
+                            <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
+                                <div className="flex flex-col flex-shrink-0 bg-white border-b border-slate-200">
                                     <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
                                         <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-500 flex items-center justify-center"><ChefHat size={13} /></div>
-                                        <h2 className="font-extrabold text-sm text-gray-900  tracking-tight">PREPARING</h2>
+                                        <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">PREPARING PRIORITY</h2>
                                         {preparingOrdersCount > 0 && <span className="ml-auto bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{preparingOrdersCount}</span>}
                                     </div>
                                     <form onSubmit={handlePreparingSearchDispatch} className="px-3 py-2 bg-white">
                                         <div className="relative">
                                             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                            <input type="text" value={preparingSearchToken} onChange={e => setPreparingSearchToken(e.target.value)} placeholder="Token # → Enter to dispatch" className="w-full pl-9 pr-8 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100" />
+                                            <input type="text" value={preparingSearchToken} onChange={e => setPreparingSearchToken(e.target.value)} placeholder="Token # → Enter to deliver" className="w-full pl-9 pr-8 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100" />
                                             {preparingSearchToken && <button type="button" onClick={() => setPreparingSearchToken('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
                                         </div>
                                     </form>
                                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-gray-500">
                                         <span>{preparingOrdersCount} Orders | {preparingItemsCount} Items</span>
-                                        {longestPreparingMins > 0 && <span className={longestPreparingMins > 20 ? 'text-red-500 font-bold' : ''}>Longest: {longestPreparingMins}m</span>}
+                                        {longestPreparingMins > 0 && <span className={longestPreparingMins > 20 ? 'text-red-500 font-bold' : ''}>Highest wait: {longestPreparingMins}m</span>}
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
@@ -801,75 +702,24 @@ export default function VendorKanban() {
                                                 const tok = tokenMap.get(order.id) || '???';
                                                 const mins = minutesElapsed(order.orderDate);
                                                 let borderCls = 'border-l-gray-300';
-                                                let textCls = 'text-gray-900';
-                                                if (mins >= 20) { borderCls = 'border-l-red-500'; textCls = 'text-red-700'; }
-                                                else if (mins >= 10) { borderCls = 'border-l-amber-400'; textCls = 'text-amber-700'; }
+                                                let timeCls = 'text-gray-500';
+                                                if (mins >= 20) { borderCls = 'border-l-red-500'; timeCls = 'text-red-600'; }
+                                                else if (mins >= 10) { borderCls = 'border-l-amber-400'; timeCls = 'text-amber-600'; }
                                                 return (
-                                                    <button key={order.id} onClick={() => dispatchWithUndo(order.id, tok)} className={`group flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 border-l-4 ${borderCls} shadow-sm hover:shadow transition-all relative overflow-hidden text-left`} title={`${mins}m | Tap to Dispatch`}>
-                                                        <div className="flex items-center gap-4">
-                                                            <span className={`text-2xl font-black tracking-tighter w-14 ${textCls}`}>#{tok}</span>
-                                                            <div className="flex flex-col justify-center">
-                                                                <span className="text-xs font-bold text-gray-500">
-                                                                    {order.items.reduce((sum, item) => sum + item.quantity, 0)} Items
-                                                                </span>
-                                                                <span className="text-[10px] font-semibold text-gray-400 truncate max-w-[140px]">
-                                                                    {order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
-                                                                </span>
+                                                    <button key={order.id} onClick={() => dispatchWithUndo(order.id, tok)} className={`flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 border-l-4 ${borderCls} shadow-sm hover:shadow transition-all text-left`}>
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-2xl font-black tracking-tighter text-gray-900">#{tok}</span>
+                                                                <span className={`text-xs font-bold ${timeCls}`}>{mins}m</span>
                                                             </div>
+                                                            <p className="text-xs font-semibold text-gray-600 truncate mt-0.5">{order.deliveryAddress?.name || 'Guest'} · Hostel {order.deliveryAddress?.hostelNumber || 'N/A'}</p>
+                                                            <p className="text-[11px] font-medium text-gray-400 truncate">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
                                                         </div>
-                                                        <span className={`font-bold text-xs ${mins >= 20 ? 'text-red-500' : 'text-gray-400'}`}>{mins}m</span>
-                                                        <div className="absolute inset-0 bg-emerald-500/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2">
-                                                            <Truck size={18} /><span className="font-extrabold text-sm">DISPATCH</span>
-                                                        </div>
+                                                        <span className="ml-3 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">Deliver</span>
                                                     </button>
                                                 );
                                             })}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* DISPATCH */}
-                            <div className={`flex flex-col border-t border-gray-200 transition-all duration-300 ${isDispatchExpanded ? 'flex-1 min-h-[40%] bg-gray-50/50' : 'h-[49px] min-h-0 shrink-0 bg-white overflow-hidden'}`}>
-                                <div className="flex flex-col bg-white border-b border-gray-200 flex-shrink-0">
-                                    <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 cursor-pointer select-none hover:bg-gray-50 transition-colors" onClick={() => setIsDispatchExpanded(r => !r)}>
-                                        <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"><Truck size={13} /></div>
-                                        <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">DISPATCH</h2>
-                                        {dispatchOrders.length > 0 && <span className="ml-auto bg-emerald-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{dispatchOrders.length}</span>}
-                                        <button className={`${dispatchOrders.length === 0 ? 'ml-auto' : 'ml-2'} text-gray-400 hover:text-gray-900 transition-colors`}>
-                                            {isDispatchExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-                                        </button>
-                                    </div>
-                                    <form onSubmit={handleDispatchSearchDeliver} className="px-3 py-2">
-                                        <div className="relative">
-                                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                            <input type="text" value={dispatchSearchToken} onChange={e => setDispatchSearchToken(e.target.value)} placeholder="Token # → Enter to deliver" className="w-full pl-9 pr-8 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100" />
-                                            {dispatchSearchToken && <button type="button" onClick={() => setDispatchSearchToken('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
-                                        </div>
-                                    </form>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
-                                    {dispatchOrders.length === 0 ? (
-                                        <EmptyState emoji="📦" text="No ready orders" sub="Dispatched orders appear here" />
-                                    ) : (
-                                        dispatchOrders.sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()).map(order => (
-                                            <div key={order.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-emerald-200 transition-colors">
-                                                <div className="flex flex-col leading-none">
-                                                    <span className="text-4xl font-black text-gray-900 tracking-tighter">#{tokenMap.get(order.id)}</span>
-                                                    <span className="text-xs font-extrabold text-gray-400 mt-2">₹{order.grandTotal}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button onClick={() => handleUndoDispatch(order.id)} className="flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 font-extrabold px-4 py-3 rounded-xl shadow-sm transition-all active:scale-95 group shrink-0" title="Undo Dispatch">
-                                                        <RotateCcw size={16} className="group-hover:-rotate-45 transition-transform" />
-                                                        <span className="text-[9px] tracking-wide uppercase leading-none mt-0.5">Undo</span>
-                                                    </button>
-                                                    <button onClick={() => handleBatchDispatch([order.id], order.deliveryAddress?.hostelNumber || 'Pickup')} className="flex flex-col items-center justify-center gap-1 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-200 hover:border-emerald-500 font-extrabold px-6 py-3 rounded-xl shadow-sm transition-all active:scale-95 group shrink-0">
-                                                        <Package size={18} className="group-hover:scale-110 transition-transform" />
-                                                        <span className="text-[10px] tracking-wide uppercase leading-none mt-0.5">Deliver</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
                                     )}
                                 </div>
                             </div>
@@ -1095,8 +945,8 @@ export default function VendorKanban() {
                                             
                                             // Handle status colors
                                             let statusCls = "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200";
-                                            if (order.status === 'Delivered') statusCls = "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200";
-                                            if (order.status === 'Dispatched') statusCls = "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200";
+                                            if (order.status === 'Delivered') statusCls = "bg-emerald-50/70 text-emerald-700 ring-1 ring-inset ring-emerald-200";
+                                            if (order.status === 'Dispatched') statusCls = "bg-emerald-50/70 text-emerald-700 ring-1 ring-inset ring-emerald-200";
                                             if (order.status === 'Preparing') statusCls = "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200";
                                             if (order.status === 'Cancelled') statusCls = "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
                                             
@@ -1146,7 +996,7 @@ export default function VendorKanban() {
                                                     </td>
                                                     <td className="px-3 py-4">
                                                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${statusCls}`}>
-                                                            {order.status}
+                                                            {order.status === 'Dispatched' ? 'Completed' : order.status}
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-4 text-right pr-4 relative">
@@ -1216,8 +1066,12 @@ function OrderCard({ order, token, onViewDetails, children }: { order: Order; to
     const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
     const platformFee = order.grandTotal - subtotal > 0 ? order.grandTotal - subtotal : 0;
 
+    const cardBorderClass = isPOS
+        ? `${urgency === 'red' ? 'border-l-red-500' : urgency === 'amber' ? 'border-l-amber-400' : 'border-l-gray-300'} border-l-4`
+        : 'border-l border-l-gray-200';
+
     return (
-        <div className={`flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow border-l-4 ${urgency === 'red' ? 'border-l-red-500' : urgency === 'amber' ? 'border-l-amber-400' : 'border-l-gray-300'} transition-all relative`}>
+        <div className={`flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow ${cardBorderClass} transition-all relative`}>
             {isPOS && <div className="absolute top-3 right-3 bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[9px] font-black tracking-wide border border-purple-200 z-10">WALK-IN</div>}
             
             {/* Header: Token + Amount */}
@@ -1276,24 +1130,36 @@ function OrderCard({ order, token, onViewDetails, children }: { order: Order; to
             </div>
 
             {/* Customer + Delivery Info */}
-            <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 shrink-0">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{order.deliveryAddress?.name || 'Guest'}</p>
-                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                            {order.deliveryAddress?.hostelNumber ? `Hostel ${order.deliveryAddress.hostelNumber}` : 'Pickup'}
-                            {order.deliveryAddress?.roomNumber ? ` · Rm ${order.deliveryAddress.roomNumber}` : ''}
-                            {order.deliveryAddress?.deliveryType ? ` · ${order.deliveryAddress.deliveryType}` : ''}
-                        </p>
+            <div className="px-4 py-3 bg-slate-50/90 border-t border-gray-100 shrink-0">
+                <div className="grid grid-cols-1 gap-2 text-[12px]">
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-semibold">Placed at</span>
+                        <span className="text-slate-700 font-bold">
+                            {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(order.orderDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                        </span>
                     </div>
-                    {(order.customerPhone || order.deliveryAddress?.mobile) && (
-                        <a href={`tel:${order.customerPhone || order.deliveryAddress?.mobile}`} className="text-xs font-bold text-red-500 hover:text-red-600 bg-red-50 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors">Call</a>
-                    )}
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-semibold">Customer</span>
+                        <span className="text-slate-900 font-bold truncate">{order.deliveryAddress?.name || 'Guest'}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-semibold">Deliver to</span>
+                        <span className="text-slate-700 font-semibold text-right">
+                            {order.deliveryAddress?.hostelNumber ? `Hostel ${order.deliveryAddress.hostelNumber}` : 'Pickup'}
+                            {order.deliveryAddress?.roomNumber ? `, Rm ${order.deliveryAddress.roomNumber}` : ''}
+                            {order.deliveryAddress?.deliveryType ? ` (${order.deliveryAddress.deliveryType})` : ''}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-semibold">Phone</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-slate-700 font-semibold">{order.customerPhone || order.deliveryAddress?.mobile || 'N/A'}</span>
+                            {(order.customerPhone || order.deliveryAddress?.mobile) && (
+                                <a href={`tel:${order.customerPhone || order.deliveryAddress?.mobile}`} className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-100 px-2.5 py-1 rounded-md shrink-0 transition-colors">Call</a>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                {/* Order timestamp */}
-                <p className="text-[10px] text-gray-400 font-medium mt-1.5">
-                    Ordered {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(order.orderDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-                </p>
             </div>
 
             {children && <div className="p-2.5 bg-white border-t border-gray-100 shrink-0">{children}</div>}

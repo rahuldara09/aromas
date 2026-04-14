@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MoreHorizontal, ClipboardList, Truck, Package, RotateCcw, Image as ImageIcon, Banknote } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, ClipboardList, Image as ImageIcon, Banknote } from 'lucide-react';
 import { Order, OrderItem } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -20,17 +20,78 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
     // Delivery vs Walk-in info
     const isDelivery = order.deliveryAddress?.deliveryType?.toLowerCase() === 'delivery';
 
-    // Timeline helpers
-    const getTimeString = (step: 'placed' | 'accepted' | 'preparing' | 'dispatched' | 'completed' | 'cancelled') => {
-        // @ts-ignore dynamic index
-        const t = order.timeline?.[step];
-        if (!t) return null;
-        const d = typeof (t as any).toDate === 'function' ? (t as any).toDate() : new Date(t as any);
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
     const isActionable = order.status === 'Placed' || order.status === 'Pending';
     const itemsCount = order.items.reduce((s, i) => s + i.quantity, 0);
+    const currentStatus = order.status;
+
+    const toDate = (value: unknown): Date | null => {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+        if (typeof value === 'object' && value !== null && typeof (value as { toDate?: unknown }).toDate === 'function') {
+            const dt = (value as { toDate: () => Date }).toDate();
+            return Number.isNaN(dt.getTime()) ? null : dt;
+        }
+        const dt = new Date(value as string | number);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+    };
+
+    const stageTimes = {
+        placed: toDate(order.timeline?.placed) ?? new Date(order.orderDate),
+        accepted: toDate(order.timeline?.accepted),
+        dispatched: toDate(order.timeline?.dispatched),
+        completed: toDate(order.timeline?.completed),
+    };
+
+    const formatDateTime = (value: Date | null) => {
+        if (!value) return 'Pending';
+        return value.toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    const durationBetween = (from: Date | null, to: Date | null) => {
+        if (!from || !to) return null;
+        const diffMs = to.getTime() - from.getTime();
+        if (diffMs <= 0) return '0m';
+        const mins = Math.floor(diffMs / 60000);
+        const hrs = Math.floor(mins / 60);
+        const rem = mins % 60;
+        if (hrs === 0) return `${mins}m`;
+        if (rem === 0) return `${hrs}h`;
+        return `${hrs}h ${rem}m`;
+    };
+
+    const timelineSteps = [
+        {
+            key: 'placed',
+            label: 'Order placed',
+            time: stageTimes.placed,
+            done: true,
+        },
+        {
+            key: 'accepted',
+            label: 'Accepted by vendor',
+            time: stageTimes.accepted,
+            done: ['Preparing', 'Completed', 'Dispatched', 'Delivered'].includes(currentStatus) || !!stageTimes.accepted,
+        },
+        {
+            key: 'dispatched',
+            label: isDelivery ? 'Out for delivery' : 'Ready for pickup',
+            time: stageTimes.dispatched,
+            done: ['Dispatched', 'Completed', 'Delivered'].includes(currentStatus) || !!stageTimes.dispatched,
+        },
+        {
+            key: 'completed',
+            label: isDelivery ? 'Delivered' : 'Picked up',
+            time: stageTimes.completed,
+            done: ['Completed', 'Delivered'].includes(currentStatus) || !!stageTimes.completed,
+        },
+    ] as const;
 
     return (
         <AnimatePresence>
@@ -89,56 +150,38 @@ export default function OrderDetailsDrawer({ isOpen, onClose, order }: OrderDeta
                             </div>
 
                             {/* Timeline */}
-                            <div className="px-4 py-6 border-b border-gray-100 relative">
-                                <div className="absolute left-[33px] top-10 bottom-12 w-[2px] bg-gray-200 z-0" />
-
-                                {/* Step 1: Confirmed */}
-                                <div className="flex gap-4 relative z-10 mb-8">
-                                    <div className="bg-white p-1">
-                                        <ClipboardList size={22} className="text-gray-400" strokeWidth={1.5} />
-                                    </div>
-                                    <div className="flex-1 flex justify-between items-start pt-0.5">
-                                        <div className="flex flex-col">
-                                            <span className="text-[15px] font-medium text-gray-900">Order Confirmed</span>
-                                            {getTimeString('accepted') && <span className="text-[13px] text-gray-500">{getTimeString('accepted')}</span>}
-                                        </div>
-                                        {order.status !== 'Pending' && order.status !== 'Cancelled' && (
-                                            <span className="px-2 py-0.5 bg-[#2eaa25] text-white text-[10px] font-bold rounded">DONE</span>
-                                        )}
-                                    </div>
+                            <div className="px-4 py-6 border-b border-gray-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-[13px] text-gray-500 font-semibold tracking-[0.12em] uppercase">Order Timeline</h4>
                                 </div>
 
-                                {/* Step 2: Preparing/Shipped */}
-                                {(order.status === 'Dispatched' || order.status === 'Completed' || order.status === 'Delivered') && (
-                                    <div className="flex gap-4 relative z-10 mb-8">
-                                        <div className="bg-white p-1">
-                                            <Truck size={22} className="text-gray-400" strokeWidth={1.5} />
-                                        </div>
-                                        <div className="flex-1 flex justify-between items-start pt-0.5">
-                                            <div className="flex flex-col">
-                                                <span className="text-[15px] font-medium text-gray-900">Order Dispatched</span>
-                                                {getTimeString('dispatched') && <span className="text-[13px] text-gray-500">{getTimeString('dispatched')}</span>}
+                                <div className="relative pl-1">
+                                    <div className="absolute left-[10px] top-2 bottom-2 w-px bg-gray-200" />
+                                    {timelineSteps.map((step, idx) => {
+                                        const nextStep = timelineSteps[idx + 1];
+                                        const gap = nextStep ? durationBetween(step.time, nextStep.time) : null;
+                                        const isDone = step.done;
+                                        return (
+                                            <div key={step.key} className="relative pb-6 last:pb-0">
+                                                <div className="flex gap-4">
+                                                    <span className={`mt-1.5 w-5 h-5 rounded-full border ${isDone ? 'bg-[#3e7f1f] border-[#3e7f1f]' : 'bg-[#f4f4f1] border-[#b9b9b2]'}`} />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[15px] leading-none text-gray-900 font-semibold">
+                                                            {step.label}
+                                                        </p>
+                                                        <p className={`text-[13px] mt-1 ${isDone ? 'text-gray-700' : 'text-gray-500'}`}>
+                                                            {formatDateTime(step.time)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {gap && (
+                                                    <div className="ml-9 mt-2 mb-1 inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold border border-amber-200">
+                                                        Took {gap}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <span className="px-2 py-0.5 bg-[#2eaa25] text-white text-[10px] font-bold rounded">DONE</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Step 3: Delivered */}
-                                <div className="flex gap-4 relative z-10">
-                                    <div className="bg-white p-1">
-                                        <Package size={22} className={order.status === 'Completed' || order.status === 'Delivered' ? "text-[#d92c59]" : "text-gray-400"} strokeWidth={1.5} />
-                                    </div>
-                                    <div className="flex-1 flex justify-between items-start pt-0.5">
-                                        <div className="flex flex-col pr-8">
-                                            <span className={`text-[15px] font-medium ${order.status === 'Completed' || order.status === 'Delivered' ? 'text-[#d92c59]' : 'text-gray-900'}`}>{isDelivery ? 'To Be Delivered' : 'Ready For Pickup'}</span>
-                                            <span className="text-[13px] text-gray-500 mt-1 leading-relaxed">
-                                                {order.status === 'Completed' || order.status === 'Delivered' 
-                                                    ? `Delivered on ${getTimeString('completed') || 'time'}.`
-                                                    : `Your order is expected to be ${isDelivery ? 'delivered' : 'ready'} soon.`}
-                                            </span>
-                                        </div>
-                                    </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
