@@ -106,7 +106,13 @@ export default function VendorKanban() {
 
     // ─── DERIVED DATA ──────────────────────────────────────────────────
     const tokenMap = useMemo(() => buildDailyTokens(orders), [orders]);
-    const newOrders = useMemo(() => orders.filter(o => o.status === 'Placed' || o.status === 'Pending').sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()), [orders]);
+    const newOrders = useMemo(
+        () =>
+            orders
+                .filter(o => (o.status === 'Placed' || o.status === 'Pending') && o.orderType !== 'pos')
+                .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()),
+        [orders]
+    );
     const preparingOrders = useMemo(
         () =>
             orders
@@ -969,53 +975,69 @@ export default function VendorKanban() {
                     </div>
 
                     {/* ── FILTERS ROW ── */}
-                    <div className="flex items-center justify-between shrink-0 overflow-x-auto gap-4 sticky top-0 z-20 bg-white py-4 -mx-5 px-5 sm:-mx-8 sm:px-8 border-b border-gray-100 shadow-[0_4px_6px_-6px_rgba(0,0,0,0.05)]">
-                        <div className="flex gap-2.5">
-                            {/* Date Filter */}
-                            <div className="relative group">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><Calendar size={14} /></span>
-                                <select className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-40">
-                                    <option>Last 7 Days</option>
-                                    <option>Today</option>
-                                    <option>This Month</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            </div>
-                            
-                            {/* Source Filter */}
-                            <div className="relative group">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><List size={14} /></span>
-                                <select value={historySource} onChange={e => setHistorySource(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-36">
-                                    <option value="All">Source: All</option>
-                                    <option value="Online">Online</option>
-                                    <option value="POS">In-Store</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            </div>
-
-                            {/* Status Filter */}
-                            <div className="relative group">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><CheckCircle2 size={14} /></span>
-                                <select value={historyStatus} onChange={e => setHistoryStatus(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-44">
-                                    <option value="All">Status: All</option>
-                                    <option value="Delivered">Delivered</option>
-                                    <option value="Dispatched">Dispatched</option>
-                                    <option value="Preparing">Preparing</option>
-                                    <option value="Cancelled">Cancelled</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            </div>
+                    <div className="flex flex-col gap-3 shrink-0 overflow-x-auto sticky top-0 z-20 bg-white py-4 -mx-5 px-5 sm:-mx-8 sm:px-8 border-b border-gray-100 shadow-[0_4px_6px_-6px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            {['All', 'Online', 'POS'].map((source) => {
+                                const isActive = historySource === source;
+                                return (
+                                    <button
+                                        key={source}
+                                        onClick={() => setHistorySource(source)}
+                                        className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                    >
+                                        {source}
+                                    </button>
+                                );
+                            })}
                         </div>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex gap-2.5">
+                                {/* Date Filter */}
+                                <div className="relative group">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><Calendar size={14} /></span>
+                                    <select className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-40">
+                                        <option>Last 7 Days</option>
+                                        <option>Today</option>
+                                        <option>This Month</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
+                                
+                                {/* Source Filter */}
+                                <div className="relative group">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><List size={14} /></span>
+                                    <select value={historySource} onChange={e => setHistorySource(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-36">
+                                        <option value="All">Source: All</option>
+                                        <option value="Online">Online</option>
+                                        <option value="POS">In-Store</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
 
-                        {/* Right side: Search & Export */}
-                        <div className="flex items-center gap-3">
-                            <div className="relative w-64 hidden sm:block">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="text" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Search ID or Customer..." className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-semibold focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 text-gray-900 shadow-sm" />
+                                {/* Status Filter */}
+                                <div className="relative group">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600"><CheckCircle2 size={14} /></span>
+                                    <select value={historyStatus} onChange={e => setHistoryStatus(e.target.value)} className="pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 shadow-sm appearance-none outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 cursor-pointer w-44">
+                                        <option value="All">Status: All</option>
+                                        <option value="Delivered">Delivered</option>
+                                        <option value="Dispatched">Dispatched</option>
+                                        <option value="Preparing">Preparing</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
-                            <button className="flex items-center gap-2 bg-[#475569] hover:bg-slate-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shrink-0">
-                                <Download size={14} className="stroke-[2.5]" /> Export CSV
-                            </button>
+
+                            {/* Right side: Search & Export */}
+                            <div className="flex items-center gap-3">
+                                <div className="relative w-64 hidden sm:block">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input type="text" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Search ID or Customer..." className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-sm font-semibold focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-100 text-gray-900 shadow-sm" />
+                                </div>
+                                <button className="flex items-center gap-2 bg-[#475569] hover:bg-slate-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shrink-0">
+                                    <Download size={14} className="stroke-[2.5]" /> Export CSV
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -1191,12 +1213,15 @@ function HostelBatchCard({
     return (
         <div className={`rounded-xl border shadow-sm overflow-hidden ${accentClass}`}>
             <div className="px-3 py-2.5 bg-white border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border ${accent === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black border ${accent === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
                         {hostel} Hostel
                     </span>
-                    <span className="text-xs font-semibold text-gray-500">{orders.length} orders · {getBatchRoomSummary(orders)}</span>
-                    <span className={`ml-auto inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${chipClass}`}>
+                    <span className="inline-flex items-center justify-center h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-black px-2.5">
+                        {orders.length}
+                    </span>
+                    <span className="text-xs text-slate-500">orders · {getBatchRoomSummary(orders)}</span>
+                    <span className={`ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${chipClass}`}>
                         {batchAge}m
                     </span>
                 </div>
@@ -1213,39 +1238,26 @@ function HostelBatchCard({
                         <div
                             key={order.id}
                             onClick={() => onSelectionChange(isSelected ? selectedIds.filter((id) => id !== order.id) : [...selectedIds, order.id])}
-                            className={`w-full px-3 py-2.5 text-left transition-colors ${isSelected ? 'bg-slate-50' : 'hover:bg-slate-50/70'}`}
+                            className={`w-full px-3 py-2.5 transition-colors rounded-xl ${isSelected ? 'bg-slate-100 shadow-sm' : 'hover:bg-slate-50/80'} cursor-pointer`}
                         >
-                            <div className="flex items-start gap-2.5">
-                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full ${dotClass}`} />
-                                <div className={`mt-1 w-3.5 h-3.5 rounded border ${isSelected ? 'bg-slate-900 border-slate-900' : 'border-gray-300 bg-white'}`} />
+                            <div className="flex items-center gap-3">
+                                <span className={`flex-shrink-0 mt-0.5 w-2.5 h-2.5 rounded-full ${dotClass}`} />
                                 <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[18px] font-black leading-none tracking-tight text-gray-900">
-                                                #{token} <span className="text-[16px] font-bold ml-2">{order.deliveryAddress?.name || 'Guest'}</span>
+                                            <p className="text-sm font-bold text-slate-900 truncate">
+                                                #{token} <span className="font-semibold text-slate-700">{order.deliveryAddress?.name || 'Guest'}</span>
                                             </p>
-                                            <p className="text-[12px] font-medium text-gray-600 truncate mt-0.5">
-                                                {itemText}
-                                            </p>
+                                            <p className="text-[12px] text-slate-500 truncate mt-0.5">{itemText}</p>
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-sm font-bold text-gray-700">Rm {order.deliveryAddress?.roomNumber || 'N/A'}</p>
-                                            <p className={`text-xs font-bold ${accent === 'amber' ? 'text-amber-600' : 'text-emerald-600'}`}>{actionText}</p>
+                                        <div className="shrink-0 text-right">
+                                            <p className="text-[11px] font-semibold text-slate-500">Rm {order.deliveryAddress?.roomNumber || 'N/A'}</p>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${accent === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                {order.status === 'Preparing' ? 'Preparing' : order.status === 'Dispatched' ? 'On trip' : 'Ready'}
+                                            </span>
                                         </div>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 font-semibold mt-1">
-                                        {title} · {getOrderAgeMinutes(order)}m active
-                                    </p>
                                 </div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onViewDetails(order);
-                                    }}
-                                    className="shrink-0 text-[11px] font-bold text-indigo-600 hover:text-indigo-700"
-                                >
-                                    View
-                                </button>
                             </div>
                         </div>
                     );
