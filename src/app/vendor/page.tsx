@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useVendor } from '@/contexts/VendorContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toggleProductAvailability } from '@/lib/vendor';
+import { getOrderStatusLabel, isOrderActiveStatus, isOrderCompletedStatus } from '@/lib/order-status';
 import { Product } from '@/types';
 import toast from 'react-hot-toast';
 import {
@@ -34,11 +35,14 @@ import {
     ExternalLink,
     Search,
     Lightbulb,
-    ArrowRight
+    ArrowRight,
+    Archive,
+    BarChart2,
+    Eye
 } from 'lucide-react';
 
 export default function VendorDashboardHome() {
-    const { orders, products } = useVendor();
+    const { orders, products, isStoreOpen, toggleStore } = useVendor();
     const { user, phoneNumber } = useAuth();
     const [chartRange, setChartRange] = useState<'7d' | 'monthly' | 'yearly'>('7d');
     const [chartMetric, setChartMetric] = useState<'revenue' | 'orders'>('revenue');
@@ -56,21 +60,13 @@ export default function VendorDashboardHome() {
         return orders.filter(o => new Date(o.orderDate).toDateString() === yStr);
     }, [orders]);
 
-    const activeOrders = orders.filter(o => o.status === 'Placed' || o.status === 'Pending' || o.status === 'Preparing');
-    const deliveredOrders = todayOrders.filter(o => o.status === 'Delivered' || o.status === 'Dispatched' || o.status === 'Completed');
+    const activeOrders = orders.filter(o => isOrderActiveStatus(o.status));
+    const deliveredOrders = todayOrders.filter(o => isOrderCompletedStatus(o.status));
     const todaySales = todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
     const yesterdaySales = yesterdayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
 
     const salesChange = yesterdaySales > 0 ? Math.round(((todaySales - yesterdaySales) / yesterdaySales) * 100) : 0;
     const ordersChange = yesterdayOrders.length > 0 ? Math.round(((todayOrders.length - yesterdayOrders.length) / yesterdayOrders.length) * 100) : 0;
-
-    const avgWaitTime = useMemo(() => {
-        if (activeOrders.length === 0) return 0;
-        const totalMins = activeOrders.reduce((sum, o) => {
-            return sum + Math.floor((Date.now() - new Date(o.orderDate).getTime()) / 60000);
-        }, 0);
-        return Math.round(totalMins / activeOrders.length);
-    }, [activeOrders]);
 
     const onlineOrdersToday = todayOrders.filter(o => o.orderType !== 'pos');
     const posOrdersToday = todayOrders.filter(o => o.orderType === 'pos');
@@ -183,46 +179,58 @@ export default function VendorDashboardHome() {
     return (
         <div className="p-6 md:p-8 max-w-[1400px] mx-auto space-y-6 h-full flex flex-col overflow-y-auto w-full bg-slate-50">
             {/* ── HEADER ── */}
-            <div className="shrink-0 flex items-center justify-between">
-                <div>
-                    <h2 className="text-[28px] font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        Welcome, Admin <span className="text-2xl">👋</span>
-                    </h2>
+            <div className="shrink-0">
+                <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">
+                    Welcome back, Admin
+                </h2>
+                <p className="text-[14px] text-slate-500 mt-1">Here&apos;s what&apos;s happening at your canteen today</p>
+            </div>
+
+            {/* ═══ TOP SECTION: 3 STAT CARDS ═══ */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 shrink-0">
+                {/* Today's Orders */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 relative">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Today&apos;s Orders</p>
+                    <p className="text-[42px] font-bold text-slate-900 leading-none">{todayOrders.length}</p>
+                    <p className="text-[13px] text-slate-500 mt-2">
+                        {todayOrders.length === 0 ? 'No orders yet today' : `${deliveredOrders.length} completed`}
+                    </p>
+                </div>
+
+                {/* Today's Earnings */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 relative">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Today&apos;s Earnings</p>
+                    <p className="text-[42px] font-bold text-slate-900 leading-none">₹{todaySales.toLocaleString()}</p>
+                    <p className="text-[13px] mt-2">
+                        {todaySales === 0 ? (
+                            <span className="text-blue-600">Store is currently {isStoreOpen ? 'open' : 'closed'}</span>
+                        ) : (
+                            <span className="text-emerald-600">+{salesChange}% from yesterday</span>
+                        )}
+                    </p>
+                </div>
+
+                {/* Active Orders */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 relative">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Active Orders</p>
+                    <p className="text-[42px] font-bold text-blue-600 leading-none">{activeOrders.length}</p>
+                    <p className="text-[13px] text-slate-500 mt-2">
+                        {activeOrders.length === 0 ? 'All orders fulfilled' : 'Pending action required'}
+                    </p>
                 </div>
             </div>
 
-            {/* ═══ TOP SECTION: STATS + CHART + IFRAME ═══ */}
+            {/* ═══ MIDDLE SECTION: CHART + QUICK ACTIONS ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 shrink-0">
-                
-                {/* Stats Column */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                    {/* Today's Orders */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-center relative min-h-[140px]">
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-indigo-700 font-semibold text-[15px]">Today's Orders</span>
-                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                                <ShoppingBag size={18} />
-                            </div>
+                {/* Revenue Trend Chart */}
+                <div className="lg:col-span-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col min-h-[340px]">
+                    <div className="flex items-center justify-between mb-1">
+                        <div>
+                            <h3 className="text-[17px] font-semibold text-slate-900">
+                                {chartMetric === 'revenue' ? 'Revenue Trend' : 'Order Trend'}
+                            </h3>
+                            <p className="text-[12px] text-slate-400 mt-0.5">Last 7 days</p>
                         </div>
-                        <div className="text-[42px] font-bold text-slate-900 leading-none mt-2">{todayOrders.length}</div>
-                    </div>
-
-                    {/* Today's Earnings */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-center relative min-h-[140px]">
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-indigo-700 font-semibold text-[15px]">Today's Earnings</span>
-                            <span className="text-emerald-600 font-bold text-[14px]">+{salesChange}% ↑</span>
-                        </div>
-                        <div className="text-[42px] font-bold text-slate-900 leading-none mt-2">₹{todaySales.toLocaleString()}</div>
-                    </div>
-                </div>
-
-                {/* Chart Area */}
-                <div className="lg:col-span-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col min-h-[304px]">
-                    <div className="flex items-center justify-between mb-4 gap-3">
-                        <h3 className="text-[17px] font-semibold text-slate-900">
-                            {chartMetric === 'revenue' ? 'Revenue Trend' : 'Order Trend'}
-                        </h3>
                         <div className="flex items-center gap-2">
                             <select
                                 value={chartMetric}
@@ -243,7 +251,7 @@ export default function VendorDashboardHome() {
                             </select>
                         </div>
                     </div>
-                    <div className="flex-1 w-full relative min-h-0">
+                    <div className="flex-1 w-full relative min-h-0 mt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e9eef5" />
@@ -265,27 +273,66 @@ export default function VendorDashboardHome() {
                                         chartMetric === 'revenue' ? 'Revenue' : 'Orders',
                                     ]}
                                 />
-                                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={24} />
+                                <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
                             </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="lg:col-span-4 flex flex-col gap-5">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col">
+                        <h3 className="text-[17px] font-semibold text-slate-900 mb-5">Quick Actions</h3>
+                        <div className="flex flex-col gap-3">
+                            <Link href="/vendor/orders" className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors shadow-sm text-[14px]">
+                                <ShoppingBag size={16} />
+                                View Live Orders
+                            </Link>
+                            <Link href="/vendor/menu" className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-colors border border-slate-200 text-[14px]">
+                                <Archive size={16} />
+                                Manage Inventory
+                            </Link>
+                            <Link href="/vendor/analytics" className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-colors border border-slate-200 text-[14px]">
+                                <Activity size={16} />
+                                View Analytics
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* Store Status */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+                        <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Store Status</p>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[15px] font-semibold text-slate-900">Accepting Orders</span>
+                            <button
+                                onClick={toggleStore}
+                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${isStoreOpen ? 'bg-blue-600' : 'bg-slate-300'}`}
+                            >
+                                <span className={`inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} style={{ width: 22, height: 22 }} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* ═══ RECENT ORDERS TABLE ═══ */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col flex-1 min-h-[300px] overflow-hidden">
-                <div className="p-6 border-b border-slate-200 shrink-0 bg-slate-50/50">
+                <div className="p-6 border-b border-slate-200 shrink-0 flex items-center justify-between">
                     <h3 className="text-[18px] font-semibold text-slate-900">Recent Orders</h3>
+                    <Link href="/vendor/orders" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1">
+                        View all orders
+                        <ArrowRight size={14} />
+                    </Link>
                 </div>
                 <div className="overflow-x-auto flex-1 h-full">
                     <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
-                            <tr className="bg-slate-50 text-slate-500 text-[14px]">
-                                <th className="py-4 px-6 font-medium">Order ID</th>
-                                <th className="py-4 px-3 font-medium">Customer</th>
-                                <th className="py-4 px-3 font-medium">Items</th>
-                                <th className="py-4 px-3 font-medium">Total</th>
-                                <th className="py-4 px-6 font-medium text-right">Status</th>
+                            <tr className="bg-slate-50 text-slate-500 text-[12px] uppercase tracking-wider">
+                                <th className="py-4 px-6 font-semibold">Order ID</th>
+                                <th className="py-4 px-3 font-semibold">Customer</th>
+                                <th className="py-4 px-3 font-semibold">Items</th>
+                                <th className="py-4 px-3 font-semibold">Total</th>
+                                <th className="py-4 px-6 font-semibold text-right">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-[14px]">
@@ -295,7 +342,8 @@ export default function VendorDashboardHome() {
                                 </tr>
                             ) : (
                                 recentActivity.map((order) => {
-                                    const isCompleted = order.status === 'Delivered' || order.status === 'Completed' || order.status === 'Dispatched';
+                                    const isCompleted = isOrderCompletedStatus(order.status);
+                                    const isInTransit = order.status === 'Dispatched';
                                     const isPreparing = order.status === 'Preparing';
                                     const isPlaced = order.status === 'Placed' || order.status === 'Pending';
                                     
@@ -308,11 +356,12 @@ export default function VendorDashboardHome() {
                                             <td className="py-4 px-6 text-right whitespace-nowrap">
                                                 <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[13px] font-medium border
                                                     ${isCompleted ? 'bg-emerald-50/70 text-emerald-700 border-emerald-200' : 
-                                                      isPreparing ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                                      isInTransit ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                      isPreparing ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                       isPlaced ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                       'bg-gray-50 text-gray-700 border-gray-200'}
                                                 `}>
-                                                    {order.status === 'Dispatched' ? 'Completed' : order.status}
+                                                    {getOrderStatusLabel(order.status)}
                                                 </span>
                                             </td>
                                         </tr>

@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useVendor } from '@/contexts/VendorContext';
-import { updateOrderStatus, batchDispatchOrders, createPOSOrder } from '@/lib/vendor';
+import { updateOrderStatus, batchUpdateOrderStatus, createPOSOrder } from '@/lib/vendor';
 import { useThermalPrinter } from '@/hooks/useThermalPrinter';
 import { Order, Product, OrderItem } from '@/types';
+import { getOrderAgeMinutes, getOrderSlaState, getOrderStatusLabel } from '@/lib/order-status';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -58,13 +59,38 @@ function groupByHostel(orders: Order[]): Record<string, Order[]> {
     return groups;
 }
 
+function getBatchRoomSummary(orders: Order[]): string {
+    const floors = Array.from(new Set(
+        orders
+            .map((order) => order.deliveryAddress?.roomNumber?.trim())
+            .filter(Boolean)
+            .map((room) => room![0])
+            .filter((floor) => /\d/.test(floor))
+    ));
+
+    if (floors.length === 0) return 'rooms pending';
+    return `floors ${floors.join(', ')}`;
+}
+
+function getBatchChipClass(state: 'normal' | 'warning' | 'overdue') {
+    switch (state) {
+        case 'warning':
+            return 'bg-amber-50 text-amber-700 border-amber-200';
+        case 'overdue':
+            return 'bg-red-50 text-red-700 border-red-200';
+        default:
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function VendorKanban() {
     const { orders, products, playDispatchSound } = useVendor();
-    const [preparingSearchToken, setPreparingSearchToken] = useState('');
     const [kitchenYellMode, setKitchenYellMode] = useState(false);
+    const [selectedPreparingIds, setSelectedPreparingIds] = useState<string[]>([]);
+    const [selectedDispatchIds, setSelectedDispatchIds] = useState<string[]>([]);
     const { isConnected: isPrinterConnected, printKOT: printReceipt, isPrinting } = useThermalPrinter();
 
     // ── MOBILE TAB STATE & FEEDBACK ────────────────────────────────
@@ -81,7 +107,26 @@ export default function VendorKanban() {
     // ─── DERIVED DATA ──────────────────────────────────────────────────
     const tokenMap = useMemo(() => buildDailyTokens(orders), [orders]);
     const newOrders = useMemo(() => orders.filter(o => o.status === 'Placed' || o.status === 'Pending').sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()), [orders]);
-    const preparingOrders = useMemo(() => orders.filter(o => o.status === 'Preparing').sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()), [orders]);
+    const preparingOrders = useMemo(
+        () =>
+            orders
+                .filter(o => o.status === 'Preparing' && o.orderType !== 'pos')
+                .sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()),
+        [orders]
+    );
+    const dispatchedOrders = useMemo(
+        () =>
+            orders
+                .filter(o => o.status === 'Dispatched' && o.orderType !== 'pos')
+                .sort((a, b) => new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()),
+        [orders]
+    );
+    const preparingGroups = useMemo(() => Object.entries(groupByHostel(preparingOrders)).sort(([, a], [, b]) => {
+        return getOrderAgeMinutes(b[0]) - getOrderAgeMinutes(a[0]);
+    }), [preparingOrders]);
+    const dispatchedGroups = useMemo(() => Object.entries(groupByHostel(dispatchedOrders)).sort(([, a], [, b]) => {
+        return getOrderAgeMinutes(b[0]) - getOrderAgeMinutes(a[0]);
+    }), [dispatchedOrders]);
     const kitchenTally = useMemo(() => {
         const tally: Record<string, number> = {};
         preparingOrders.forEach(o => o.items.forEach(item => { tally[item.name] = (tally[item.name] || 0) + item.quantity; }));
@@ -98,35 +143,36 @@ export default function VendorKanban() {
             await printReceipt(order, token);
             await updateOrderStatus(order.id, 'Preparing');
             toast.success(`#${token} accepted`, { style: { borderRadius: '14px', fontWeight: 600 } });
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
             // Show error and allow retry — do NOT accept the order if printing failed
-            toast.error(err?.message || 'Print failed', {
+            toast.error(err instanceof Error ? err.message : 'Print failed', {
                 duration: 4000,
                 style: { borderRadius: '14px', fontWeight: 600 },
             });
         }
     }, [printReceipt]);
 
-    const dispatchWithUndo = useCallback((orderId: string, token: string) => {
-        const run = async () => {
-            try {
-                await batchDispatchOrders([orderId]);
-                playDispatchSound();
-                notifyDispatch(`Delivered #${token}`);
-            } catch { toast.error('Failed to deliver order'); }
-        };
-        run();
+    const markOrdersOutForDelivery = useCallback(async (orderIds: string[], label: string) => {
+        try {
+            await batchUpdateOrderStatus(orderIds, 'Dispatched');
+            setSelectedPreparingIds(prev => prev.filter(id => !orderIds.includes(id)));
+            playDispatchSound();
+            notifyDispatch(`${label} out for delivery`);
+        } catch {
+            toast.error('Failed to start delivery batch');
+        }
     }, [playDispatchSound, notifyDispatch]);
 
-    const handlePreparingSearchDispatch = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        const q = preparingSearchToken.trim().padStart(3, '0');
-        if (!q.trim()) return;
-        const match = preparingOrders.find(o => tokenMap.get(o.id) === q);
-        if (match) { dispatchWithUndo(match.id, q); setPreparingSearchToken(''); }
-        else toast.error(`Token #${q} not found in Preparing`);
-    }, [preparingSearchToken, preparingOrders, tokenMap, dispatchWithUndo]);
+    const markOrdersDelivered = useCallback(async (orderIds: string[], label: string) => {
+        try {
+            await batchUpdateOrderStatus(orderIds, 'Delivered');
+            setSelectedDispatchIds(prev => prev.filter(id => !orderIds.includes(id)));
+            notifyDispatch(`${label} delivered`);
+        } catch {
+            toast.error('Failed to close delivery batch');
+        }
+    }, [notifyDispatch]);
 
     // ─── POS STATE ─────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState<'board' | 'history'>('board');
@@ -154,6 +200,13 @@ export default function VendorKanban() {
             setHighlightedSuggestionIndex(null);
         }
     }, [posSearch, posFiltered.length]);
+
+    useEffect(() => {
+        const activePreparingIds = new Set(preparingOrders.map((order) => order.id));
+        const activeDispatchIds = new Set(dispatchedOrders.map((order) => order.id));
+        setSelectedPreparingIds((prev) => prev.filter((id) => activePreparingIds.has(id)));
+        setSelectedDispatchIds((prev) => prev.filter((id) => activeDispatchIds.has(id)));
+    }, [preparingOrders, dispatchedOrders]);
 
     const posCartItems: OrderItem[] = useMemo(() =>
         Object.entries(posCart).map(([productId, quantity]) => {
@@ -202,9 +255,9 @@ export default function VendorKanban() {
             try {
                 await printReceipt(printMockOrder, token);
                 toast.success(`POS Order #${token} created & printed!`, { style: { borderRadius: '14px', fontWeight: 600 } });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('POS Print error:', err);
-                toast.success(`Order created! (Print failed: ${err.message})`, { style: { borderRadius: '14px', fontWeight: 600 } });
+                toast.success(`Order created! (Print failed: ${err instanceof Error ? err.message : 'Unknown error'})`, { style: { borderRadius: '14px', fontWeight: 600 } });
             }
 
             setPosCart({});
@@ -486,38 +539,69 @@ export default function VendorKanban() {
                             <div className="flex flex-col bg-white  min-h-full w-full max-w-full overflow-hidden">
                                 <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-200 shrink-0">
                                     <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-500 flex items-center justify-center"><ChefHat size={13} /></div>
-                                    <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">PREPARING</h2>
-                                    {preparingOrdersCount > 0 && <span className="ml-auto bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{preparingOrdersCount}</span>}
+                                    <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">PREPARING BATCHES</h2>
+                                    {(preparingOrdersCount + dispatchedOrders.length) > 0 && <span className="ml-auto bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{preparingOrdersCount + dispatchedOrders.length}</span>}
                                 </div>
-                                <form onSubmit={handlePreparingSearchDispatch} className="px-4 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
-                                    <div className="relative">
-                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input type="text" value={preparingSearchToken} onChange={e => setPreparingSearchToken(e.target.value)} placeholder="Token # → Enter to dispatch" className="w-full pl-9 pr-8 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 text-sm font-bold placeholder:font-normal focus:outline-none focus:border-amber-400" />
+                                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
+                                    <div className="grid grid-cols-3 gap-2 text-center">
+                                        <div className="rounded-xl bg-white border border-gray-200 py-2">
+                                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pending</p>
+                                            <p className="text-lg font-black text-gray-900 leading-none">{preparingOrdersCount + dispatchedOrders.length}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white border border-gray-200 py-2">
+                                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Preparing</p>
+                                            <p className="text-lg font-black text-amber-600 leading-none">{preparingOrdersCount}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white border border-gray-200 py-2">
+                                            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">On Trip</p>
+                                            <p className="text-lg font-black text-emerald-600 leading-none">{dispatchedOrders.length}</p>
+                                        </div>
                                     </div>
-                                </form>
-                                <div className="flex-1 p-3 space-y-3 pb-8 overflow-y-auto">
-                                    {preparingOrders.length === 0 ? <EmptyState emoji="👨‍🍳" text="Kitchen is clear" sub="No items being prepared" /> : (
-                                        preparingOrders.map(order => {
-                                            const tok = tokenMap.get(order.id) || '???';
-                                            const mins = minutesElapsed(order.orderDate);
-                                            return (
-                                                <button key={order.id} onClick={() => dispatchWithUndo(order.id, tok)} className={`w-full flex items-center justify-between p-3 sm:p-4 bg-white rounded-xl border border-gray-200 border-l-4 ${mins >= 20 ? 'border-l-red-500' : mins >= 10 ? 'border-l-amber-400' : 'border-l-gray-300'} shadow-sm text-left min-h-[64px]`}>
-                                                    <div className="flex items-center gap-3 min-w-0 pr-2">
-                                                        <span className={`text-xl sm:text-2xl font-black tracking-tighter shrink-0 ${mins >= 20 ? 'text-red-700' : 'text-gray-900'}`}>#{tok}</span>
-                                                        <div className="min-w-0">
-                                                            <p className="text-xs font-bold text-gray-500">{order.items.reduce((s, i) => s + i.quantity, 0)} Items</p>
-                                                            <p className="text-[11px] sm:text-xs text-gray-400 font-medium truncate w-full">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0">
-                                                        <span className={`text-xs sm:text-sm font-bold ${mins >= 20 ? 'text-red-500' : 'text-gray-400'}`}>{mins}m</span>
-                                                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold whitespace-nowrap">
-                                                            <Truck size={12} className="sm:w-3.5 sm:h-3.5" /> Dispatch
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })
+                                </div>
+                                <div className="flex-1 p-3 space-y-4 pb-8 overflow-y-auto bg-slate-50">
+                                    {preparingGroups.length === 0 && dispatchedGroups.length === 0 ? <EmptyState emoji="👨‍🍳" text="Kitchen is clear" sub="No active batches right now" /> : (
+                                        <>
+                                            {preparingGroups.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <p className="px-1 text-[11px] font-black tracking-[0.15em] text-gray-500 uppercase">Preparing Priority</p>
+                                                    {preparingGroups.map(([hostel, hostelOrders]) => (
+                                                        <HostelBatchCard
+                                                            key={`mobile-preparing-${hostel}`}
+                                                            title="Preparing"
+                                                            hostel={hostel}
+                                                            orders={hostelOrders}
+                                                            tokenMap={tokenMap}
+                                                            selectedIds={selectedPreparingIds}
+                                                            accent="amber"
+                                                            primaryActionLabel="Out for delivery"
+                                                            onSelectionChange={(ids) => setSelectedPreparingIds(ids)}
+                                                            onPrimaryAction={(ids) => markOrdersOutForDelivery(ids, hostel)}
+                                                            onViewDetails={setSelectedOrderDetails}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {dispatchedGroups.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <p className="px-1 text-[11px] font-black tracking-[0.15em] text-gray-500 uppercase">Out For Delivery</p>
+                                                    {dispatchedGroups.map(([hostel, hostelOrders]) => (
+                                                        <HostelBatchCard
+                                                            key={`mobile-dispatched-${hostel}`}
+                                                            title="Out for delivery"
+                                                            hostel={hostel}
+                                                            orders={hostelOrders}
+                                                            tokenMap={tokenMap}
+                                                            selectedIds={selectedDispatchIds}
+                                                            accent="emerald"
+                                                            primaryActionLabel="Delivered"
+                                                            onSelectionChange={(ids) => setSelectedDispatchIds(ids)}
+                                                            onPrimaryAction={(ids) => markOrdersDelivered(ids, hostel)}
+                                                            onViewDetails={setSelectedOrderDetails}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -681,45 +765,62 @@ export default function VendorKanban() {
                                     <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100">
                                         <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-500 flex items-center justify-center"><ChefHat size={13} /></div>
                                         <h2 className="font-extrabold text-sm text-gray-900 tracking-tight">PREPARING PRIORITY</h2>
-                                        {preparingOrdersCount > 0 && <span className="ml-auto bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{preparingOrdersCount}</span>}
+                                        {(preparingOrdersCount + dispatchedOrders.length) > 0 && <span className="ml-auto bg-amber-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full">{preparingOrdersCount + dispatchedOrders.length}</span>}
                                     </div>
-                                    <form onSubmit={handlePreparingSearchDispatch} className="px-3 py-2 bg-white">
-                                        <div className="relative">
-                                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                            <input type="text" value={preparingSearchToken} onChange={e => setPreparingSearchToken(e.target.value)} placeholder="Token # → Enter to deliver" className="w-full pl-9 pr-8 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-100" />
-                                            {preparingSearchToken && <button type="button" onClick={() => setPreparingSearchToken('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
+                                    <div className="px-3 py-2 bg-white">
+                                        <div className="rounded-xl border border-gray-200 bg-slate-50 px-3 py-2.5 flex items-center justify-between">
+                                            <span className="text-xs uppercase tracking-[0.14em] text-gray-500 font-black">Total pending orders</span>
+                                            <span className="text-lg font-black text-gray-900 leading-none">{preparingOrdersCount + dispatchedOrders.length}</span>
                                         </div>
-                                    </form>
+                                    </div>
                                     <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-gray-500">
-                                        <span>{preparingOrdersCount} Orders | {preparingItemsCount} Items</span>
+                                        <span>{preparingOrdersCount} Preparing | {dispatchedOrders.length} On trip | {preparingItemsCount} Items</span>
                                         {longestPreparingMins > 0 && <span className={longestPreparingMins > 20 ? 'text-red-500 font-bold' : ''}>Highest wait: {longestPreparingMins}m</span>}
                                     </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
-                                    {preparingOrders.length === 0 ? <EmptyState emoji="👨‍🍳" text="Kitchen is clear" sub="No items being prepared" /> : (
-                                        <div className="flex flex-col gap-2">
-                                            {preparingOrders.map(order => {
-                                                const tok = tokenMap.get(order.id) || '???';
-                                                const mins = minutesElapsed(order.orderDate);
-                                                let borderCls = 'border-l-gray-300';
-                                                let timeCls = 'text-gray-500';
-                                                if (mins >= 20) { borderCls = 'border-l-red-500'; timeCls = 'text-red-600'; }
-                                                else if (mins >= 10) { borderCls = 'border-l-amber-400'; timeCls = 'text-amber-600'; }
-                                                return (
-                                                    <button key={order.id} onClick={() => dispatchWithUndo(order.id, tok)} className={`flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 border-l-4 ${borderCls} shadow-sm hover:shadow transition-all text-left`}>
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-2xl font-black tracking-tighter text-gray-900">#{tok}</span>
-                                                                <span className={`text-xs font-bold ${timeCls}`}>{mins}m</span>
-                                                            </div>
-                                                            <p className="text-xs font-semibold text-gray-600 truncate mt-0.5">{order.deliveryAddress?.name || 'Guest'} · Hostel {order.deliveryAddress?.hostelNumber || 'N/A'}</p>
-                                                            <p className="text-[11px] font-medium text-gray-400 truncate">{order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                                                        </div>
-                                                        <span className="ml-3 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">Deliver</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
+                                <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
+                                    {preparingGroups.length === 0 && dispatchedGroups.length === 0 ? <EmptyState emoji="👨‍🍳" text="Kitchen is clear" sub="No active batches right now" /> : (
+                                        <>
+                                            {preparingGroups.length > 0 && (
+                                                <div className="space-y-3">
+                                                    {preparingGroups.map(([hostel, hostelOrders]) => (
+                                                        <HostelBatchCard
+                                                            key={`desktop-preparing-${hostel}`}
+                                                            title="Preparing"
+                                                            hostel={hostel}
+                                                            orders={hostelOrders}
+                                                            tokenMap={tokenMap}
+                                                            selectedIds={selectedPreparingIds}
+                                                            accent="amber"
+                                                            primaryActionLabel="Out for delivery"
+                                                            onSelectionChange={(ids) => setSelectedPreparingIds(ids)}
+                                                            onPrimaryAction={(ids) => markOrdersOutForDelivery(ids, hostel)}
+                                                            onViewDetails={setSelectedOrderDetails}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {dispatchedGroups.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <div className="px-1 text-[11px] font-black tracking-[0.16em] text-gray-500 uppercase">Out For Delivery</div>
+                                                    {dispatchedGroups.map(([hostel, hostelOrders]) => (
+                                                        <HostelBatchCard
+                                                            key={`desktop-dispatched-${hostel}`}
+                                                            title="Out for delivery"
+                                                            hostel={hostel}
+                                                            orders={hostelOrders}
+                                                            tokenMap={tokenMap}
+                                                            selectedIds={selectedDispatchIds}
+                                                            accent="emerald"
+                                                            primaryActionLabel="Delivered"
+                                                            onSelectionChange={(ids) => setSelectedDispatchIds(ids)}
+                                                            onPrimaryAction={(ids) => markOrdersDelivered(ids, hostel)}
+                                                            onViewDetails={setSelectedOrderDetails}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -946,7 +1047,7 @@ export default function VendorKanban() {
                                             // Handle status colors
                                             let statusCls = "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200";
                                             if (order.status === 'Delivered') statusCls = "bg-emerald-50/70 text-emerald-700 ring-1 ring-inset ring-emerald-200";
-                                            if (order.status === 'Dispatched') statusCls = "bg-emerald-50/70 text-emerald-700 ring-1 ring-inset ring-emerald-200";
+                                            if (order.status === 'Dispatched') statusCls = "bg-indigo-50/70 text-indigo-700 ring-1 ring-inset ring-indigo-200";
                                             if (order.status === 'Preparing') statusCls = "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200";
                                             if (order.status === 'Cancelled') statusCls = "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200";
                                             
@@ -996,7 +1097,7 @@ export default function VendorKanban() {
                                                     </td>
                                                     <td className="px-3 py-4">
                                                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${statusCls}`}>
-                                                            {order.status === 'Dispatched' ? 'Completed' : order.status}
+                                                            {getOrderStatusLabel(order.status)}
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-4 text-right pr-4 relative">
@@ -1045,6 +1146,129 @@ export default function VendorKanban() {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
+
+function HostelBatchCard({
+    title,
+    hostel,
+    orders,
+    tokenMap,
+    selectedIds,
+    accent,
+    primaryActionLabel,
+    onSelectionChange,
+    onPrimaryAction,
+    onViewDetails,
+}: {
+    title: string;
+    hostel: string;
+    orders: Order[];
+    tokenMap: Map<string, string>;
+    selectedIds: string[];
+    accent: 'amber' | 'emerald';
+    primaryActionLabel: string;
+    onSelectionChange: (orderIds: string[]) => void;
+    onPrimaryAction: (orderIds: string[]) => void;
+    onViewDetails: (order: Order) => void;
+}) {
+    const orderIds = orders.map((order) => order.id);
+    const selectedInBatch = orderIds.filter((id) => selectedIds.includes(id));
+    const allSelected = selectedInBatch.length === orderIds.length && orderIds.length > 0;
+    const batchAge = Math.max(...orders.map((order) => getOrderAgeMinutes(order)));
+    const batchState = orders.some((order) => getOrderSlaState(order) === 'overdue')
+        ? 'overdue'
+        : orders.some((order) => getOrderSlaState(order) === 'warning')
+            ? 'warning'
+            : 'normal';
+    const chipClass = getBatchChipClass(batchState);
+    const accentClass = accent === 'amber'
+        ? 'border-amber-200 bg-amber-50/40'
+        : 'border-emerald-200 bg-emerald-50/40';
+    const actionClass = accent === 'amber'
+        ? 'bg-slate-900 hover:bg-slate-800'
+        : 'bg-emerald-600 hover:bg-emerald-700';
+    const actionText = accent === 'amber' ? 'Preparing' : 'Out for delivery';
+
+    return (
+        <div className={`rounded-xl border shadow-sm overflow-hidden ${accentClass}`}>
+            <div className="px-3 py-2.5 bg-white border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black border ${accent === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+                        {hostel} Hostel
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500">{orders.length} orders · {getBatchRoomSummary(orders)}</span>
+                    <span className={`ml-auto inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${chipClass}`}>
+                        {batchAge}m
+                    </span>
+                </div>
+            </div>
+
+            <div className="divide-y divide-gray-100 bg-white">
+                {orders.map((order) => {
+                    const token = tokenMap.get(order.id) || '???';
+                    const isSelected = selectedIds.includes(order.id);
+                    const rowState = getOrderSlaState(order);
+                    const dotClass = rowState === 'overdue' ? 'bg-red-500' : rowState === 'warning' ? 'bg-amber-500' : 'bg-emerald-500';
+                    const itemText = order.items.map((item) => `${item.name} x${item.quantity}`).join(', ');
+                    return (
+                        <div
+                            key={order.id}
+                            onClick={() => onSelectionChange(isSelected ? selectedIds.filter((id) => id !== order.id) : [...selectedIds, order.id])}
+                            className={`w-full px-3 py-2.5 text-left transition-colors ${isSelected ? 'bg-slate-50' : 'hover:bg-slate-50/70'}`}
+                        >
+                            <div className="flex items-start gap-2.5">
+                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full ${dotClass}`} />
+                                <div className={`mt-1 w-3.5 h-3.5 rounded border ${isSelected ? 'bg-slate-900 border-slate-900' : 'border-gray-300 bg-white'}`} />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <p className="text-[18px] font-black leading-none tracking-tight text-gray-900">
+                                                #{token} <span className="text-[16px] font-bold ml-2">{order.deliveryAddress?.name || 'Guest'}</span>
+                                            </p>
+                                            <p className="text-[12px] font-medium text-gray-600 truncate mt-0.5">
+                                                {itemText}
+                                            </p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-sm font-bold text-gray-700">Rm {order.deliveryAddress?.roomNumber || 'N/A'}</p>
+                                            <p className={`text-xs font-bold ${accent === 'amber' ? 'text-amber-600' : 'text-emerald-600'}`}>{actionText}</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-gray-500 font-semibold mt-1">
+                                        {title} · {getOrderAgeMinutes(order)}m active
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onViewDetails(order);
+                                    }}
+                                    className="shrink-0 text-[11px] font-bold text-indigo-600 hover:text-indigo-700"
+                                >
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="px-3 py-2.5 bg-white border-t border-gray-100 flex items-center gap-2">
+                <button
+                    onClick={() => onSelectionChange(allSelected ? [] : orderIds)}
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                >
+                    {allSelected ? 'Clear selection' : 'Mark all ready'}
+                </button>
+                <button
+                    onClick={() => onPrimaryAction(selectedInBatch.length > 0 ? selectedInBatch : orderIds)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold text-white ${actionClass}`}
+                >
+                    {primaryActionLabel}
+                </button>
+            </div>
+        </div>
+    );
+}
 
 function EmptyState({ emoji, text, sub }: { emoji: string; text: string; sub?: string }) {
     return (

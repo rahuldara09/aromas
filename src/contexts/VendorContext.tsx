@@ -146,7 +146,7 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
             orders.forEach((o) => {
                 const mins = Math.floor((Date.now() - new Date(o.orderDate).getTime()) / 60000);
                 if (
-                    (o.status === 'Placed' || o.status === 'Pending' || o.status === 'Preparing') &&
+                    (o.status === 'Placed' || o.status === 'Pending' || o.status === 'Preparing' || o.status === 'Dispatched') &&
                     mins >= 20 &&
                     !redAlertedRef.current.has(o.id)
                 ) {
@@ -166,9 +166,9 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
             const idToken = await user!.getIdToken();
             await toggleStoreStatus(newVal, idToken, phoneNumber ?? '');
             toast.success(newVal ? 'Store is OPEN' : 'Store is CLOSED', { style: { borderRadius: '14px', fontWeight: 600 } });
-        } catch (error: any) {
+        } catch (error: unknown) {
             setIsStoreOpen(!newVal);
-            toast.error(error?.message || 'Failed to toggle store');
+            toast.error(error instanceof Error ? error.message : 'Failed to toggle store');
         }
     };
 

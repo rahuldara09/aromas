@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { listenToOrder } from '@/lib/firestore';
 import { Order, OrderStatus } from '@/types';
+import { getOrderStatusLabel } from '@/lib/order-status';
 import {
     CheckCircle2,
     ChefHat,
@@ -13,7 +14,7 @@ import {
     MapPin,
     Receipt,
     ArrowLeft,
-    XCircle
+    Truck
 } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -26,10 +27,11 @@ function getProgressStep(status: OrderStatus): number {
         case 'Preparing':
         case 'payment_processing':
             return 2;
-        case 'Completed':
         case 'Dispatched':
-        case 'Delivered':
             return 3;
+        case 'Completed':
+        case 'Delivered':
+            return 4;
         case 'Cancelled':
             return -1;
         default:
@@ -90,7 +92,6 @@ export default function OrderTrackingPage() {
     // Real-time Firestore listener
     useEffect(() => {
         if (!orderId) return;
-        setLoading(true);
         const unsub = listenToOrder(orderId, (o) => {
             setOrder(o);
             setLoading(false);
@@ -137,7 +138,7 @@ export default function OrderTrackingPage() {
 
     const progressStep = getProgressStep(order.status);
     const isCancelled = order.status === 'Cancelled' || order.status === 'failed';
-    const isDelivered = progressStep === 3;
+    const isDelivered = order.status === 'Delivered' || order.status === 'Completed';
     const etaMinutes = order.etaMinutes ?? 15;
     const expectedReadyTime = order.expectedReadyTime ? new Date(order.expectedReadyTime) : new Date(new Date(order.orderDate).getTime() + etaMinutes * 60000);
     const orderToken = order.orderToken ?? '---';
@@ -219,7 +220,7 @@ export default function OrderTrackingPage() {
                                 <p className="text-sm font-bold text-emerald-500 mb-2 bg-emerald-50 rounded-lg inline-block px-3 py-1">Payment Successful</p>
                             )}
                             <p className="text-2xl font-extrabold text-gray-900">
-                                {progressStep === 1 ? '🎉 Order Confirmed!' : '🍳 Being Prepared'}
+                                {progressStep === 1 ? '🎉 Order Confirmed!' : progressStep === 2 ? '🍳 Being Prepared' : progressStep === 3 ? '🛵 Out for delivery' : '📦 Almost there'}
                             </p>
                             <div className="mt-3 inline-flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-full px-5 py-2.5">
                                 <Clock size={16} />
@@ -239,15 +240,19 @@ export default function OrderTrackingPage() {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Live Status</p>
                     <div className="relative flex items-start justify-between">
                         {/* Connector line */}
-                        <div className="absolute top-6 left-[calc(16.67%)] right-[calc(16.67%)] h-0.5 bg-gray-100 z-0" />
+                        <div className="absolute top-6 left-[12.5%] right-[12.5%] h-0.5 bg-gray-100 z-0" />
                         {/* Filled connector */}
                         <div
-                            className={`absolute top-6 left-[calc(16.67%)] h-0.5 z-0 bg-red-400 transition-all duration-700`}
-                            style={{ width: progressStep >= 2 ? '33.33%' : '0%' }}
+                            className={`absolute top-6 left-[12.5%] h-0.5 z-0 bg-red-400 transition-all duration-700`}
+                            style={{ width: progressStep >= 2 ? '25%' : '0%' }}
                         />
                         <div
-                            className={`absolute top-6 left-1/2 h-0.5 z-0 bg-red-400 transition-all duration-700`}
-                            style={{ width: progressStep >= 3 ? '33.33%' : '0%' }}
+                            className={`absolute top-6 left-[37.5%] h-0.5 z-0 bg-red-400 transition-all duration-700`}
+                            style={{ width: progressStep >= 3 ? '25%' : '0%' }}
+                        />
+                        <div
+                            className={`absolute top-6 left-[62.5%] h-0.5 z-0 bg-red-400 transition-all duration-700`}
+                            style={{ width: progressStep >= 4 ? '25%' : '0%' }}
                         />
 
                         <ProgressStep
@@ -266,9 +271,16 @@ export default function OrderTrackingPage() {
                         />
                         <ProgressStep
                             step={3}
-                            label="Ready"
+                            label="Out for delivery"
+                            icon={<Truck size={18} />}
+                            current={progressStep === 3}
+                            done={progressStep > 3}
+                        />
+                        <ProgressStep
+                            step={4}
+                            label="Delivered"
                             icon={<Package size={18} />}
-                            current={progressStep === 3 && !isDelivered}
+                            current={progressStep === 4 && !isDelivered}
                             done={isDelivered}
                         />
                     </div>
@@ -281,7 +293,7 @@ export default function OrderTrackingPage() {
                                     'bg-blue-50 text-blue-600 border-blue-100'
                             }`}>
                             <span className="w-2 h-2 rounded-full bg-current" />
-                            {order.status}
+                            {getOrderStatusLabel(order.status)}
                         </span>
                     </div>
                 </div>

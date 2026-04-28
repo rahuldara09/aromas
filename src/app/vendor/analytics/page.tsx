@@ -1,6 +1,7 @@
 'use client';
 
 import { useVendor } from '@/contexts/VendorContext';
+import { Order } from '@/types';
 import { useMemo, useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getOrderStatusLabel, isOrderCompletedStatus } from '@/lib/order-status';
 
 export default function VendorAnalytics() {
     const { orders, products } = useVendor();
@@ -19,13 +21,13 @@ export default function VendorAnalytics() {
     // ─── DERIVED METRICS ───────────────────────────────────────────────
 
     // 1. App Payouts (Mocked recent total for realism if data sparse)
-    const deliveredSales = orders.filter(o => o.status === 'Delivered' || o.status === 'Completed').reduce((sum, o) => sum + o.grandTotal, 0);
+    const deliveredSales = orders.filter(o => isOrderCompletedStatus(o.status)).reduce((sum, o) => sum + o.grandTotal, 0);
     const displayPayout = deliveredSales > 0 ? deliveredSales : 25480.00; // fallback to match mockup visual if empty
 
     // 2. Active Orders
     const activeOrdersMap = {
         preparing: orders.filter(o => o.status === 'Preparing').length,
-        ready: orders.filter(o => o.status === 'Completed').length
+        ready: orders.filter(o => o.status === 'Dispatched').length
     };
     // Fallback for mockup exactness if 0
     const displayPreparing = activeOrdersMap.preparing || 14;
@@ -70,7 +72,7 @@ export default function VendorAnalytics() {
         const hours = Array.from({length: 24}, (_, i) => ({
             hour: i,
             label: i === 0 ? '12 AM' : i === 13 ? '1 PM (LUNCH)' : i === 23 ? '11 PM (NIGHT)' : '',
-            value: Math.floor(Math.random() * 20) + (i >= 12 && i <= 15 ? 40 : 0) + (i >= 19 && i <= 21 ? 25 : 0)
+            value: ((i * 7) % 18) + (i >= 12 && i <= 15 ? 40 : 0) + (i >= 19 && i <= 21 ? 25 : 0)
         }));
         return hours;
     }, []);
@@ -88,21 +90,19 @@ export default function VendorAnalytics() {
         ];
     }, []);
 
-    const recentLiveOrders = useMemo(() => {
-        return [...orders]
-            .sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
-            .slice(0, 3)
-            .map(o => ({
-                id: o.orderToken || '#' + o.id.slice(0, 6).toUpperCase(),
-                customer: o.customerPhone || 'Guest User',
-                items: Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} x${i.quantity || 1}`).join(', ') : o.items,
-                status: o.status,
-                time: new Date(o.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                amount: o.grandTotal
-            }));
-    }, [orders]);
+    const recentLiveOrders = [...orders]
+        .sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
+        .slice(0, 3)
+        .map(o => ({
+            id: o.orderToken || '#' + o.id.slice(0, 6).toUpperCase(),
+            customer: o.customerPhone || 'Guest User',
+            items: Array.isArray(o.items) ? o.items.map((i) => `${i.name} x${i.quantity || 1}`).join(', ') : '',
+            status: o.status,
+            time: new Date(o.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            amount: o.grandTotal
+        }));
 
-    const displayOrders = recentLiveOrders.length >= 3 ? recentLiveOrders : [
+    const displayOrders: Array<{ id: string; customer: string; items: string; status: Order['status'] | 'PREPARING' | 'READY'; time: string; amount: number }> = recentLiveOrders.length >= 3 ? recentLiveOrders : [
         { id: '#ORD-9021', customer: 'Aditya Verma', items: 'Masala Dosa x2, Tea x1', status: 'PREPARING', time: '12:45 PM', amount: 160.00 },
         { id: '#ORD-9020', customer: 'Sneha Kapoor', items: 'Cold Coffee x1', status: 'READY', time: '12:42 PM', amount: 85.00 },
         { id: '#ORD-9019', customer: 'Rahul Mehta', items: 'Chicken Biryani x1, Coke x1', status: 'Delivered', time: '12:30 PM', amount: 240.00 }
@@ -166,7 +166,7 @@ export default function VendorAnalytics() {
                                 </div>
                                 <div>
                                     <p className="text-[28px] font-black text-blue-600 leading-none mb-1">{displayReady < 10 && displayReady > 0 ? `0${displayReady}` : displayReady}</p>
-                                    <p className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest">Ready</p>
+                                    <p className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest">On trip</p>
                                 </div>
                             </div>
                         </div>
@@ -198,7 +198,7 @@ export default function VendorAnalytics() {
                             <span className="text-[10px] font-black text-white uppercase tracking-[0.1em]">H2Canteen Vendor Insights</span>
                         </div>
                         <p className="text-[14px] font-bold text-white/95 leading-snug mb-4">
-                            "Updating menu availability during lunch rush reduces cancelled orders by up to 22%."
+                            &quot;Updating menu availability during lunch rush reduces cancelled orders by up to 22%.&quot;
                         </p>
                         
                         <div className="mt-auto flex items-center gap-1.5 text-white/80 group-hover:text-white transition-colors cursor-pointer w-fit">
@@ -383,7 +383,7 @@ export default function VendorAnalytics() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {displayOrders.map((order: any, idx) => (
+                            {displayOrders.map((order, idx) => (
                                 <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="py-4">
                                         <span className="text-[13px] font-extrabold text-[#111827]">{order.id}</span>
@@ -398,10 +398,10 @@ export default function VendorAnalytics() {
                                         {/* Status Pill */}
                                         <span className={`inline-flex items-center px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest leading-none ${
                                             order.status === 'PREPARING' || order.status === 'Preparing' ? 'bg-amber-50 text-amber-600' :
-                                            order.status === 'READY' || order.status === 'Ready' ? 'bg-indigo-50 text-indigo-600' :
+                                            order.status === 'Dispatched' ? 'bg-indigo-50 text-indigo-600' :
                                             'bg-emerald-50 text-emerald-600'
                                         }`}>
-                                            {order.status}
+                                            {order.status === 'PREPARING' || order.status === 'READY' ? order.status : getOrderStatusLabel(order.status)}
                                         </span>
                                     </td>
                                     <td className="py-4">

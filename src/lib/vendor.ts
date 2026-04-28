@@ -13,6 +13,52 @@ import {
 } from 'firebase/firestore';
 import { Order, OrderStatus, Product } from '@/types';
 
+function getTimelineKeyForStatus(status: OrderStatus): 'placed' | 'accepted' | 'preparing' | 'dispatched' | 'completed' | 'cancelled' | null {
+    switch (status) {
+        case 'Placed':
+            return 'placed';
+        case 'Pending':
+            return 'accepted';
+        case 'Preparing':
+            return 'preparing';
+        case 'Dispatched':
+            return 'dispatched';
+        case 'Completed':
+        case 'Delivered':
+            return 'completed';
+        case 'Cancelled':
+            return 'cancelled';
+        default:
+            return null;
+    }
+}
+
+async function buildStatusUpdates(orderRef: ReturnType<typeof doc>, status: OrderStatus) {
+    const updates: Record<string, unknown> = { status };
+    const tKey = getTimelineKeyForStatus(status);
+
+    if (tKey) {
+        updates[`timeline.${tKey}`] = new Date();
+    }
+
+    if (status === 'Completed' || status === 'Dispatched' || status === 'Delivered') {
+        try {
+            const snap = await getDoc(orderRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                const start = data.timeline?.preparing?.toDate?.() || data.orderDate?.toDate?.();
+                if (start) {
+                    updates.prep_time = Math.max(1, Math.floor((Date.now() - start.getTime()) / 60_000));
+                }
+            }
+        } catch (e) {
+            logger.error('Failed to calc prep_time:', e);
+        }
+    }
+
+    return updates;
+}
+
 /**
  * ─── STORE STATUS (Master Switch) ─────────────────────────────────────────────
  */
@@ -91,40 +137,11 @@ export async function updateOrderStatus(
     cancelledBy?: string
 ): Promise<void> {
     const orderRef = doc(db, 'orders', orderId);
-    
-    // Convert friendly status string to strict timeline key
-    const tKey = status.toLowerCase() === 'placed' ? 'placed' 
-        : status.toLowerCase() === 'pending' ? 'accepted'
-        : status.toLowerCase() === 'preparing' ? 'preparing'
-        : status.toLowerCase() === 'completed' ? 'completed'
-        : status.toLowerCase() === 'dispatched' ? 'dispatched'
-        : status.toLowerCase() === 'delivered' ? 'completed'
-        : status.toLowerCase() === 'cancelled' ? 'cancelled'
-        : null;
-
-    const updates: Record<string, any> = { status };
-    
-    if (tKey) {
-        updates[`timeline.${tKey}`] = new Date();
-    }
+    const updates = await buildStatusUpdates(orderRef, status);
 
     if (status === 'Cancelled' && cancelReason) {
         updates['cancel_reason'] = cancelReason;
         if (cancelledBy) updates['cancelled_by'] = cancelledBy;
-    }
-
-    // Attempt to calculate prep_time if finishing
-    if (status === 'Completed' || status === 'Dispatched') {
-        try {
-            const snap = await getDoc(orderRef);
-            if (snap.exists()) {
-                const data = snap.data();
-                const start = data.timeline?.preparing?.toDate?.() || data.orderDate?.toDate?.();
-                if (start) {
-                    updates.prep_time = Math.max(1, Math.floor((Date.now() - start.getTime()) / 60_000));
-                }
-            }
-        } catch (e) { logger.error('Failed to calc prep_time:', e); }
     }
 
     await updateDoc(orderRef, updates);
@@ -268,13 +285,22 @@ export async function deleteProduct(productId: string, idToken: string, phone: s
  */
 
 /**
- * Atomically dispatches a batch of orders (e.g., all orders for a hostel group).
+ * Atomically updates a batch of orders with a shared status/timeline transition.
  */
-export async function batchDispatchOrders(orderIds: string[]): Promise<void> {
-    const batch = writeBatch(db);
-    orderIds.forEach((id) => {
+export async function batchUpdateOrderStatus(orderIds: string[], status: Extract<OrderStatus, 'Dispatched' | 'Delivered' | 'Preparing'>): Promise<void> {
+    const updatesById = await Promise.all(orderIds.map(async (id) => {
         const ref = doc(db, 'orders', id);
-        batch.update(ref, { status: 'Dispatched' as const });
+        const updates = await buildStatusUpdates(ref, status);
+        return { ref, updates };
+    }));
+
+    const batch = writeBatch(db);
+    updatesById.forEach(({ ref, updates }) => {
+        batch.update(ref, updates);
     });
     await batch.commit();
+}
+
+export async function batchDispatchOrders(orderIds: string[]): Promise<void> {
+    await batchUpdateOrderStatus(orderIds, 'Dispatched');
 }

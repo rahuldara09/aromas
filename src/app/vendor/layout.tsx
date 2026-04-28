@@ -39,6 +39,17 @@ import {
 import Link from 'next/link';
 import Script from 'next/script';
 import { Order } from '@/types';
+import { isOrderActiveStatus } from '@/lib/order-status';
+
+function getStoredVendorEmail(): string | null {
+    if (typeof window === 'undefined') return null;
+    const email = localStorage.getItem('vendorEmail');
+    const expiry = localStorage.getItem('vendorSessionExpiry');
+    if (email && expiry && Date.now() < Number(expiry)) return email;
+    localStorage.removeItem('vendorEmail');
+    localStorage.removeItem('vendorSessionExpiry');
+    return null;
+}
 
 // ─── MAIN LAYOUT WRAPPER ─────────────────────────────────────────
 export default function VendorLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +68,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
     const { isStoreOpen, toggleStore, unlockAudio, orders } = useVendor();
     const { isConnected: isPrinterConnected } = useThermalPrinter();
 
-    const activeCount = orders.filter(o => ['Placed', 'Pending', 'Preparing'].includes(o.status)).length;
+    const activeCount = orders.filter(o => isOrderActiveStatus(o.status)).length;
     useEffect(() => {
         document.title = activeCount > 0 ? `(${activeCount}) Aroma Ops` : 'Aroma Ops';
     }, [activeCount]);
@@ -80,26 +91,12 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
 
     // ── MOBILE DRAWER STATE ─────────────────────────────────────────────────
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-    useEffect(() => { setMobileDrawerOpen(false); }, [pathname]);
 
     // ── VENDOR EMAIL SESSION ────────────────────────────────────────────────
     // We gate on sessionStorage.vendorEmail (set after OTP verification).
     // No client-login required — vendor portal is fully standalone.
-    const [vendorEmail, setVendorEmail] = useState<string | null>(null);
-    const [isCheckingSession, setIsCheckingSession] = useState(true);
-
-    useEffect(() => {
-        const email = localStorage.getItem('vendorEmail');
-        const expiry = localStorage.getItem('vendorSessionExpiry');
-        if (email && expiry && Date.now() < Number(expiry)) {
-            setVendorEmail(email);
-        } else {
-            // Session expired or missing — clear stale data
-            localStorage.removeItem('vendorEmail');
-            localStorage.removeItem('vendorSessionExpiry');
-        }
-        setIsCheckingSession(false);
-    }, []);
+    const [vendorEmail, setVendorEmail] = useState<string | null>(() => getStoredVendorEmail());
+    const isCheckingSession = false;
 
     const handleLoginSuccess = (email: string) => {
         setVendorEmail(email);

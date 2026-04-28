@@ -9,6 +9,7 @@ import { getUserOrders, getUserAddresses, updateUserAddress, updateUserProfileUn
 import { saveSessionPhone } from '@/lib/auth';
 import { IIM_MUMBAI_HOSTELS } from '@/lib/hostels';
 import { Order, Address, UserProfile, UserAddress } from '@/types';
+import { getOrderStatusLabel, isOrderActiveStatus } from '@/lib/order-status';
 import { ListOrdered, MapPin, LogOut, Filter, Pencil, Check, X, User, Calendar, Leaf, UtensilsCrossed, Plus, Home, Building, HelpCircle, Mail, Phone, Camera, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { load } from '@cashfreepayments/cashfree-js';
@@ -17,9 +18,11 @@ type SidebarTab = 'orders' | 'addresses' | 'profile';
 
 const STATUS_COLORS: Record<string, string> = {
     Delivered: 'text-green-600',
+    Dispatched: 'text-blue-600',
     Paid: 'text-blue-600',
     Placed: 'text-green-600',
     Pending: 'text-yellow-600',
+    Preparing: 'text-amber-600',
     Cancelled: 'text-red-500',
     pending_payment: 'text-amber-600',
     failed: 'text-red-500',
@@ -27,9 +30,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_DOT: Record<string, string> = {
     Delivered: 'bg-green-500',
+    Dispatched: 'bg-blue-500',
     Placed: 'bg-green-500',
     Paid: 'bg-blue-500',
     Pending: 'bg-yellow-500',
+    Preparing: 'bg-amber-500',
     Cancelled: 'bg-red-400',
     pending_payment: 'bg-amber-500',
     failed: 'bg-red-400',
@@ -39,6 +44,7 @@ const STATUS_DOT: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
     pending_payment: 'Payment Pending',
     failed: 'Failed',
+    Dispatched: 'Out for delivery',
 };
 
 function formatDate(date: Date): string {
@@ -400,7 +406,7 @@ export default function AccountPage() {
                                     ) : (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {orders.map((order) => {
-                                                const isActive = ['Placed', 'Pending', 'Preparing'].includes(order.status);
+                                                const isActive = isOrderActiveStatus(order.status);
                                                 return (
                                                     <div
                                                         key={order.id}
@@ -435,7 +441,7 @@ export default function AccountPage() {
                                                             <div className="flex items-center gap-1.5">
                                                                 <div className={`w-2 h-2 rounded-full ${STATUS_DOT[order.status] ?? 'bg-gray-400'}`} />
                                                                 <span className={`text-sm font-medium ${STATUS_COLORS[order.status] ?? 'text-gray-600'}`}>
-                                                                    {STATUS_LABEL[order.status] ?? order.status}
+                                                                    {STATUS_LABEL[order.status] ?? getOrderStatusLabel(order.status)}
                                                                 </span>
                                                             </div>
                                                             {isActive && (
