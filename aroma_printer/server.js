@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync, exec } = require('child_process');
-const { formatReceiptText, formatReceiptRaw } = require('./receipt');
+const { formatReceiptText, formatReceiptRaw, formatReportText, formatReportRaw } = require('./receipt');
 
 const app = express();
 const HTTP_PORT = 9100;
@@ -226,6 +226,46 @@ app.post('/print', async (req, res) => {
       error: err.message,
       receipt: text,
     });
+  }
+});
+
+// ── PRINT REPORT ─────────────────────────────────────────────────
+app.post('/print-report', async (req, res) => {
+  const reportData = req.body;
+
+  if (!reportData || !reportData.summary) {
+    return res.status(400).json({ success: false, error: 'Missing report data' });
+  }
+
+  const token = `RPT-${Date.now()}`;
+  const text = formatReportText(reportData);
+  console.log('\n📊 REPORT:');
+  console.log(text);
+
+  if (!isConnected || !printerName) {
+    return res.json({
+      success: true,
+      printed: false,
+      message: 'No printer — report logged to console',
+      report: text,
+    });
+  }
+
+  try {
+    const rawData = formatReportRaw(reportData);
+
+    if (isWindows) {
+      await printViaWindows(rawData, token);
+    } else {
+      await printViaCUPS(rawData, token);
+    }
+
+    await new Promise(r => setTimeout(r, PHYSICAL_PRINT_DELAY_MS));
+    console.log(`🖨️ Report printed → ${printerName}`);
+    res.json({ success: true, printed: true });
+  } catch (err) {
+    console.error('❌ Report print failed:', err.message);
+    res.status(500).json({ success: false, error: err.message, report: text });
   }
 });
 

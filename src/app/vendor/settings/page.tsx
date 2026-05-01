@@ -1,11 +1,45 @@
 'use client';
 
 import { useVendor } from '@/contexts/VendorContext';
-import { Settings as SettingsIcon, User, BellRing, Store, Moon, Sun, Clock, Timer, Palette, Volume2, Mail, Smartphone, ChevronDown, Printer, Download, ExternalLink, ShieldCheck, Zap } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useThermalPrinter } from '@/hooks/useThermalPrinter';
 import PrinterSetupGuide from '@/components/vendor/PrinterSetupGuide';
+import {
+    Store, Printer, Bell, Palette, Volume2, Mail, Smartphone,
+    ChevronDown, Download, ExternalLink, ShieldCheck, Zap, Activity, Clock, Timer
+} from 'lucide-react';
+
+type Section = 'General' | 'Hardware' | 'Notifications' | 'Appearance';
+
+function Toggle({ checked, onChange, accent = 'gray' }: { checked: boolean; onChange: () => void; accent?: string }) {
+    return (
+        <button
+            onClick={onChange}
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none
+                ${checked ? 'bg-indigo-600' : 'bg-gray-200'}`}
+        >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200
+                ${checked ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+        </button>
+    );
+}
+
+function SettingRow({ label, description, children }: {
+    label: string;
+    description?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between py-4 border-b border-gray-100 last:border-0">
+            <div className="flex-1 mr-6">
+                <p className="text-[14px] font-semibold text-gray-900">{label}</p>
+                {description && <p className="text-[12px] text-gray-400 mt-0.5">{description}</p>}
+            </div>
+            <div className="shrink-0">{children}</div>
+        </div>
+    );
+}
 
 export default function VendorSettings() {
     const { isStoreOpen, toggleStore } = useVendor();
@@ -13,229 +47,261 @@ export default function VendorSettings() {
     const [mounted, setMounted] = useState(false);
     const { isConnected } = useThermalPrinter();
     const [showGuide, setShowGuide] = useState(false);
+    const [activeSection, setActiveSection] = useState<Section>('General');
 
     useEffect(() => setMounted(true), []);
-
     if (!mounted) return null;
 
+    const sections: { id: Section; label: string; icon: React.ReactNode }[] = [
+        { id: 'General', label: 'General', icon: <Store size={14} /> },
+        { id: 'Hardware', label: 'Hardware', icon: <Printer size={14} /> },
+        { id: 'Notifications', label: 'Notifications', icon: <Bell size={14} /> },
+        { id: 'Appearance', label: 'Appearance', icon: <Palette size={14} /> },
+    ];
+
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 pb-20">
-            <div className="mb-8">
-                <h2 className="text-[28px] font-extrabold text-[#111827] tracking-tight dark:text-white">System Configuration</h2>
-                <p className="text-[15px] text-gray-500 font-medium mt-1 dark:text-gray-400">Manage your digital storefront environment and operational alerts.</p>
+        <div className="vendor-workspace h-full overflow-y-auto p-5 pb-10">
+
+            {/* ── HEADER ── */}
+            <div className="mb-6">
+                <h1 className="text-[22px] font-bold text-gray-900 tracking-tight">Settings</h1>
+                <p className="text-[13px] text-gray-500 mt-0.5">Operational preferences & system configuration</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 1. Store Operations */}
-                <div className="bg-white dark:bg-gray-900 rounded-[16px] shadow-sm flex flex-col h-full border border-gray-100 dark:border-gray-800">
-                    <div className="p-6 pb-4">
-                        <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/30 rounded-[12px] flex items-center justify-center mb-4">
-                            <Store size={18} className="text-[#9B1B30] dark:text-pink-300" />
-                        </div>
-                        <h3 className="text-[17px] font-extrabold text-[#111827] dark:text-white leading-none">Store Operations</h3>
-                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-2">Global toggle for customer availability</p>
-                    </div>
-                    <div className="p-6 pt-0 space-y-4">
-                        <div className="flex items-center justify-between bg-indigo-50/50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-50 dark:border-indigo-900/40">
-                            <div>
-                                <h4 className="font-extrabold text-[#111827] dark:text-white text-sm">Accepting Orders</h4>
-                                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">Instantly show/hide your menu.</p>
-                            </div>
+            {/* ── LAYOUT ── */}
+            <div className="flex gap-8">
+
+                {/* Left sidebar */}
+                <div className="w-44 shrink-0">
+                    <nav className="space-y-0.5">
+                        {sections.map(s => (
                             <button
-                                onClick={toggleStore}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${isStoreOpen ? 'bg-[#9B1B30]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                key={s.id}
+                                onClick={() => setActiveSection(s.id)}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-colors text-left
+                                    ${activeSection === s.id
+                                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    }`}
                             >
-                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${isStoreOpen ? 'translate-x-[24px]' : 'translate-x-[2px]'}`} />
+                                <span className={activeSection === s.id ? 'text-indigo-500' : 'text-gray-400'}>
+                                    {s.icon}
+                                </span>
+                                {s.label}
                             </button>
+                        ))}
+                    </nav>
+
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                            <Activity size={11} className="text-emerald-500" />
+                            <span>v2.4.0</span>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="border border-gray-100 dark:border-gray-800 p-4 rounded-xl">
-                                <Clock size={16} className="text-[#d92d20] mb-3" />
-                                <h4 className="font-extrabold text-[#111827] dark:text-white text-xs">Shutdown</h4>
-                                <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mt-1">Closing times.</p>
-                            </div>
-                            <div className="border border-gray-100 dark:border-gray-800 p-4 rounded-xl">
-                                <Timer size={16} className="text-[#d92d20] mb-3" />
-                                <h4 className="font-extrabold text-[#111827] dark:text-white text-xs">Prep Time</h4>
-                                <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mt-1">Lead times.</p>
-                            </div>
-                        </div>
+                        <p className="text-[10px] text-gray-300 mt-1">IIM Mumbai Campus</p>
                     </div>
                 </div>
 
-                {/* 2. Appearance */}
-                <div className="bg-white dark:bg-gray-900 rounded-[16px] shadow-sm flex flex-col h-full border border-gray-100 dark:border-gray-800">
-                    <div className="p-6 pb-4">
-                        <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-[12px] flex items-center justify-center mb-4">
-                            <Palette size={18} className="text-[#d92d20]" />
-                        </div>
-                        <h3 className="text-[17px] font-extrabold text-[#111827] dark:text-white leading-none">Appearance</h3>
-                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-2">Visual dashboard personalization</p>
-                    </div>
-                    <div className="p-6 pt-0 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="font-extrabold text-[#111827] dark:text-white text-sm">Dark Theme</h4>
-                                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">Low-light interface.</p>
-                            </div>
-                            <button
-                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 ${theme === 'dark' ? 'bg-[#9B1B30]' : 'bg-[#e2e8f0] dark:bg-gray-700'}`}
-                            >
-                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${theme === 'dark' ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
-                            </button>
-                        </div>
-                        <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
-                            <h4 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Color Accent</h4>
-                            <div className="flex gap-4 items-center">
-                                <span className="w-6 h-6 rounded-full bg-[#d92d20] ring-4 ring-offset-2 ring-red-50 dark:ring-red-900/30 border border-white dark:border-gray-900 cursor-pointer shadow-sm hover:scale-110 transition-transform"></span>
-                                <span className="w-5 h-5 rounded-full bg-violet-600 cursor-pointer hover:scale-110 shadow-sm transition-transform"></span>
-                                <span className="w-5 h-5 rounded-full bg-[#9B1B30] cursor-pointer hover:scale-110 shadow-sm transition-transform"></span>
-                                <span className="w-5 h-5 rounded-full bg-slate-800 cursor-pointer hover:scale-110 shadow-sm transition-transform"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Right content */}
+                <div className="flex-1 min-w-0">
+                    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
-                {/* 3. Printer Configuration */}
-                <div className="bg-white dark:bg-gray-900 rounded-[16px] shadow-sm flex flex-col h-full border border-gray-100 dark:border-gray-800 lg:col-span-1">
-                    <div className="p-6 pb-4">
-                        <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-[12px] flex items-center justify-center mb-4">
-                            <Printer size={18} className="text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-[17px] font-extrabold text-[#111827] dark:text-white leading-none">Printer Config</h3>
-                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1.5">Direct thermal management</p>
-                            </div>
-                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${isConnected ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
-                                {isConnected ? 'Connected' : 'Offline'}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-6 pt-0 space-y-4">
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Zap size={14} className="text-amber-500" />
-                                <h4 className="font-extrabold text-[#111827] dark:text-white text-[13px]">Universal Printing</h4>
-                            </div>
-                            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
-                                Zomato-style printing for Mac & Windows. Manual setup available for advanced users.
-                            </p>
-                            
-                            <div className="space-y-2">
-                                {!isConnected ? (
-                                    <button 
-                                        onClick={() => setShowGuide(true)}
-                                        className="w-full flex items-center justify-center gap-2 bg-[#9B1B30] text-white py-2.5 rounded-lg text-xs font-black shadow-md hover:bg-[#801628] transition-all transform active:scale-[0.98] text-center"
+                        {/* GENERAL */}
+                        {activeSection === 'General' && (
+                            <div className="px-6 py-2">
+                                <div className="py-4 border-b border-gray-100">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Store operations</p>
+                                    <SettingRow
+                                        label="Accept orders"
+                                        description="Toggle global store visibility and incoming order acceptance"
                                     >
-                                        <Download size={14} /> Download & Setup
-                                    </button>
-                                ) : (
-                                    <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <ShieldCheck size={14} className="text-emerald-500" />
-                                            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">Service Active</span>
-                                        </div>
-                                        <span 
-                                            onClick={() => window.location.reload()}
-                                            className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 cursor-pointer hover:underline"
-                                        >
-                                            Re-ping
+                                        <Toggle checked={isStoreOpen} onChange={toggleStore} />
+                                    </SettingRow>
+                                </div>
+                                <div className="py-4">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Scheduling</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors text-left group">
+                                            <Clock size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                            <div>
+                                                <p className="text-[13px] font-semibold text-gray-900">Auto-closing</p>
+                                                <p className="text-[11px] text-gray-400 mt-0.5">Schedule closing time</p>
+                                            </div>
+                                        </button>
+                                        <button className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors text-left group">
+                                            <Timer size={16} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                            <div>
+                                                <p className="text-[13px] font-semibold text-gray-900">Prep time</p>
+                                                <p className="text-[11px] text-gray-400 mt-0.5">Set default prep duration</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* HARDWARE */}
+                        {activeSection === 'Hardware' && (
+                            <div className="px-6 py-2">
+                                <div className="py-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Thermal printer</p>
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium
+                                            ${isConnected ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                                            {isConnected ? 'Connected' : 'Offline'}
                                         </span>
                                     </div>
-                                )}
+
+                                    <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <Zap size={13} className="text-amber-500" />
+                                            <p className="text-[13px] font-semibold text-gray-900">Auto-print</p>
+                                        </div>
+                                        <p className="text-[12px] text-gray-400 mb-4">
+                                            Automatically print kitchen tickets when new orders arrive.
+                                        </p>
+
+                                        {!isConnected ? (
+                                            <button
+                                                onClick={() => setShowGuide(true)}
+                                                className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white py-2.5 rounded-xl text-[13px] font-medium hover:bg-indigo-700 transition-colors"
+                                            >
+                                                <Download size={14} />
+                                                Set up printer
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                                <div className="flex items-center gap-2">
+                                                    <ShieldCheck size={14} className="text-emerald-600" />
+                                                    <span className="text-[12px] font-medium text-emerald-700">Active connection</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => window.location.reload()}
+                                                    className="text-[12px] text-emerald-600 hover:text-emerald-800 transition-colors"
+                                                >
+                                                    Refresh
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowGuide(true)}
+                                        className="flex items-center gap-1.5 mt-4 text-[12px] text-gray-400 hover:text-gray-700 transition-colors"
+                                    >
+                                        <ExternalLink size={12} />
+                                        View setup guide
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex items-center justify-between px-1">
-                            <span 
-                                onClick={() => setShowGuide(true)}
-                                className="text-[11px] font-extrabold text-gray-400 flex items-center gap-1.5 cursor-pointer hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                            >
-                                <ExternalLink size={12}/> Setup Guide & Core
-                            </span>
-                            <span className="text-[11px] font-extrabold text-[#9B1B30] dark:text-red-400 cursor-pointer">Troubleshoot</span>
-                        </div>
+                        )}
+
+                        {/* NOTIFICATIONS */}
+                        {activeSection === 'Notifications' && (
+                            <div className="px-6 py-2">
+                                <div className="py-4">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Alert channels</p>
+
+                                    <SettingRow
+                                        label="Sound alerts"
+                                        description="Play an alert sound when new orders come in"
+                                    >
+                                        <Toggle checked={true} onChange={() => {}} />
+                                    </SettingRow>
+
+                                    <div className="py-4 border-b border-gray-100">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                                <p className="text-[14px] font-semibold text-gray-900">Volume</p>
+                                                <p className="text-[12px] text-gray-400 mt-0.5">Alert volume level</p>
+                                            </div>
+                                            <span className="text-[12px] font-medium text-gray-600">80%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: '80%' }} />
+                                        </div>
+                                    </div>
+
+                                    <SettingRow
+                                        label="Email alerts"
+                                        description="Receive a daily summary at your registered email"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 cursor-pointer hover:bg-gray-100 transition-colors">
+                                                Daily @ 22:00 <ChevronDown size={12} className="text-gray-400 ml-1" />
+                                            </div>
+                                            <Toggle checked={false} onChange={() => {}} />
+                                        </div>
+                                    </SettingRow>
+
+                                    <SettingRow
+                                        label="SMS alerts"
+                                        description="Emergency fallback notifications via SMS"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[12px] text-gray-400">+91 ••• ••• 0892</span>
+                                            <Toggle checked={true} onChange={() => {}} />
+                                        </div>
+                                    </SettingRow>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* APPEARANCE */}
+                        {activeSection === 'Appearance' && (
+                            <div className="px-6 py-2">
+                                <div className="py-4">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Theme</p>
+
+                                    <SettingRow
+                                        label="Night mode"
+                                        description="Switch to a dark-themed interface"
+                                    >
+                                        <Toggle
+                                            checked={theme === 'dark'}
+                                            onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                        />
+                                    </SettingRow>
+
+                                    <div className="py-4">
+                                        <p className="text-[14px] font-semibold text-gray-900 mb-1">Accent color</p>
+                                        <p className="text-[12px] text-gray-400 mb-4">Choose a highlight color for the interface</p>
+                                        <div className="flex items-center gap-2.5">
+                                            {[
+                                                { color: '#6366F1', label: 'Indigo', ring: 'ring-indigo-300', active: true },
+                                                { color: '#06B6D4', label: 'Cyan', ring: 'ring-cyan-200', active: false },
+                                                { color: '#111827', label: 'Slate', ring: 'ring-gray-300', active: false },
+                                                { color: '#EF4444', label: 'Red', ring: 'ring-red-200', active: false },
+                                            ].map(accent => (
+                                                <button
+                                                    key={accent.color}
+                                                    title={accent.label}
+                                                    className={`w-7 h-7 rounded-full border-2 border-white ring-2 ${accent.ring} transition-transform hover:scale-110 ${accent.active ? 'scale-110' : ''}`}
+                                                    style={{ background: accent.color }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pb-4 pt-2">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">About</p>
+                                    <div className="space-y-2">
+                                        {['Privacy', 'Terms of Service', 'Hardware API'].map(link => (
+                                            <button key={link} className="flex w-full items-center justify-between py-2 text-[13px] text-gray-700 hover:text-gray-900 transition-colors group">
+                                                {link}
+                                                <span className="text-gray-300 group-hover:text-gray-500 transition-colors">→</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Modals */}
             <PrinterSetupGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
-
-            {/* Bottom section: Notifications */}
-            <div className="bg-white dark:bg-gray-900 rounded-[16px] border border-gray-100 dark:border-gray-800 shadow-sm mt-8 p-6">
-                <div className="flex justify-between items-start mb-6">
-                    <div className="flex items-center gap-4 border-b border-transparent">
-                        <div className="w-10 h-10 bg-[#f3e8ff] dark:bg-purple-900/30 rounded-[12px] flex items-center justify-center shrink-0">
-                            <BellRing size={18} className="text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <h3 className="text-[17px] font-extrabold text-[#111827] dark:text-white leading-none mb-1">Notifications</h3>
-                            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 leading-none">Configure order and system alerts.</p>
-                        </div>
-                    </div>
-                    <button className="bg-[#f1f5f9] dark:bg-gray-800 text-[#1e293b] dark:text-gray-200 px-4 py-2 rounded-lg text-xs font-extrabold shadow-sm hover:bg-[#e2e8f0] dark:hover:bg-gray-700 transition-colors">
-                        Reset Alerts
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-extrabold text-[#111827] dark:text-white text-sm flex items-center gap-2"><Volume2 size={14}/> Audio Alerts</h4>
-                            <div className="bg-[#d92d20] w-9 h-5 rounded-[10px] relative shadow-inner cursor-pointer transition-colors">
-                                <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
-                            </div>
-                        </div>
-                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed pr-4">Play a chime for every incoming order.</p>
-                        <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
-                            <h5 className="text-[9px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">Volume</h5>
-                            <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full mt-2">
-                                <div className="bg-[#94a3b8] dark:bg-gray-500 w-2/3 h-full rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-extrabold text-[#111827] dark:text-white text-sm flex items-center gap-2"><Mail size={14}/> Email Summaries</h4>
-                            <div className="bg-[#e2e8f0] dark:bg-gray-700 w-9 h-5 rounded-[10px] relative shadow-inner cursor-pointer transition-colors">
-                                <span className="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
-                            </div>
-                        </div>
-                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed pr-4">Receive a daily performance summary.</p>
-                        <div className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-800 mt-2 cursor-pointer hover:border-gray-200 transition-colors">
-                            Daily at 10:00 PM <ChevronDown size={14} className="text-gray-400" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-extrabold text-[#111827] dark:text-white text-sm flex items-center gap-2"><Smartphone size={14}/> SMS Critical</h4>
-                            <div className="bg-[#d92d20] w-9 h-5 rounded-[10px] relative shadow-inner cursor-pointer transition-colors">
-                                <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"></span>
-                            </div>
-                        </div>
-                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-relaxed pr-4">Immediate text alerts for critical failures.</p>
-                        <div className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-[11px] font-extrabold text-[#334155] dark:text-gray-300 border border-gray-100 dark:border-gray-800 mt-2">
-                            +1 (555) ••• ••89 
-                            <span className="text-[#d92d20] dark:text-red-400 text-[10px] font-black uppercase cursor-pointer hover:underline tracking-wide">Change</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-8 flex flex-col md:flex-row gap-4 items-center justify-between text-[10px] font-bold text-gray-400 dark:text-gray-500 px-2">
-                <div className="flex gap-6">
-                    <span className="cursor-pointer hover:text-gray-600 transition-colors">Privacy Policy</span>
-                    <span className="cursor-pointer hover:text-gray-600 transition-colors">Terms of Service</span>
-                    <span className="cursor-pointer hover:text-gray-600 transition-colors">Vendor Guidelines</span>
-                </div>
-                <span>Aroma Slate v2.4.0 • Built with precision for the IIM Mumbai Campus</span>
-            </div>
         </div>
     );
 }

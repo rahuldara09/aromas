@@ -6,6 +6,22 @@
     "functions": {
         "src/app/api/orders/route.ts": {
             "maxDuration": 10
+        },
+        "src/app/api/cron/daily-report/route.ts": {
+            "maxDuration": 60
+        },
+        "src/app/api/cron/monthly-archive/route.ts": {
+            "maxDuration": 60
         }
-    }
+    },
+    "crons": [
+        {
+            "path": "/api/cron/daily-report",
+            "schedule": "29 18 * * *"
+        },
+        {
+            "path": "/api/cron/monthly-archive",
+            "schedule": "30 19 1 * *"
+        }
+    ]
 }

@@ -177,4 +177,112 @@ function formatReceiptRaw(order, token) {
   return data;
 }
 
-module.exports = { formatReceiptText, formatReceiptRaw };
+// ═══════════════════════════════════════════════════════════════════
+//  ANALYTICS REPORT (ESC/POS)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * reportData: {
+ *   title:   string          // e.g. "Daily Report"
+ *   date:    string          // e.g. "01/05/26"
+ *   range:   string          // e.g. "Today" | "Last 7 days"
+ *   summary: { revenue, orders, cancelled }
+ *   items:   [{ name, qty, revenue }]   // top items
+ * }
+ */
+function formatReportText(reportData) {
+  const { title, date, range, summary, items } = reportData;
+  const NL = '\n';
+  let out = NL;
+  out += center('AROMA DHABA') + NL;
+  out += center('IIM Mumbai Campus, Powai') + NL;
+  out += divider('=') + NL;
+  out += center(title || 'ANALYTICS REPORT') + NL;
+  out += center(date || new Date().toLocaleDateString('en-IN')) + NL;
+  out += center(`(${range || ''})`) + NL;
+  out += divider('=') + NL;
+  out += twoCol('REVENUE', `Rs.${(summary.revenue || 0).toLocaleString()}`) + NL;
+  out += twoCol('ORDERS', String(summary.orders || 0)) + NL;
+  out += twoCol('CANCELLED', String(summary.cancelled || 0)) + NL;
+  out += divider('-') + NL;
+  if (items && items.length > 0) {
+    out += center('TOP ITEMS') + NL;
+    out += divider('-') + NL;
+    out += 'Item Name              Qty     Revenue' + NL;
+    out += divider('-') + NL;
+    items.forEach(item => {
+      const name = String(item.name || '').substring(0, 20).padEnd(21);
+      const qty  = String(item.qty || 0).padStart(5);
+      const rev  = `Rs.${(item.revenue || 0)}`.padStart(11);
+      out += `${name} ${qty} ${rev}` + NL;
+    });
+    out += divider('-') + NL;
+  }
+  out += center('--- End of Report ---') + NL;
+  return out;
+}
+
+function formatReportRaw(reportData) {
+  const { title, date, range, summary, items } = reportData;
+  const NL = CMD.FEED;
+
+  const data = [
+    CMD.INIT,
+    CMD.CENTER,
+    CMD.BOLD_ON,
+    'AROMA DHABA' + NL,
+    CMD.BOLD_OFF,
+    'IIM Mumbai Campus, Powai' + NL,
+    divider('=') + NL,
+    CMD.BOLD_ON,
+    (title || 'ANALYTICS REPORT') + NL,
+    CMD.BOLD_OFF,
+    (date || new Date().toLocaleDateString('en-IN')) + NL,
+  ];
+
+  if (range) data.push(`(${range})` + NL);
+
+  data.push(
+    divider('=') + NL,
+    CMD.LEFT,
+    CMD.DOUBLE_SIZE,
+    twoCol('REVENUE', `Rs.${(summary.revenue || 0).toLocaleString()}`) + NL,
+    CMD.NORMAL_SIZE,
+    twoCol('ORDERS', String(summary.orders || 0)) + NL,
+    twoCol('CANCELLED', String(summary.cancelled || 0)) + NL,
+    divider('-') + NL,
+  );
+
+  if (items && items.length > 0) {
+    data.push(
+      CMD.CENTER,
+      CMD.BOLD_ON,
+      'TOP ITEMS' + NL,
+      CMD.BOLD_OFF,
+      CMD.LEFT,
+      divider('-') + NL,
+      'Item Name              Qty     Revenue' + NL,
+      divider('-') + NL,
+    );
+
+    items.forEach(item => {
+      const name = String(item.name || '').substring(0, 20).padEnd(21);
+      const qty  = String(item.qty || 0).padStart(5);
+      const rev  = `Rs.${(item.revenue || 0)}`.padStart(11);
+      data.push(`${name} ${qty} ${rev}` + NL);
+    });
+
+    data.push(divider('-') + NL);
+  }
+
+  data.push(
+    CMD.CENTER,
+    '--- End of Report ---' + NL,
+    NL, NL, NL, NL, NL, NL,
+    CMD.CUT,
+  );
+
+  return data;
+}
+
+module.exports = { formatReceiptText, formatReceiptRaw, formatReportText, formatReportRaw };

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useVendor } from '@/contexts/VendorContext';
-import { ChefHat, Search, Maximize, Clock, Flame, Zap, ZapOff, CheckCircle2 } from 'lucide-react';
+import { ChefHat, Search, Maximize, Clock, Flame, Zap, ZapOff, CheckCircle2, Activity, Timer } from 'lucide-react';
 import { Order, OrderItem } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -13,10 +13,10 @@ const minutesElapsed = (dateInput: string | Date) => {
 };
 
 const urgencyColor = (mins: number) => {
-    if (mins >= 15) return 'bg-red-500 text-white border-red-600 shadow-red-500/20';
-    if (mins >= 10) return 'bg-orange-500 text-white border-orange-600 shadow-orange-500/20';
-    if (mins >= 5) return 'bg-amber-400 text-amber-900 border-amber-500 shadow-amber-400/20';
-    return 'bg-gray-800 text-gray-100 border-gray-700 shadow-black/10';
+    if (mins >= 15) return 'bg-red-600 text-white border-red-700';
+    if (mins >= 10) return 'bg-amber-500 text-white border-amber-600';
+    if (mins >= 5) return 'bg-[#06B6D4] text-white border-cyan-600';
+    return 'bg-slate-800 text-white border-slate-700';
 };
 
 const buildDailyTokens = (orders: Order[]) => {
@@ -64,8 +64,6 @@ export default function KitchenDisplayScreen() {
             const mins = minutesElapsed(order.orderDate);
 
             order.items.forEach(item => {
-                // If item relies on product ID or name, we group by name to merge identical products.
-                // We create a composite key for local state completion tracking: `${orderId}-${item.name}`
                 const completionKey = `${order.id}-${item.name}`;
                 if (completedItems.has(completionKey)) return;
 
@@ -84,20 +82,18 @@ export default function KitchenDisplayScreen() {
             });
         });
 
-        // Sort: Most urgent (oldest) first. Recommender will highlight the top item.
         return Array.from(map.values()).sort((a, b) => b.oldestMins - a.oldestMins || b.totalQuantity - a.totalQuantity);
-    }, [preparingOrders, tokenMap, completedItems, currentTime]); // Add currentTime to force recalculation of oldestMins periodically if needed, though usually just re-evaluating on interaction is fine.
+    }, [preparingOrders, tokenMap, completedItems, currentTime]);
 
     // Telemetry
     const totalOrdersCount = preparingOrders.length;
     const totalItemsCount = itemsPending.reduce((sum, item) => sum + item.totalQuantity, 0);
     const maxWaitTime = itemsPending.length > 0 ? itemsPending[0].oldestMins : 0;
 
-    // Load Status: Assuming ~1.5m active cooking per item on board
     const loadFactor = totalItemsCount * 1.5;
-    let loadStatus = { label: 'NORMAL', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20' };
-    if (loadFactor >= 25) loadStatus = { label: 'OVERLOADED', color: 'text-red-400 bg-red-400/10 border-red-500/20 animate-pulse' };
-    else if (loadFactor >= 12) loadStatus = { label: 'BUSY', color: 'text-amber-400 bg-amber-400/10 border-amber-500/20' };
+    let loadStatus = { label: 'OPTIMAL', color: 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20' };
+    if (loadFactor >= 25) loadStatus = { label: 'CRITICAL', color: 'text-red-400 bg-red-400/10 border-red-500/20 animate-pulse' };
+    else if (loadFactor >= 12) loadStatus = { label: 'HIGH LOAD', color: 'text-amber-400 bg-amber-400/10 border-amber-500/20' };
 
     const recommender = itemsPending.length > 0 ? itemsPending.reduce((prev, current) => (prev.totalQuantity > current.totalQuantity) ? prev : current) : null;
 
@@ -110,7 +106,7 @@ export default function KitchenDisplayScreen() {
             checkAndFulfillOrder(orderId, next);
             return next;
         });
-        toast.success(`Marked ${itemName} complete`);
+        toast.success(`COMPLETED: ${itemName}`);
     };
 
     const handleMarkBatchComplete = (itemName: string) => {
@@ -124,7 +120,7 @@ export default function KitchenDisplayScreen() {
             return next;
         });
         setExpandedItem(null);
-        toast.success(`${itemName} batch cleared!`, { icon: '🔥' });
+        toast.success(`BATCH CLEARED: ${itemName}`, { icon: '🔥' });
     };
 
     const checkAndFulfillOrder = (orderId: string, currentCompletedSet: Set<string>) => {
@@ -133,92 +129,93 @@ export default function KitchenDisplayScreen() {
 
         const allItemsDone = order.items.every(item => currentCompletedSet.has(`${order.id}-${item.name}`));
         if (allItemsDone) {
-            // Ideally call updateOrderStatus(orderId, 'Completed') here
-            // But we don't have updateOrderStatus imported natively directly, it's typically in the context or passed down.
-            // For now, in local state, it will just diminish in `itemsPending`. 
-            // We will need to actually call updateOrderStatus to move it to dispatch permanently.
-            toast(`Order #${tokenMap.get(orderId)} READY for Dispatch!`, { icon: '🏁', duration: 4000 });
+            toast(`TICKET #${tokenMap.get(orderId)} READY`, { icon: '🏁', duration: 4000 });
         }
     };
 
-    // ─── RENDER ─────────────────────────────────────────────────────
     return (
-        <div className={`fixed inset-0 z-50 flex flex-col font-sans transition-colors duration-300 ${rushMode ? 'bg-[#0a0a0a]' : 'bg-gray-950'} text-gray-100`}>
-            {/* TOP BAR */}
-            <header className={`flex items-center justify-between px-6 py-4 border-b ${rushMode ? 'border-red-900/50 bg-red-950/20' : 'border-gray-800 bg-gray-900'} shrink-0`}>
+        <div className={`vendor-pos-shell fixed inset-0 z-50 flex flex-col font-sans select-none overflow-hidden transition-colors duration-300 ${rushMode ? 'bg-black' : 'bg-[#111827]'} text-white`}>
+            
+            {/* ── HEADER ── */}
+            <header className="vendor-topbar flex h-16 border-b border-[#111827] items-center justify-between px-6 flex-shrink-0 z-10 w-full">
                 <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.4)]">
-                            <ChefHat size={24} className="text-white" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-md bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center">
+                            <ChefHat size={22} strokeWidth={3} />
                         </div>
-                        <h1 className="text-2xl font-black tracking-tight">KDS <span className="text-gray-500 font-bold">STATION</span></h1>
+                        <div>
+                            <h1 className="text-[16px] font-black tracking-[0.2em] uppercase leading-none">Kitchen Display</h1>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-1">Terminal ID: KDS-01</p>
+                        </div>
                     </div>
 
-                    <div className="h-8 w-px bg-gray-800" />
+                    <div className="h-10 w-px bg-slate-800" />
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-8">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Orders</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Queue</span>
                             <span className="text-xl font-black leading-none">{totalOrdersCount}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pending Items</span>
-                            <span className="text-xl font-black leading-none text-orange-400">{totalItemsCount}</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Items</span>
+                            <span className="text-xl font-black leading-none text-cyan-300">{totalItemsCount}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Longest Wait</span>
-                            <span className={`text-xl font-black leading-none ${maxWaitTime >= 15 ? 'text-red-500 animate-pulse' : 'text-gray-100'}`}>{maxWaitTime}m</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Wait Time</span>
+                            <span className={`text-xl font-black leading-none ${maxWaitTime >= 15 ? 'text-red-500' : 'text-white'}`}>{maxWaitTime}m</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
                     {recommender && (
-                        <div className="hidden lg:flex items-center gap-3 bg-gray-800/50 border border-gray-700 px-4 py-2 rounded-xl">
-                            <Flame size={16} className="text-orange-500" />
+                        <div className="hidden xl:flex items-center gap-3 bg-slate-900 border border-slate-800 px-4 py-2 rounded-md">
+                            <Flame size={16} className="text-amber-500" />
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Recommended Batch</span>
-                                <span className="text-sm font-black text-white">{recommender.totalQuantity}× {recommender.name}</span>
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Recommended Priority</span>
+                                <span className="text-[11px] font-black text-white uppercase tracking-wider">{recommender.totalQuantity}x {recommender.name}</span>
                             </div>
                         </div>
                     )}
 
-                    <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-black text-xs tracking-wide ${loadStatus.color}`}>
-                        <span className="relative flex h-2 w-2">
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${loadFactor >= 25 ? 'bg-red-400' : loadFactor >= 12 ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
-                            <span className={`relative inline-flex rounded-full h-2 w-2 ${loadFactor >= 25 ? 'bg-red-500' : loadFactor >= 12 ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                        </span>
+                    <div className={`px-4 py-2 rounded-md border flex items-center gap-2 font-black text-[10px] tracking-widest uppercase ${loadStatus.color}`}>
                         {loadStatus.label}
                     </div>
 
-                    <button
-                        onClick={() => setRushMode(!rushMode)}
-                        className={`p-3 rounded-xl transition-all border ${rushMode ? 'bg-red-500 text-white border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
-                        title="Toggle Rush Mode (High Contrast)"
-                    >
-                        {rushMode ? <Zap size={20} /> : <ZapOff size={20} />}
-                    </button>
-
-                    <button className="p-3 bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-white rounded-xl transition-colors">
-                        <Maximize size={20} />
-                    </button>
+                    <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-md border border-slate-800">
+                        <button
+                            onClick={() => setRushMode(!rushMode)}
+                            className={`p-2 rounded-md transition-all ${rushMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-transparent text-slate-500 hover:text-white'}`}
+                        >
+                            <Zap size={18} strokeWidth={3} />
+                        </button>
+                        <button className="p-2 rounded-md text-slate-500 hover:text-white transition-colors">
+                            <Maximize size={18} strokeWidth={3} />
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            {/* MAIN WORKSPACE */}
+            {/* ── WORKSPACE ── */}
             <div className="flex flex-1 overflow-hidden">
-                {/* ── ALGO BOARD (70%) ── */}
-                <main className="w-[70%] flex flex-col border-r border-gray-800/60 p-6 overflow-y-auto scrollbar-thin">
-                    <h2 className="text-sm font-black text-gray-500 tracking-widest mb-6">ITEM COOKING BOARD</h2>
+                
+                {/* 1. MAIN PRODUCTION GRID */}
+                <main className="flex-1 flex flex-col bg-slate-900/50 p-6 overflow-y-auto scrollbar-thin">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-[11px] font-black text-slate-500 tracking-[0.3em] uppercase">Active Production Grid</h2>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                            <Timer size={12} /> Auto-refresh: 30s
+                        </div>
+                    </div>
 
                     {itemsPending.length === 0 ? (
-                        <div className="flex-1 flex flex-col items-center justify-center text-gray-600">
-                            <ChefHat size={64} className="mb-4 opacity-20" />
-                            <p className="text-xl font-bold">Kitchen is Clear</p>
-                            <p className="text-sm font-medium mt-1">No pending items to cook</p>
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-700">
+                            <ChefHat size={80} strokeWidth={1} className="mb-6 opacity-10" />
+                            <p className="text-xl font-black uppercase tracking-[0.2em]">Kitchen Idle</p>
+                            <p className="text-[11px] font-bold mt-2 uppercase tracking-widest opacity-50">Monitoring incoming traffic...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
                             {itemsPending.map(item => {
                                 const isExpanded = expandedItem === item.name;
                                 const colorClass = urgencyColor(item.oldestMins);
@@ -226,55 +223,54 @@ export default function KitchenDisplayScreen() {
                                 return (
                                     <div
                                         key={item.name}
-                                        className={`flex flex-col rounded-2xl border transition-all duration-300 shadow-lg ${colorClass} ${isExpanded ? 'ring-4 ring-white/20 scale-[1.02] z-10' : 'hover:scale-[1.01]'}`}
+                                        className={`flex flex-col rounded-md border transition-all duration-200 ${isExpanded ? 'ring-4 ring-[#6D28D9]/30 scale-[1.01] z-10 border-[#6D28D9]' : 'border-slate-800 bg-slate-900/80 hover:border-slate-600'}`}
                                     >
                                         <div
-                                            className="p-5 cursor-pointer flex flex-col gap-2"
+                                            className="p-5 cursor-pointer flex flex-col gap-4"
                                             onClick={() => setExpandedItem(isExpanded ? null : item.name)}
                                         >
                                             <div className="flex items-start justify-between gap-4">
-                                                <h3 className={`font-black leading-tight break-words ${rushMode ? 'text-4xl uppercase' : 'text-2xl'}`}>
+                                                <h3 className={`font-black uppercase tracking-tight leading-none ${isExpanded ? 'text-3xl text-white' : 'text-xl text-slate-200'}`}>
                                                     {item.name}
                                                 </h3>
-                                                <span className={`font-black tabular-nums bg-black/20 px-3 py-1 rounded-lg ${rushMode ? 'text-5xl' : 'text-3xl'}`}>
-                                                    {item.totalQuantity}<span className="text-lg opacity-50 ml-1">×</span>
+                                                <span className={`font-black tabular-nums px-3 py-1 rounded-md ${isExpanded ? 'bg-[#6D28D9] text-white text-4xl' : 'bg-slate-800 text-[#06B6D4] text-2xl'}`}>
+                                                    {item.totalQuantity}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center justify-between mt-auto pt-4">
-                                                <div className="flex items-center gap-1.5 text-sm font-bold opacity-80 bg-black/10 px-2.5 py-1 rounded-lg">
-                                                    <Clock size={14} />
-                                                    Oldest: {item.oldestMins}m
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <div className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-md border uppercase tracking-widest ${colorClass}`}>
+                                                    <Clock size={12} strokeWidth={3} /> {item.oldestMins}m
                                                 </div>
-                                                <span className="text-xs font-bold uppercase tracking-wider opacity-70">
-                                                    In {item.orders.length} Orders
+                                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                    In {item.orders.length} Tickets
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* EXPANDED BREAKDOWN */}
                                         {isExpanded && (
-                                            <div className="bg-gray-950/95 border-t border-white/10 p-4 rounded-b-2xl overflow-hidden backdrop-blur-md">
+                                            <div className="bg-[#111827] border-t border-slate-800 p-4">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleMarkBatchComplete(item.name); }}
-                                                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-black p-3 rounded-xl mb-4 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                                                    className="w-full flex items-center justify-center gap-2 bg-[#06B6D4] hover:bg-cyan-500 text-white font-black py-4 rounded-md mb-4 transition-all uppercase tracking-[0.2em] text-[11px]"
                                                 >
-                                                    <CheckCircle2 size={20} /> CLEAR ENTIRE BATCH
+                                                    <CheckCircle2 size={16} strokeWidth={3} /> Clear Batch
                                                 </button>
 
                                                 <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
                                                     {item.orders.sort((a, b) => b.mins - a.mins).map(order => (
-                                                        <div key={order.orderId} className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="font-black text-xl tracking-tighter w-16 text-gray-300">#{order.token}</span>
-                                                                <span className="font-bold bg-gray-800 text-white px-2 py-0.5 rounded text-sm">{order.quantity}×</span>
-                                                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${order.mins >= 15 ? 'bg-red-500/20 text-red-400' : 'text-gray-500'}`}>{order.mins}m</span>
+                                                        <div key={order.orderId} className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-md p-3 hover:border-slate-600 transition-colors">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className="font-black text-xl tracking-tighter w-12 text-[#6D28D9]">#{order.token}</span>
+                                                                <span className="font-black bg-slate-800 text-white px-2 py-0.5 rounded-md text-[11px] uppercase">{order.quantity}×</span>
+                                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${order.mins >= 15 ? 'bg-red-600 text-white' : 'text-slate-500'}`}>{order.mins}m</span>
                                                             </div>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleMarkItemComplete(order.orderId, item.name); }}
-                                                                className="px-3 py-1.5 bg-gray-800 hover:bg-emerald-500 hover:text-white border border-gray-700 hover:border-emerald-500 text-gray-300 text-xs font-extrabold rounded-lg transition-colors"
+                                                                className="px-3 py-1.5 bg-slate-800 hover:bg-[#6D28D9] text-white border border-slate-700 hover:border-[#6D28D9] text-[9px] font-black rounded-md transition-all uppercase tracking-widest"
                                                             >
-                                                                DONE
+                                                                Done
                                                             </button>
                                                         </div>
                                                     ))}
@@ -288,37 +284,35 @@ export default function KitchenDisplayScreen() {
                     )}
                 </main>
 
-                {/* ── ORDER TIMELINE REPO (30%) ── */}
-                <aside className="w-[30%] bg-[#0f0f11] p-6 flex flex-col">
+                {/* 2. ORDER LEDGER SIDEBAR */}
+                <aside className="w-80 bg-[#111827] border-l border-[#1F2937] p-6 flex flex-col flex-shrink-0">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-sm font-black text-gray-500 tracking-widest">ORDER LEDGER</h2>
-                        <span className="text-xs font-bold bg-gray-800 text-gray-400 px-2.5 py-1 rounded-full">{preparingOrders.length} Pending</span>
+                        <h2 className="text-[11px] font-black text-slate-500 tracking-[0.3em] uppercase">Order Ledger</h2>
+                        <span className="text-[9px] font-black bg-slate-800 text-slate-400 px-2 py-1 rounded-md uppercase tracking-widest">{preparingOrders.length} Tickets</span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pr-2 space-y-2 scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto space-y-3 scrollbar-none pr-1">
                         {preparingOrders.length === 0 ? (
-                            <p className="text-sm font-bold text-gray-600">No active tickets.</p>
+                            <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest text-center mt-12">No active tickets</p>
                         ) : (
                             preparingOrders.map(order => {
                                 const tok = tokenMap.get(order.id) || '???';
                                 const mins = minutesElapsed(order.orderDate);
-                                // Calculate how many items are currently tracked as completed for this order locally
                                 const totalOrderQty = order.items.reduce((s, i) => s + i.quantity, 0);
                                 const localCompletedQty = order.items.filter(i => completedItems.has(`${order.id}-${i.name}`)).reduce((s, i) => s + i.quantity, 0);
                                 const progress = Math.round((localCompletedQty / totalOrderQty) * 100);
 
                                 return (
-                                    <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group">
-                                        {/* Progress Bar Background */}
-                                        <div className="absolute left-0 bottom-0 h-1 bg-emerald-500/50 transition-all duration-500" style={{ width: `${progress}%` }} />
+                                    <div key={order.id} className="bg-slate-900 border border-slate-800 rounded-md p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-slate-600 transition-colors">
+                                        <div className="absolute left-0 bottom-0 h-1 bg-[#06B6D4] transition-all duration-500" style={{ width: `${progress}%` }} />
 
                                         <div className="flex items-center justify-between">
-                                            <span className={`text-2xl font-black tracking-tighter ${mins >= 20 ? 'text-red-400' : 'text-gray-100'}`}>#{tok}</span>
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded bg-gray-950 ${mins >= 20 ? 'text-red-500' : 'text-gray-500'}`}>{mins}m waiting</span>
+                                            <span className={`text-2xl font-black tracking-tighter ${mins >= 20 ? 'text-red-500' : 'text-white'}`}>#{tok}</span>
+                                            <span className={`text-[9px] font-black px-2 py-1 rounded-md bg-black uppercase tracking-widest ${mins >= 20 ? 'text-red-500' : 'text-slate-500'}`}>{mins}m wait</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-xs font-semibold">
-                                            <span className="text-gray-400">{totalOrderQty} Total Items</span>
-                                            <span className={progress === 100 ? 'text-emerald-400' : 'text-orange-400'}>{progress}% complete</span>
+                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-500">{totalOrderQty} Items</span>
+                                            <span className={progress === 100 ? 'text-emerald-500' : 'text-[#06B6D4]'}>{progress}% Prod</span>
                                         </div>
                                     </div>
                                 );
