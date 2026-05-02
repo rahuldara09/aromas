@@ -102,9 +102,11 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
         .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
     const todayDateStr = new Date().toDateString();
-    const todaysSales = orders
-        .filter(o => o.status !== 'Cancelled' && new Date(o.orderDate).toDateString() === todayDateStr)
+    const todayOrders = orders.filter(o => new Date(o.orderDate).toDateString() === todayDateStr);
+    const todaysSales = todayOrders
+        .filter(o => o.status !== 'Cancelled')
         .reduce((sum, o) => sum + o.grandTotal, 0);
+    const todayOrderCount = todayOrders.length;
 
     const navItems = [
         { href: '/vendor', label: 'Dashboard', icon: <LayoutGrid size={14} />, active: pathname === '/vendor' },
@@ -171,7 +173,7 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                             <div className="w-px h-3.5 bg-gray-200" />
                             <div className="flex items-center gap-2">
                                 <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Orders</span>
-                                <span className="text-[13px] font-bold text-gray-900">{activeCount}</span>
+                                <span className="text-[13px] font-bold text-gray-900">{todayOrderCount}</span>
                             </div>
                         </div>
 

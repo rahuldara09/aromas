@@ -559,13 +559,13 @@ export default function VendorKanban() {
                                             return (
                                                 <div key={order.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 animate-in fade-in slide-in-from-bottom-2">
                                                     <OrderCard order={order} token={tok} onViewDetails={() => setSelectedOrderDetails(order)}>
-                                                        <div className="flex gap-2 mt-2">
-                                                            <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="flex-1 py-3 rounded-xl text-gray-500 hover:bg-gray-100 font-bold text-sm ring-1 ring-inset ring-gray-300 transition-colors min-h-[44px]">Reject</button>
-                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-1 flex items-center justify-center gap-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-bold text-sm py-3 rounded-xl shadow-sm transition-colors min-h-[44px]">
+                                                        <div className="flex gap-2">
+                                                            <button onClick={async () => { try { await updateOrderStatus(order.id, 'Cancelled'); toast('Rejected', { icon: '🚫' }); } catch { toast.error('Failed'); } }} className="flex-1 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold text-[13px] border border-gray-300 transition-colors min-h-[44px]">Reject</button>
+                                                            <button disabled={isPrinting} onClick={() => handleAcceptAndPrint(order, tok)} className="flex-[2] flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-400 text-white font-bold text-[13px] py-3 rounded-xl shadow-sm transition-colors min-h-[44px]">
                                                                 {isPrinting ? (
                                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                                 ) : (
-                                                                    <Printer size={16} />
+                                                                    <Printer size={15} />
                                                                 )}
                                                                 {isPrinting ? 'Printing...' : 'Accept & Print'}
                                                             </button>
@@ -763,29 +763,28 @@ export default function VendorKanban() {
                                                 >
                                                     <OrderCard order={order} token={tok} onViewDetails={() => setSelectedOrderDetails(order)}>
                                                         <div className="flex gap-2">
-                                                            <button 
-                                                                onClick={async () => { 
-                                                                    try { 
-                                                                        await updateOrderStatus(order.id, 'Cancelled'); 
-                                                                        toast('Rejected', { icon: '🚫' }); 
-                                                                    } catch { 
-                                                                        toast.error('Failed'); 
-                                                                    } 
-                                                                }} 
-                                                                className="px-3 py-2 rounded-md text-slate-500 hover:bg-slate-100 font-black text-[10px] border border-slate-200 transition-colors uppercase tracking-widest"
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await updateOrderStatus(order.id, 'Cancelled');
+                                                                        toast('Rejected', { icon: '🚫' });
+                                                                    } catch {
+                                                                        toast.error('Failed');
+                                                                    }
+                                                                }}
+                                                                className="flex-1 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold text-[13px] border border-gray-300 transition-colors min-h-[44px]"
                                                             >
                                                                 Reject
                                                             </button>
-                                                            <button 
-                                                                disabled={isPrinting} 
-                                                                onClick={() => handleAcceptAndPrint(order, tok)} 
-                                                                className="flex-1 flex items-center justify-center gap-1.5 text-white font-black text-[10px] py-2 rounded-md shadow-none transition-colors uppercase tracking-widest"
-                                                                style={{ backgroundColor: accentColor }}
+                                                            <button
+                                                                disabled={isPrinting}
+                                                                onClick={() => handleAcceptAndPrint(order, tok)}
+                                                                className="flex-[2] flex items-center justify-center gap-1.5 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-400 text-white font-bold text-[13px] py-3 rounded-xl shadow-sm transition-colors min-h-[44px]"
                                                             >
                                                                 {isPrinting ? (
-                                                                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                                 ) : (
-                                                                    <Printer size={14} strokeWidth={3} />
+                                                                    <Printer size={15} />
                                                                 )}
                                                                 {isPrinting ? 'Printing...' : 'Accept & Print'}
                                                             </button>
@@ -1181,7 +1180,19 @@ export default function VendorKanban() {
                     </div>
                 </div>
             )}
-            <OrderDetailsDrawer isOpen={!!selectedOrderDetails} onClose={() => setSelectedOrderDetails(null)} order={selectedOrderDetails} />
+            <OrderDetailsDrawer
+                isOpen={!!selectedOrderDetails}
+                onClose={() => setSelectedOrderDetails(null)}
+                order={selectedOrderDetails}
+                onAccept={async (o) => {
+                    const tok = tokenMap.get(o.id) || o.orderToken || o.id.slice(0, 6).toUpperCase();
+                    await handleAcceptAndPrint(o, tok);
+                }}
+                onReject={async (o) => {
+                    await updateOrderStatus(o.id, 'Cancelled');
+                    toast('Order rejected', { icon: '🚫' });
+                }}
+            />
         </div>
     );
 }
@@ -1316,94 +1327,114 @@ function EmptyState({ emoji, text, sub }: { emoji: string; text: string; sub?: s
 function OrderCard({ order, token, onViewDetails, children }: { order: Order; token: string; onViewDetails?: () => void; children?: React.ReactNode }) {
     const urgency = getUrgency(order.orderDate);
     const mins = minutesElapsed(order.orderDate);
-    const isPaid = order.status !== 'Pending';
+    const isPaid = order.payment_status === 'success';
     const isPOS = order.orderType === 'pos';
     const displayToken = isPOS ? `POS-#${token}` : `#${token}`;
-
+    const placedAt = new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isDelivery = order.deliveryAddress?.deliveryType?.toLowerCase() !== 'takeaway';
     const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
     const platformFee = order.grandTotal - subtotal > 0 ? order.grandTotal - subtotal : 0;
 
-    const urgencyBg = urgencyBgClass(urgency);
-    const urgencyBorder = urgencyBorderClass(urgency);
+    const elapsedBadge =
+        urgency === 'red'   ? 'bg-red-100 text-red-700 border-red-300' :
+        urgency === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-300' :
+        'bg-gray-100 text-gray-600 border-gray-300';
 
     return (
-        <div className={`flex flex-col rounded-md border border-[#CBD5E1] shadow-none hover:border-[#6D28D9] ${urgencyBorder} ${urgencyBg} transition-all relative group`}>
-            {isPOS && <div className="absolute top-2 right-2 bg-[#6D28D9] text-white px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-widest z-10 uppercase">POS</div>}
-            
-            {/* Header: Token + Amount */}
-            <div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-b border-[#CBD5E1] bg-slate-50">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{displayToken}</span>
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${urgency === 'red' ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-600'} uppercase tracking-tighter`}>{mins}M</span>
-                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md border ${isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'} uppercase tracking-widest`}>{isPaid ? 'PAID' : 'COD'}</span>
+        <div className={`flex flex-col rounded-2xl overflow-hidden bg-white border-2 shadow-sm transition-shadow hover:shadow-md
+            ${urgency === 'red' ? 'border-red-400' : urgency === 'amber' ? 'border-amber-400' : 'border-violet-200'}`}>
+
+            {/* ── HEADER ── */}
+            <div className="px-4 pt-3.5 pb-3 border-b border-gray-100">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-[26px] font-black text-gray-900 tracking-tight leading-none">{displayToken}</span>
+                        {isPOS && (
+                            <span className="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-md border border-violet-200 uppercase tracking-widest">POS</span>
+                        )}
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${elapsedBadge} uppercase tracking-wide`}>
+                            {mins}M
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-widest ${isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {isPaid ? 'PAID' : 'COD'}
+                        </span>
+                    </div>
+                    <span className="text-[22px] font-black text-gray-900 leading-none shrink-0">₹{order.grandTotal}</span>
                 </div>
-                <div className="flex items-center gap-2 text-right">
-                    <span className="text-base font-black text-slate-900 tracking-tighter">₹{order.grandTotal}</span>
-                </div>
+                <p className="text-[11px] font-semibold text-gray-400 mt-1.5">
+                    Placed at {placedAt}
+                    {order.payment_provider && ` · ${order.payment_provider.toUpperCase()}`}
+                    {isDelivery ? ' · Delivery' : ' · Pickup'}
+                </p>
             </div>
 
-            {/* Items List */}
-            <div className="px-3 py-1.5 flex-1 overflow-y-auto scrollbar-thin max-h-40">
-                <div className="space-y-1">
+            {/* ── ITEMS ── */}
+            <div className="px-4 py-2.5 overflow-y-auto bg-white" style={{ maxHeight: '132px' }}>
+                <div className="space-y-1.5">
                     {order.items.map((item, idx) => (
-                        <div key={idx} className="flex items-start justify-between text-[11px] group/item">
-                            <div className="flex items-start gap-2 min-w-0">
-                                <span className="text-[10px] font-black text-slate-900 min-w-[16px]">{item.quantity}x</span>
-                                <span className="font-black text-slate-800 truncate uppercase tracking-tight text-[12px]">{item.name}</span>
+                        <div key={idx} className="flex items-baseline justify-between gap-2">
+                            <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="text-[12px] font-black text-violet-600 shrink-0 w-6 text-right leading-none">{item.quantity}x</span>
+                                <span className="text-[13px] font-bold text-gray-900 truncate leading-snug">{item.name}</span>
                             </div>
-                            <span className="font-black text-slate-400 text-[10px] shrink-0 ml-2">₹{item.price * item.quantity}</span>
+                            <span className="text-[12px] font-semibold text-gray-500 shrink-0">₹{item.price * item.quantity}</span>
                         </div>
                     ))}
                 </div>
-
-                {/* Bill Breakdown (Collapsed by default, subtle) */}
-                <div className="mt-2.5 pt-1.5 border-t border-dashed border-[#CBD5E1] space-y-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    <div className="flex justify-between">
+                <div className="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-0.5">
+                    <div className="flex justify-between text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                         <span>Items</span>
                         <span>₹{subtotal}</span>
                     </div>
                     {platformFee > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex justify-between text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                             <span>Fee</span>
                             <span>₹{platformFee}</span>
                         </div>
                     )}
-                    <div className="flex justify-between font-black text-slate-900 text-[10px] pt-1 mt-0.5 border-t border-slate-100">
+                    <div className="flex justify-between text-[13px] font-black text-gray-900 uppercase tracking-wider pt-0.5">
                         <span>Total</span>
                         <span>₹{order.grandTotal}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Customer + Delivery Info (Condensed) */}
-            <div className="px-3 py-1.5 bg-slate-50 border-t border-[#CBD5E1] shrink-0">
-                <div className="grid grid-cols-1 gap-0.5 text-[9px] font-bold uppercase tracking-tight">
-                    <div className="flex items-center justify-between gap-3 text-slate-400">
-                        <span>Time</span>
-                        <span className="text-slate-700">
-                            {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-slate-400">
-                        <span>User</span>
-                        <span className="text-slate-900 truncate max-w-[120px]">{order.deliveryAddress?.name || 'GUEST'}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-slate-400">
-                        <span>Loc</span>
-                        <span className="text-slate-700 truncate">
-                            {order.deliveryAddress?.hostelNumber ? `H${order.deliveryAddress.hostelNumber}` : 'PICK'}
-                            {order.deliveryAddress?.roomNumber ? ` R${order.deliveryAddress.roomNumber}` : ''}
-                        </span>
-                    </div>
+            {/* ── CUSTOMER / LOCATION ── */}
+            <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100 shrink-0 space-y-1">
+                <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-10 shrink-0 mt-0.5">Time</span>
+                    <span className="text-[11px] font-bold text-gray-800 text-right">{placedAt}</span>
                 </div>
+                <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-10 shrink-0 mt-0.5">User</span>
+                    <span className="text-[11px] font-bold text-gray-900 text-right truncate max-w-[160px]">{(order.deliveryAddress?.name || 'Guest').toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-10 shrink-0 mt-0.5">Loc</span>
+                    <span className="text-[11px] font-bold text-gray-800 text-right">
+                        {order.deliveryAddress?.hostelNumber
+                            ? `${order.deliveryAddress.hostelNumber.toUpperCase()} HOSTEL${order.deliveryAddress.roomNumber ? ` R${order.deliveryAddress.roomNumber}` : ''}`
+                            : isPOS ? 'WALK-IN' : '—'}
+                    </span>
+                </div>
+                {order.deliveryAddress?.mobile && (
+                    <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-10 shrink-0 mt-0.5">Ph</span>
+                        <span className="text-[11px] font-bold text-violet-600 text-right">{order.deliveryAddress.mobile}</span>
+                    </div>
+                )}
+
                 {onViewDetails && (
-                    <button onClick={(e) => { e.stopPropagation(); onViewDetails(); }} className="mt-2 w-full py-1 text-[9px] font-black text-[#6D28D9] hover:bg-indigo-50 border border-[#6D28D9] rounded-md transition-colors uppercase tracking-[0.2em]">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onViewDetails(); }}
+                        className="mt-1 w-full py-1.5 text-[11px] font-bold text-violet-600 hover:bg-violet-50 border border-violet-300 rounded-xl transition-colors uppercase tracking-widest"
+                    >
                         View Full Details
                     </button>
                 )}
             </div>
 
-            {children && <div className="p-2 bg-white border-t border-[#CBD5E1] shrink-0">{children}</div>}
+            {children && <div className="px-3 pb-3 pt-2 bg-white border-t border-gray-100 shrink-0">{children}</div>}
         </div>
     );
 }

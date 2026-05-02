@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Category } from '@/types';
 import { useState } from 'react';
+import CldImage from '@/components/products/CldImage';
 
 // Fallback used when a category image URL is broken or missing
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80';
@@ -21,20 +22,14 @@ export default function CategoryCard({ category }: CategoryCardProps) {
         <Link href={`/menu?category=${category.id}`}>
             <div className="relative overflow-hidden rounded-2xl aspect-[4/3] group cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300">
                 {/* Background image */}
-                {showImage ? (
-                    <img
-                        src={imgSrc}
-                        alt={category.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        onError={() => setImgError(true)}
-                    />
-                ) : (
-                    <img
-                        src={FALLBACK_IMAGE}
-                        alt={category.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                )}
+                <CldImage
+                    src={showImage ? imgSrc : FALLBACK_IMAGE}
+                    alt={category.name}
+                    width={400}
+                    sizes="(max-width: 640px) 50vw, 400px"
+                    className="transition-transform duration-500 group-hover:scale-110"
+                    onError={() => setImgError(true)}
+                />
 
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />

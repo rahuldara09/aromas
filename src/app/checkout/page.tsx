@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
+import { cldUrl, isCloudinaryUrl } from '@/lib/cloudinary';
 import OrderSummaryPanel from '@/components/checkout/OrderSummaryPanel';
 import PaymentFooter from '@/components/checkout/PaymentFooter';
 import { useCartStore } from '@/store/cartStore';
@@ -311,7 +312,13 @@ export default function CheckoutPage() {
                                         <div key={item.product.id} className="flex items-center gap-4 p-4">
                                             <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
                                                 {item.product.imageURL ? (
-                                                    <img src={item.product.imageURL} alt={item.product.name} className="w-full h-full object-cover" />
+                                                    <img
+                                                        src={isCloudinaryUrl(item.product.imageURL) ? cldUrl(item.product.imageURL, 80) : item.product.imageURL}
+                                                        alt={item.product.name}
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">🍽</div>
                                                 )}

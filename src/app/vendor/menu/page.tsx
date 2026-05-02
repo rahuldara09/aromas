@@ -7,6 +7,7 @@ import { Product } from '@/types';
 import toast from 'react-hot-toast';
 import { Search, Plus, X, Trash2, Edit2, Filter, Download, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { cldUrl, isCloudinaryUrl } from '@/lib/cloudinary';
 
 type ProductWithCategory = Product & { category?: string };
 
@@ -244,7 +245,13 @@ export default function VendorMenu() {
                                 <div className="col-span-5 flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
                                         {product.imageURL ? (
-                                            <img src={product.imageURL} alt={product.name} className="w-full h-full object-cover" />
+                                            <img
+                                                src={isCloudinaryUrl(product.imageURL) ? cldUrl(product.imageURL, 80) : product.imageURL}
+                                                alt={product.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="w-full h-full object-cover"
+                                            />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-300 text-base">🍽</div>
                                         )}

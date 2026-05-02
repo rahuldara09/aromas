@@ -10,6 +10,7 @@ import { Product } from '@/types';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { cldUrl, isCloudinaryUrl } from '@/lib/cloudinary';
 
 interface HeaderProps {
     variant?: 'default' | 'checkout';
@@ -253,7 +254,13 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                                                 >
                                                     <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                                                         {product.imageURL ? (
-                                                            <img src={product.imageURL} alt={product.name} className="w-full h-full object-cover" />
+                                                            <img
+                                                                src={isCloudinaryUrl(product.imageURL) ? cldUrl(product.imageURL, 80) : product.imageURL}
+                                                                alt={product.name}
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                                className="w-full h-full object-cover"
+                                                            />
                                                         ) : (
                                                             <span className="text-gray-400 text-[10px]">🍽</span>
                                                         )}
@@ -394,7 +401,13 @@ export default function Header({ variant = 'default', checkoutStep = 1 }: Header
                                                             {/* Image thumbnail */}
                                                             <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                                                                 {product.imageURL ? (
-                                                                    <img src={product.imageURL} alt={product.name} className="w-full h-full object-cover" />
+                                                                    <img
+                                                                        src={isCloudinaryUrl(product.imageURL) ? cldUrl(product.imageURL, 80) : product.imageURL}
+                                                                        alt={product.name}
+                                                                        loading="lazy"
+                                                                        decoding="async"
+                                                                        className="w-full h-full object-cover"
+                                                                    />
                                                                 ) : (
                                                                     <span className="text-gray-400 text-[10px] font-bold">NO IMG</span>
                                                                 )}

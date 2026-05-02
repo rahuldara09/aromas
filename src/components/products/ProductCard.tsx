@@ -4,6 +4,7 @@ import { Plus, Check } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { useState, useEffect } from 'react';
+import CldImage from '@/components/products/CldImage';
 
 interface ProductCardProps {
     product: Product;
@@ -90,12 +91,12 @@ export default function ProductCard({ product, categoryName }: ProductCardProps)
             <div className="relative group bg-[#F5F6F8] rounded-[32px] p-4 aspect-square flex items-center justify-center overflow-hidden mb-3 border border-gray-100/50 shadow-sm">
                 <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-inner ${isOut ? 'grayscale opacity-75' : ''}`}>
                     {product.imageURL && !imgError ? (
-                        <img
+                        <CldImage
                             src={product.imageURL}
                             alt={product.name}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            width={300}
+                            sizes="(max-width: 640px) 50vw, 300px"
+                            className="transition-transform duration-500 group-hover:scale-105"
                             onError={() => setImgError(true)}
                         />
                     ) : (

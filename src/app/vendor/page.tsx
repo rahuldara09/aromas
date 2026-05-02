@@ -21,16 +21,18 @@ export default function VendorDashboardHome() {
         [orders]
     );
 
-    const todaySales   = todayOrders.reduce((s, o) => s + (o.grandTotal || 0), 0);
-    const onlineRev    = todayOrders.filter(o => o.orderType !== 'pos').reduce((s, o) => s + (o.grandTotal || 0), 0);
-    const posRev       = todayOrders.filter(o => o.orderType === 'pos').reduce((s, o) => s + (o.grandTotal || 0), 0);
-    const outOfStock   = products.filter(p => p.isAvailable === false).length;
+    const todaySales = todayOrders.reduce((s, o) => s + (o.grandTotal || 0), 0);
+    const onlineOrdersToday = todayOrders.filter(o => o.orderType !== 'pos');
+    const posOrdersToday    = todayOrders.filter(o => o.orderType === 'pos');
+    const onlineRev = onlineOrdersToday.reduce((s, o) => s + (o.grandTotal || 0), 0);
+    const posRev    = posOrdersToday.reduce((s, o) => s + (o.grandTotal || 0), 0);
+    const outOfStock = products.filter(p => p.isAvailable === false).length;
 
     // ── Chart data ──────────────────────────────────────────────────
     const chartData = useMemo(() => {
         const now = new Date();
-        const val  = (o: typeof orders[number]) => chartMetric === 'revenue' ? (o.grandTotal || 0) : 1;
-        const ok   = (o: typeof orders[number]) => o.status !== 'Cancelled';
+        const val = (o: typeof orders[number]) => chartMetric === 'revenue' ? (o.grandTotal || 0) : 1;
+        const ok = (o: typeof orders[number]) => o.status !== 'Cancelled';
         const data: { name: string; value: number }[] = [];
 
         if (chartRange === '7d') {
@@ -40,7 +42,7 @@ export default function VendorDashboardHome() {
             }
             orders.forEach(o => {
                 if (!ok(o)) return;
-                const diff = Math.round((new Date(now).setHours(0,0,0,0) - new Date(o.orderDate).setHours(0,0,0,0)) / 86400000);
+                const diff = Math.round((new Date(now).setHours(0, 0, 0, 0) - new Date(o.orderDate).setHours(0, 0, 0, 0)) / 86400000);
                 if (diff >= 0 && diff <= 6 && data[6 - diff]) data[6 - diff].value += val(o);
             });
         } else if (chartRange === 'monthly') {
@@ -53,7 +55,7 @@ export default function VendorDashboardHome() {
                     data[dt.getDate() - 1].value += val(o);
             });
         } else {
-            ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
                 .forEach(m => data.push({ name: m, value: 0 }));
             orders.forEach(o => {
                 if (!ok(o)) return;
@@ -65,13 +67,13 @@ export default function VendorDashboardHome() {
     }, [orders, chartRange, chartMetric]);
 
     const chartTotal = chartData.reduce((s, d) => s + d.value, 0);
-    const chartAvg   = chartData.length ? Math.round(chartTotal / chartData.length) : 0;
-    const peakDay    = chartData.reduce((p, c) => c.value > p.value ? c : p, { name: '—', value: 0 });
+    const chartAvg = chartData.length ? Math.round(chartTotal / chartData.length) : 0;
+    const peakDay = chartData.reduce((p, c) => c.value > p.value ? c : p, { name: '—', value: 0 });
 
     // ── Online-only recent orders (with items) ───────────────────────
     const recentOnline = useMemo(() =>
         [...orders]
-            .filter(o => o.orderType !== 'pos')
+            .filter(o => o.orderType !== 'pos' && (o.status === 'Placed' || o.status === 'Pending'))
             .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
             .slice(0, 14)
             .map(o => {
@@ -80,13 +82,13 @@ export default function VendorDashboardHome() {
                 ).join(', ');
                 const extra = o.items.length > 2 ? ` +${o.items.length - 2} more` : '';
                 return {
-                    id:           o.id,
-                    token:        o.orderToken || o.id.slice(0, 6).toUpperCase(),
+                    id: o.id,
+                    token: o.orderToken || o.id.slice(0, 6).toUpperCase(),
                     customerName: o.deliveryAddress?.name || o.customerPhone || 'Customer',
-                    amount:       o.grandTotal,
-                    status:       o.status,
-                    items:        shown + extra || '—',
-                    time:         new Date(o.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    amount: o.grandTotal,
+                    status: o.status,
+                    items: shown + extra || '—',
+                    time: new Date(o.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 };
             }),
         [orders]
@@ -94,7 +96,7 @@ export default function VendorDashboardHome() {
 
     const statusDot = (s: string) => {
         if (s === 'Delivered' || s === 'Completed') return 'bg-emerald-400';
-        if (s === 'Preparing'  || s === 'Dispatched') return 'bg-indigo-400';
+        if (s === 'Preparing' || s === 'Dispatched') return 'bg-indigo-400';
         if (s === 'Cancelled') return 'bg-red-400';
         return 'bg-amber-400';
     };
@@ -117,7 +119,11 @@ export default function VendorDashboardHome() {
                     <div className="flex-1 px-6 py-3.5 flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Orders</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">today</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-gray-400">Online {onlineOrdersToday.length}</span>
+                                <span className="text-gray-200">·</span>
+                                <span className="text-[10px] text-gray-400">POS {posOrdersToday.length}</span>
+                            </div>
                         </div>
                         <p className="text-[30px] font-bold text-gray-900 leading-none">{todayOrders.length}</p>
                     </div>
@@ -210,7 +216,7 @@ export default function VendorDashboardHome() {
                                 <XAxis dataKey="name" axisLine={false} tickLine={false}
                                     tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 500 }} dy={6} />
                                 <YAxis axisLine={false} tickLine={false}
-                                    tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 500 }} 
+                                    tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 500 }}
                                     tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(value % 1000 !== 0 ? 1 : 0)}K` : value}
                                 />
                                 <Tooltip
@@ -223,9 +229,9 @@ export default function VendorDashboardHome() {
                                         background: '#fff',
                                     }}
                                 />
-                                <Bar 
-                                    dataKey="value" 
-                                    fill="#3B82F6" 
+                                <Bar
+                                    dataKey="value"
+                                    fill="#6354F0"
                                     radius={[4, 4, 0, 0]}
                                     barSize={24}
                                 />
@@ -239,8 +245,8 @@ export default function VendorDashboardHome() {
 
                     <div className="flex items-center justify-between px-5 py-3 border-b border-gray-50 shrink-0">
                         <div>
-                            <p className="text-[14px] font-bold text-gray-900">Online Orders</p>
-                            <p className="text-[11px] text-gray-500 mt-0.5">Live feed · customer view</p>
+                            <p className="text-[14px] font-bold text-gray-900">New Online Orders</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Awaiting acceptance</p>
                         </div>
                         <Link href="/vendor/orders"
                             className="flex items-center gap-1 text-[12px] text-indigo-500 hover:text-indigo-700 font-medium transition-colors">
@@ -256,8 +262,8 @@ export default function VendorDashboardHome() {
                                     <Package size={16} className="text-gray-300" />
                                 </div>
                                 <div>
-                                    <p className="text-[13px] font-medium text-gray-500">No online orders yet</p>
-                                    <p className="text-[11px] text-gray-400 mt-0.5">Online orders will appear here</p>
+                                    <p className="text-[13px] font-medium text-gray-500">All caught up</p>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">No orders waiting for acceptance</p>
                                 </div>
                             </div>
                         ) : recentOnline.map(order => (
@@ -287,10 +293,10 @@ export default function VendorDashboardHome() {
                                         ${order.status === 'Preparing' || order.status === 'Dispatched'
                                             ? 'bg-indigo-50 text-indigo-600'
                                             : order.status === 'Delivered' || order.status === 'Completed'
-                                            ? 'bg-emerald-50 text-emerald-600'
-                                            : order.status === 'Cancelled'
-                                            ? 'bg-red-50 text-red-600'
-                                            : 'bg-amber-50 text-amber-600'
+                                                ? 'bg-emerald-50 text-emerald-600'
+                                                : order.status === 'Cancelled'
+                                                    ? 'bg-red-50 text-red-600'
+                                                    : 'bg-amber-50 text-amber-600'
                                         }`}>
                                         {statusLabel(order.status)}
                                     </span>

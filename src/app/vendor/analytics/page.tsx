@@ -55,6 +55,9 @@ export default function VendorAnalytics() {
     const [chartMode, setChartMode] = useState<'revenue' | 'orders'>('revenue');
     const [emailSending, setEmailSending] = useState(false);
     const [posPrinting, setPosPrinting] = useState(false);
+    const [orderLogOpen, setOrderLogOpen] = useState(false);
+    const [orderLogPage, setOrderLogPage] = useState(1);
+    const ORDER_LOG_PAGE_SIZE = 25;
 
     // ── Filtering ─────────────────────────────────────────────────────
     const { from, to } = useMemo(() => {
@@ -701,93 +704,142 @@ export default function VendorAnalytics() {
                     )}
                 </div>
 
-                {/* ── FULL ORDER LOG ── */}
+                {/* ── FULL ORDER LOG (collapsed by default) ── */}
                 <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+                    {/* Header — always visible, click to expand */}
+                    <div
+                        onClick={() => { setOrderLogOpen(v => !v); setOrderLogPage(1); }}
+                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50/60 transition-colors text-left cursor-pointer"
+                    >
                         <div>
                             <p className="text-[14px] font-bold text-gray-900">Full Order Log</p>
                             <p className="text-[11px] font-medium text-gray-400 mt-0.5">
                                 {filteredOrders.length} orders · {rangeLabel}
+                                {!orderLogOpen && filteredOrders.length > 0 && (
+                                    <span className="ml-2 text-indigo-500 font-semibold">Click to expand</span>
+                                )}
                             </p>
                         </div>
-                        <button
-                            onClick={exportOrders}
-                            className="flex items-center gap-1.5 text-[12px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors"
-                        >
-                            <Download size={12} /> Download Report
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={e => { e.stopPropagation(); exportOrders(); }}
+                                className="flex items-center gap-1.5 text-[12px] font-semibold text-indigo-500 hover:text-indigo-700 transition-colors"
+                            >
+                                <Download size={12} /> Export
+                            </button>
+                            <ChevronRight
+                                size={16}
+                                className={`text-gray-400 transition-transform duration-200 ${orderLogOpen ? 'rotate-90' : ''}`}
+                            />
+                        </div>
                     </div>
 
-                    {filteredOrders.length === 0 ? (
-                        <div className="py-14 text-center">
-                            <Package size={26} className="text-gray-200 mx-auto mb-3" />
-                            <p className="text-[13px] text-gray-400">No orders in selected range</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr>
-                                        <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order</th>
-                                        <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer</th>
-                                        <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Items</th>
-                                        <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time</th>
-                                        <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount</th>
-                                        <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {[...filteredOrders]
-                                        .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
-                                        .map(order => (
-                                        <tr key={order.id} className="hover:bg-gray-50/60 transition-colors">
-                                            <td className="px-5 py-3">
-                                                <p className="text-[12px] font-bold text-gray-900">
-                                                    #{order.orderToken || order.id.slice(0, 6).toUpperCase()}
-                                                </p>
-                                                <p className="text-[10px] font-medium text-gray-400 mt-0.5">
-                                                    {order.orderType === 'pos' ? 'POS' : 'Online'}
-                                                </p>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <p className="text-[12px] font-semibold text-gray-800">
-                                                    {order.deliveryAddress?.name || order.customerPhone || 'Walk-in'}
-                                                </p>
-                                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                                    {order.deliveryAddress?.hostelNumber
-                                                        ? `H${order.deliveryAddress.hostelNumber}`
-                                                        : ''}
-                                                </p>
-                                            </td>
-                                            <td className="px-5 py-3 max-w-[180px]">
-                                                <p className="text-[11px] text-gray-600 truncate">
-                                                    {order.items.slice(0, 2)
-                                                        .map(i => i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name)
-                                                        .join(', ')}
-                                                    {order.items.length > 2 ? ` +${order.items.length - 2}` : ''}
-                                                </p>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <p className="text-[11px] font-medium text-gray-600">
-                                                    {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                                    {new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                                </p>
-                                            </td>
-                                            <td className="px-5 py-3 text-right">
-                                                <span className="text-[13px] font-bold text-gray-900">
-                                                    ₹{(order.grandTotal || 0).toLocaleString()}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3 text-center">
-                                                <StatusBadge status={order.status} />
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    {/* Expandable content */}
+                    {orderLogOpen && (
+                        filteredOrders.length === 0 ? (
+                            <div className="py-14 text-center border-t border-gray-50">
+                                <Package size={26} className="text-gray-200 mx-auto mb-3" />
+                                <p className="text-[13px] text-gray-400">No orders in selected range</p>
+                            </div>
+                        ) : (() => {
+                            const sorted = [...filteredOrders].sort(
+                                (a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
+                            );
+                            const totalPages = Math.ceil(sorted.length / ORDER_LOG_PAGE_SIZE);
+                            const pageOrders = sorted.slice(0, orderLogPage * ORDER_LOG_PAGE_SIZE);
+                            const hasMore = pageOrders.length < sorted.length;
+
+                            return (
+                                <div className="border-t border-gray-50">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Order</th>
+                                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Customer</th>
+                                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Items</th>
+                                                    <th className="text-left px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time</th>
+                                                    <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount</th>
+                                                    <th className="text-center px-5 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {pageOrders.map(order => (
+                                                    <tr key={order.id} className="hover:bg-gray-50/60 transition-colors">
+                                                        <td className="px-5 py-3">
+                                                            <p className="text-[12px] font-bold text-gray-900">
+                                                                #{order.orderToken || order.id.slice(0, 6).toUpperCase()}
+                                                            </p>
+                                                            <p className="text-[10px] font-medium text-gray-400 mt-0.5">
+                                                                {order.orderType === 'pos' ? 'POS' : 'Online'}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-5 py-3">
+                                                            <p className="text-[12px] font-semibold text-gray-800">
+                                                                {order.deliveryAddress?.name || order.customerPhone || 'Walk-in'}
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">
+                                                                {order.deliveryAddress?.hostelNumber
+                                                                    ? `H${order.deliveryAddress.hostelNumber}`
+                                                                    : ''}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-5 py-3 max-w-[180px]">
+                                                            <p className="text-[11px] text-gray-600 truncate">
+                                                                {order.items.slice(0, 2)
+                                                                    .map(i => i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name)
+                                                                    .join(', ')}
+                                                                {order.items.length > 2 ? ` +${order.items.length - 2}` : ''}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-5 py-3">
+                                                            <p className="text-[11px] font-medium text-gray-600">
+                                                                {new Date(order.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-400 mt-0.5">
+                                                                {new Date(order.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-5 py-3 text-right">
+                                                            <span className="text-[13px] font-bold text-gray-900">
+                                                                ₹{(order.grandTotal || 0).toLocaleString()}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-5 py-3 text-center">
+                                                            <StatusBadge status={order.status} />
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Load more / pagination footer */}
+                                    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-50 bg-gray-50/40">
+                                        <p className="text-[11px] text-gray-400 font-medium">
+                                            Showing {pageOrders.length} of {sorted.length} orders
+                                            {totalPages > 1 && ` · Page ${orderLogPage} of ${totalPages}`}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            {hasMore && (
+                                                <button
+                                                    onClick={() => setOrderLogPage(p => p + 1)}
+                                                    className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-semibold hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                                                >
+                                                    Load {Math.min(ORDER_LOG_PAGE_SIZE, sorted.length - pageOrders.length)} more
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => { setOrderLogOpen(false); setOrderLogPage(1); }}
+                                                className="px-3 py-1.5 text-gray-400 rounded-lg text-[12px] font-semibold hover:text-gray-700 transition-colors"
+                                            >
+                                                Collapse
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()
                     )}
                 </div>
 

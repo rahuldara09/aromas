@@ -5,6 +5,7 @@ import EmptyCart from './EmptyCart';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { useState, useEffect } from 'react';
+import { cldUrl, isCloudinaryUrl } from '@/lib/cloudinary';
 
 export default function CartSidebar() {
     const items = useCartStore((s) => s.items);
@@ -48,8 +49,10 @@ export default function CartSidebar() {
                                     <div className="w-9 h-9 rounded bg-gray-100 overflow-hidden flex-shrink-0">
                                         {item.product.imageURL && !imgErrors[item.product.id] ? (
                                             <img
-                                                src={item.product.imageURL}
+                                                src={isCloudinaryUrl(item.product.imageURL) ? cldUrl(item.product.imageURL, 80) : item.product.imageURL}
                                                 alt={item.product.name}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover"
                                                 onError={() =>
                                                     setImgErrors((prev) => ({ ...prev, [item.product.id]: true }))
