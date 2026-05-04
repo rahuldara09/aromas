@@ -5,12 +5,16 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useThermalPrinter } from '@/hooks/useThermalPrinter';
 import PrinterSetupGuide from '@/components/vendor/PrinterSetupGuide';
+import { useAuth } from '@/contexts/AuthContext';
+import { listenToGSTSettings, updateGSTSettings } from '@/lib/vendor';
+import { GSTSettings } from '@/types';
 import {
-    Store, Printer, Bell, Palette, Volume2, Mail, Smartphone,
-    ChevronDown, Download, ExternalLink, ShieldCheck, Zap, Activity, Clock, Timer
+    Store, Printer, Bell, Palette,
+    ChevronDown, Download, ExternalLink, ShieldCheck, Zap, Activity, Clock, Timer, Receipt
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-type Section = 'General' | 'Hardware' | 'Notifications' | 'Appearance';
+type Section = 'General' | 'Hardware' | 'Notifications' | 'Appearance' | 'Pricing';
 
 function Toggle({ checked, onChange, accent = 'gray' }: { checked: boolean; onChange: () => void; accent?: string }) {
     return (
@@ -43,17 +47,41 @@ function SettingRow({ label, description, children }: {
 
 export default function VendorSettings() {
     const { isStoreOpen, toggleStore } = useVendor();
+    const { user, phoneNumber } = useAuth();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const { isConnected } = useThermalPrinter();
     const [showGuide, setShowGuide] = useState(false);
     const [activeSection, setActiveSection] = useState<Section>('General');
 
+    const [gst, setGst] = useState<GSTSettings>({ gstEnabled: false, gstType: 'included', gstPercentage: 5 });
+    const [gstSaving, setGstSaving] = useState(false);
+
     useEffect(() => setMounted(true), []);
+
+    useEffect(() => {
+        const unsub = listenToGSTSettings(setGst);
+        return () => unsub();
+    }, []);
     if (!mounted) return null;
+
+    const saveGST = async () => {
+        if (!user) return;
+        setGstSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await updateGSTSettings(gst, idToken, phoneNumber ?? '');
+            toast.success('GST settings saved', { style: { borderRadius: '14px', fontWeight: 600 } });
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Failed to save GST settings');
+        } finally {
+            setGstSaving(false);
+        }
+    };
 
     const sections: { id: Section; label: string; icon: React.ReactNode }[] = [
         { id: 'General', label: 'General', icon: <Store size={14} /> },
+        { id: 'Pricing', label: 'Pricing & GST', icon: <Receipt size={14} /> },
         { id: 'Hardware', label: 'Hardware', icon: <Printer size={14} /> },
         { id: 'Notifications', label: 'Notifications', icon: <Bell size={14} /> },
         { id: 'Appearance', label: 'Appearance', icon: <Palette size={14} /> },
@@ -135,6 +163,131 @@ export default function VendorSettings() {
                                             </div>
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PRICING & GST */}
+                        {activeSection === 'Pricing' && (
+                            <div className="px-6 py-2">
+                                <div className="py-4 border-b border-gray-100">
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">GST Configuration</p>
+
+                                    <SettingRow
+                                        label="Enable GST"
+                                        description="Show GST as part of the price breakdown on checkout"
+                                    >
+                                        <Toggle
+                                            checked={gst.gstEnabled}
+                                            onChange={() => setGst(g => ({ ...g, gstEnabled: !g.gstEnabled }))}
+                                        />
+                                    </SettingRow>
+
+                                    {gst.gstEnabled && (
+                                        <>
+                                            <div className="py-4 border-b border-gray-100">
+                                                <p className="text-[14px] font-semibold text-gray-900 mb-1">GST Type</p>
+                                                <p className="text-[12px] text-gray-400 mb-3">How GST is applied to product prices</p>
+                                                <div className="flex gap-3">
+                                                    {(['included', 'excluded'] as const).map((type) => (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => setGst(g => ({ ...g, gstType: type }))}
+                                                            className={`flex-1 py-3 px-4 rounded-xl border text-[13px] font-semibold transition-colors text-left
+                                                                ${gst.gstType === type
+                                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                                                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                                                }`}
+                                                        >
+                                                            <p className="capitalize">{type}</p>
+                                                            <p className={`text-[11px] mt-0.5 font-normal ${gst.gstType === type ? 'text-indigo-500' : 'text-gray-400'}`}>
+                                                                {type === 'included'
+                                                                    ? 'GST already in price'
+                                                                    : 'GST added on top'}
+                                                            </p>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="py-4">
+                                                <p className="text-[14px] font-semibold text-gray-900 mb-1">GST Rate</p>
+                                                <p className="text-[12px] text-gray-400 mb-3">Enter the applicable GST percentage</p>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative flex-1 max-w-[140px]">
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            max={100}
+                                                            step={0.5}
+                                                            value={gst.gstPercentage}
+                                                            onChange={(e) => setGst(g => ({ ...g, gstPercentage: Math.max(0, Math.min(100, Number(e.target.value))) }))}
+                                                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition pr-8"
+                                                        />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-gray-400 font-medium">%</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {[5, 12, 18, 28].map(rate => (
+                                                            <button
+                                                                key={rate}
+                                                                onClick={() => setGst(g => ({ ...g, gstPercentage: rate }))}
+                                                                className={`px-3 py-2 rounded-lg text-[12px] font-medium border transition-colors
+                                                                    ${gst.gstPercentage === rate
+                                                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                                                        : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                                                    }`}
+                                                            >
+                                                                {rate}%
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {gst.gstEnabled && (
+                                    <div className="py-4 border-b border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Preview</p>
+                                        <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 text-[13px]">
+                                            <div className="flex justify-between text-gray-600 mb-1.5">
+                                                <span>Item total</span>
+                                                <span>₹100.00</span>
+                                            </div>
+                                            {gst.gstType === 'included' ? (
+                                                <>
+                                                    <div className="flex justify-between text-gray-400 text-[12px] mb-1.5 pl-3">
+                                                        <span>↳ Base price</span>
+                                                        <span>₹{(100 / (1 + gst.gstPercentage / 100)).toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-gray-400 text-[12px] mb-1.5 pl-3">
+                                                        <span>↳ GST ({gst.gstPercentage}%)</span>
+                                                        <span>₹{(100 - 100 / (1 + gst.gstPercentage / 100)).toFixed(2)}</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex justify-between text-gray-400 text-[12px] mb-1.5">
+                                                    <span>GST ({gst.gstPercentage}%)</span>
+                                                    <span>+₹{(100 * gst.gstPercentage / 100).toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200 mt-1">
+                                                <span>To Pay</span>
+                                                <span>₹{gst.gstType === 'included' ? '100.00' : (100 + 100 * gst.gstPercentage / 100).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="py-4">
+                                    <button
+                                        onClick={saveGST}
+                                        disabled={gstSaving}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold py-2.5 rounded-xl text-[14px] transition-colors"
+                                    >
+                                        {gstSaving ? 'Saving…' : 'Save GST Settings'}
+                                    </button>
                                 </div>
                             </div>
                         )}

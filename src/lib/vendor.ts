@@ -11,7 +11,7 @@ import {
     addDoc,
     writeBatch,
 } from 'firebase/firestore';
-import { Order, OrderStatus, Product } from '@/types';
+import { Order, OrderStatus, Product, GSTSettings } from '@/types';
 
 function getTimelineKeyForStatus(status: OrderStatus): 'placed' | 'accepted' | 'preparing' | 'dispatched' | 'completed' | 'cancelled' | null {
     switch (status) {
@@ -78,6 +78,40 @@ export function listenToStoreStatus(callback: (isOpen: boolean) => void) {
             callback(false);
         }
     });
+}
+
+const DEFAULT_GST: GSTSettings = { gstEnabled: false, gstType: 'included', gstPercentage: 5 };
+
+export function listenToGSTSettings(callback: (settings: GSTSettings) => void) {
+    const docRef = doc(db, 'settings', 'storeSettings');
+    return onSnapshot(docRef, (snap) => {
+        if (snap.exists()) {
+            const d = snap.data();
+            callback({
+                gstEnabled: d.gstEnabled === true,
+                gstType: d.gstType === 'excluded' ? 'excluded' : 'included',
+                gstPercentage: typeof d.gstPercentage === 'number' ? d.gstPercentage : 5,
+            });
+        } else {
+            callback(DEFAULT_GST);
+        }
+    });
+}
+
+export async function updateGSTSettings(settings: GSTSettings, idToken: string, phone: string): Promise<void> {
+    const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+            'x-vendor-phone': phone,
+        },
+        body: JSON.stringify(settings),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error ?? 'Failed to update GST settings');
+    }
 }
 
 export async function toggleStoreStatus(isOpen: boolean, idToken: string, phone: string): Promise<void> {

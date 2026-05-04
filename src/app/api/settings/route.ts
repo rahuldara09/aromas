@@ -80,19 +80,46 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
     }
 
-    const { isOpen } = body;
-    if (typeof isOpen !== 'boolean') {
-        return NextResponse.json({ error: 'isOpen (boolean) is required.' }, { status: 422 });
+    const updates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
+
+    if ('isOpen' in body) {
+        if (typeof body.isOpen !== 'boolean') {
+            return NextResponse.json({ error: 'isOpen must be boolean.' }, { status: 422 });
+        }
+        updates.isOpen = body.isOpen;
+    }
+
+    if ('gstEnabled' in body) {
+        if (typeof body.gstEnabled !== 'boolean') {
+            return NextResponse.json({ error: 'gstEnabled must be boolean.' }, { status: 422 });
+        }
+        updates.gstEnabled = body.gstEnabled;
+    }
+
+    if ('gstType' in body) {
+        if (body.gstType !== 'included' && body.gstType !== 'excluded') {
+            return NextResponse.json({ error: 'gstType must be "included" or "excluded".' }, { status: 422 });
+        }
+        updates.gstType = body.gstType;
+    }
+
+    if ('gstPercentage' in body) {
+        const pct = Number(body.gstPercentage);
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+            return NextResponse.json({ error: 'gstPercentage must be 0–100.' }, { status: 422 });
+        }
+        updates.gstPercentage = pct;
+    }
+
+    if (Object.keys(updates).length === 1) {
+        return NextResponse.json({ error: 'No valid fields provided.' }, { status: 422 });
     }
 
     try {
-        await adminDb.collection('settings').doc('storeSettings').set(
-            { isOpen, updatedAt: FieldValue.serverTimestamp() },
-            { merge: true }
-        );
+        await adminDb.collection('settings').doc('storeSettings').set(updates, { merge: true });
         return NextResponse.json({ success: true });
     } catch (err) {
         console.error('[API/settings PUT] Firestore write failed:', err);
-        return NextResponse.json({ error: 'Failed to update store settings.' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update settings.' }, { status: 500 });
     }
 }

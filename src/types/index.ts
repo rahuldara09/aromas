@@ -142,6 +142,12 @@ export interface UserAddress {
   isDefault?: boolean;
 }
 
+export interface GSTSettings {
+  gstEnabled: boolean;
+  gstType: 'included' | 'excluded';
+  gstPercentage: number;
+}
+
 export interface UserProfile {
   phone: string;
   name: string;

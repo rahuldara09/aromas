@@ -1,6 +1,8 @@
 'use client';
 
-import { Tag, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Tag, ChevronRight, ChevronDown } from 'lucide-react';
+import { useGSTSettings, computeGST } from '@/hooks/useGSTSettings';
 
 interface OrderSummaryPanelProps {
     subtotal: number;
@@ -21,6 +23,18 @@ export default function OrderSummaryPanel({
     continueLabel = 'Continue',
     showContinue = true,
 }: OrderSummaryPanelProps) {
+    const gst = useGSTSettings();
+    const [breakdownOpen, setBreakdownOpen] = useState(false);
+
+    const gstBreakdown = gst.gstEnabled
+        ? computeGST(subtotal, gst.gstPercentage, gst.gstType)
+        : null;
+
+    // For excluded GST the final total changes
+    const effectiveTotal = gstBreakdown && gst.gstType === 'excluded'
+        ? gstBreakdown.total + dukanFee + deliveryFee
+        : grandTotal;
+
     return (
         <div className="w-full md:w-80 flex-shrink-0">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden md:sticky md:top-20">
@@ -44,20 +58,97 @@ export default function OrderSummaryPanel({
                         <span>Item total</span>
                         <span>₹{subtotal}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Delivery + Packing</span>
-                        <span>₹{dukanFee}</span>
-                    </div>
+                    {dukanFee > 0 && (
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Delivery + Packing</span>
+                            <span>₹{dukanFee}</span>
+                        </div>
+                    )}
+
+                    {/* GST line — only for excluded type */}
+                    {gstBreakdown && gst.gstType === 'excluded' && (
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>GST ({gst.gstPercentage}%)</span>
+                            <span>₹{gstBreakdown.gstAmount.toFixed(2)}</span>
+                        </div>
+                    )}
 
                     <div className="border-t border-gray-100 pt-2.5">
                         <div className="flex justify-between">
                             <div>
                                 <p className="font-bold text-gray-900">Grand total</p>
-                                <p className="text-xs text-gray-400">Inclusive of all taxes</p>
+                                <p className="text-xs text-gray-400">
+                                    {gstBreakdown
+                                        ? gst.gstType === 'included'
+                                            ? `Incl. ${gst.gstPercentage}% GST`
+                                            : `Incl. all taxes`
+                                        : 'Inclusive of all taxes'}
+                                </p>
                             </div>
-                            <p className="font-bold text-gray-900">₹{grandTotal}</p>
+                            <p className="font-bold text-gray-900">₹{effectiveTotal}</p>
                         </div>
                     </div>
+
+                    {/* Price breakdown toggle */}
+                    {gstBreakdown && (
+                        <div>
+                            <button
+                                onClick={() => setBreakdownOpen(o => !o)}
+                                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors mt-1"
+                            >
+                                {breakdownOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                                {breakdownOpen ? 'Hide' : 'View'} price breakdown
+                            </button>
+
+                            {breakdownOpen && (
+                                <div className="mt-2.5 bg-gray-50 rounded-xl border border-gray-100 px-3 py-3 space-y-1.5 text-xs text-gray-600">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Bill Details</p>
+
+                                    <div className="flex justify-between">
+                                        <span>Item total</span>
+                                        <span>₹{subtotal}</span>
+                                    </div>
+
+                                    {gst.gstType === 'included' ? (
+                                        <>
+                                            <div className="flex justify-between text-gray-400 pl-3">
+                                                <span>↳ Base price (excl. GST)</span>
+                                                <span>₹{gstBreakdown.baseAmount.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-gray-400 pl-3">
+                                                <span>↳ GST ({gst.gstPercentage}%)</span>
+                                                <span>₹{gstBreakdown.gstAmount.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex justify-between">
+                                            <span>GST ({gst.gstPercentage}%)</span>
+                                            <span>₹{gstBreakdown.gstAmount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+
+                                    {dukanFee > 0 && (
+                                        <div className="flex justify-between">
+                                            <span>Delivery + Packing</span>
+                                            <span>₹{dukanFee}</span>
+                                        </div>
+                                    )}
+
+                                    {deliveryFee > 0 && (
+                                        <div className="flex justify-between">
+                                            <span>Delivery fee</span>
+                                            <span>₹{deliveryFee}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between font-bold text-gray-900 pt-1.5 border-t border-gray-200 mt-1">
+                                        <span>To Pay</span>
+                                        <span>₹{effectiveTotal}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <p className="text-xs text-gray-500 pt-1">
                         Average delivery time: <strong>30-60 minutes</strong>
