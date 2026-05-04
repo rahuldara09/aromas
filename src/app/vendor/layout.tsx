@@ -123,16 +123,11 @@ function VendorLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* ── TOP NAVBAR ── */}
                 <nav className="vendor-topbar flex h-[58px] items-center px-5 gap-4 flex-shrink-0 z-20 w-full">
 
-                    {/* Logo */}
-                    <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="relative w-7 h-7 rounded-lg bg-[#E22718] flex items-center justify-center overflow-hidden border-t-[3px] border-[#F29D0A]">
-                            <ShoppingBag size={13} className="text-white mt-0.5" />
-                        </div>
-                        <div className="leading-none">
-                            <span className="font-bold text-[15px] text-gray-900 tracking-tight">Online Vyapar</span>
-                            <p className="hidden sm:block text-[9px] font-semibold text-gray-500 tracking-widest mt-0.5 ">Ab Aapka Business Hoga Online.</p>
-                        </div>
-                    </div>
+                    <img
+                        src="/logo.png"
+                        alt="Byte Business Logo"
+                        className="h-28 w-auto object-contain"
+                    />
 
                     {/* Center nav */}
                     <div className="hidden lg:flex flex-1 justify-center">
