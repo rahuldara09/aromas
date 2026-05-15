@@ -1,6 +1,5 @@
 name: Build Windows Installer
 
-# Trigger manually from GitHub UI, or on every push to main
 on:
   workflow_dispatch:
   push:
@@ -11,39 +10,40 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1. Download your code
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js 20
+      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3. Recreate .env.local from the GitHub Secret you will add
-      #    (the secret stores your entire .env.local encoded as base64)
+      # 3. Create .env.local
       - name: Create .env.local
         shell: bash
         run: |
           echo "${{ secrets.ENV_LOCAL_BASE64 }}" | base64 -d > .env.local
 
-      # 4. Install dependencies (skips postinstall to avoid CI issues)
+      # 4. Install dependencies
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      # 5. Rebuild better-sqlite3 for Electron on Windows arm64 + x64 + ia32
+      # 5. Rebuild better-sqlite3 only for x64 + arm64
       - name: Rebuild native modules
-        run: npx electron-rebuild -f -w better-sqlite3
+        run: |
+          npx electron-rebuild -f -w better-sqlite3 --arch=x64
+          npx electron-rebuild -f -w better-sqlite3 --arch=arm64
 
-      # 6. Full build: next build → prepare → compile → electron-builder
+      # 6. Build Electron app
       - name: Build Windows app
-        run: npm run electron:build:win
+        run: npx electron-builder --win nsis --x64 --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 7. Upload .exe files — download from Actions tab after build
+      # 7. Upload installers
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
