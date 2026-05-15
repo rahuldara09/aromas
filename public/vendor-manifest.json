@@ -1,0 +1,26 @@
+{
+  "id": "/vendor",
+  "name": "Aroma Ops",
+  "short_name": "Aroma Ops",
+  "description": "Vendor dashboard for Aroma Dhaba",
+  "start_url": "/vendor",
+  "scope": "/vendor",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

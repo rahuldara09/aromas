@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx firebase:*)",
+      "Read(//Users/rahuldara/**)",
+      "Read(//private/tmp/unzip_check/extracted/**)",
+      "Bash(zip -j /Users/rahuldara/IIT/aromas/public/downloads/byte_printer.zip receipt.js server.js package.json package-lock.json)",
+      "Bash(zip /Users/rahuldara/IIT/aromas/public/downloads/byte_printer.zip scripts/raw-print.ps1 scripts/build-dist.sh scripts/build-dmg.sh)",
+      "Bash(zip -j /Users/rahuldara/IIT/aromas/public/downloads/byte_printer_mac.zip receipt.js server.js package.json package-lock.json)",
+      "Bash(zip /Users/rahuldara/IIT/aromas/public/downloads/byte_printer_mac.zip scripts/build-dist.sh scripts/build-dmg.sh)",
+      "Bash(zip -j /Users/rahuldara/IIT/aromas/public/downloads/byte_printer_win.zip receipt.js server.js package.json package-lock.json)",
+      "Bash(xargs ls -la)",
+      "Bash(xargs cat)",
+      "Bash(npx next *)"
+    ]
+  }
+}
