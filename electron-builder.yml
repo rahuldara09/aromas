@@ -31,6 +31,11 @@ asarUnpack:
 files:
   - dist-electron/**/*
   - .next/standalone/**/*
+  # Next.js creates hash-named symlinks inside standalone/.next/node_modules/
+  # (e.g. firebase-admin-a14c8a5423a75469) that point back to project node_modules.
+  # On Windows, 7-zip follows these broken symlinks → exit code 1 → build fails.
+  # These are NOT needed at runtime (standalone server uses standalone/node_modules/).
+  - "!.next/standalone/.next/node_modules/**"
   - package.json
   - "!node_modules/.cache/**/*"
   - "!.next/cache/**/*"
@@ -78,14 +83,10 @@ dmg:
 win:
   icon: electron/assets/icon.ico
   target:
-    # x64  → modern 64-bit Windows 10/11 (most vendor machines)
-    # ia32 → older 32-bit Windows machines (broad compatibility)
-    # arm64→ Windows on ARM (Surface Pro X, Snapdragon laptops)
     - target: nsis
       arch:
-        - x64
-        - ia32
-        - arm64
+        - x64    # modern 64-bit Windows 10/11 — covers 95%+ of vendor machines
+        - arm64  # Windows on ARM (Surface Pro X, Snapdragon laptops)
 
 nsis:
   oneClick: false
@@ -93,5 +94,3 @@ nsis:
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: ByteBusiness POS
-  # Each arch gets its own separate installer file — vendor picks the right one
-  differentialPackage: false

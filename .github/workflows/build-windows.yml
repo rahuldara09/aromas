@@ -19,37 +19,32 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Recreate .env.local from the base64 secret you added in GitHub Settings
       - name: Create .env.local
         shell: bash
         run: echo "${{ secrets.ENV_LOCAL_BASE64 }}" | base64 -d > .env.local
 
-      # --ignore-scripts skips postinstall (electron-builder install-app-deps)
-      # We run native module rebuild manually in the next step
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      # Rebuild better-sqlite3 native addon for the Electron Node.js ABI on Windows
       - name: Rebuild native modules
         run: npx electron-rebuild -f -w better-sqlite3
 
-      # ── THE THREE STEPS THAT WERE MISSING ────────────────────────────────────
-
-      # Step A: Build Next.js → produces .next/standalone/server.js
       - name: Build Next.js
         run: npm run build
 
-      # Step B: Copy .next/static + public/ into .next/standalone/
       - name: Prepare standalone
         run: npm run electron:prepare
 
-      # Step C: Compile electron/*.ts → dist-electron/main.js + preload.js etc.
+      # Remove hash-named symlinks Next.js creates inside standalone/.next/node_modules/
+      # These are broken junctions on Windows and cause 7-zip to exit with code 1.
+      # They are NOT needed at runtime — standalone server uses standalone/node_modules/.
+      - name: Remove broken symlinks
+        shell: bash
+        run: rm -rf .next/standalone/.next/node_modules
+
       - name: Compile Electron TypeScript
         run: npm run electron:compile
 
-      # ─────────────────────────────────────────────────────────────────────────
-
-      # Now dist-electron/main.js exists and .next/standalone is ready
       - name: Package with electron-builder
         run: npx electron-builder --win --x64 --arm64
         env:
