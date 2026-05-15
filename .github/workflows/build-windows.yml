@@ -10,40 +10,51 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3. Create .env.local
+      # Recreate .env.local from the base64 secret you added in GitHub Settings
       - name: Create .env.local
         shell: bash
-        run: |
-          echo "${{ secrets.ENV_LOCAL_BASE64 }}" | base64 -d > .env.local
+        run: echo "${{ secrets.ENV_LOCAL_BASE64 }}" | base64 -d > .env.local
 
-      # 4. Install dependencies
+      # --ignore-scripts skips postinstall (electron-builder install-app-deps)
+      # We run native module rebuild manually in the next step
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      # 5. Rebuild better-sqlite3 only for x64 + arm64
+      # Rebuild better-sqlite3 native addon for the Electron Node.js ABI on Windows
       - name: Rebuild native modules
-        run: |
-          npx electron-rebuild -f -w better-sqlite3 --arch=x64
-          npx electron-rebuild -f -w better-sqlite3 --arch=arm64
+        run: npx electron-rebuild -f -w better-sqlite3
 
-      # 6. Build Electron app
-      - name: Build Windows app
-        run: npx electron-builder --win nsis --x64 --arm64
+      # ── THE THREE STEPS THAT WERE MISSING ────────────────────────────────────
+
+      # Step A: Build Next.js → produces .next/standalone/server.js
+      - name: Build Next.js
+        run: npm run build
+
+      # Step B: Copy .next/static + public/ into .next/standalone/
+      - name: Prepare standalone
+        run: npm run electron:prepare
+
+      # Step C: Compile electron/*.ts → dist-electron/main.js + preload.js etc.
+      - name: Compile Electron TypeScript
+        run: npm run electron:compile
+
+      # ─────────────────────────────────────────────────────────────────────────
+
+      # Now dist-electron/main.js exists and .next/standalone is ready
+      - name: Package with electron-builder
+        run: npx electron-builder --win --x64 --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 7. Upload installers
       - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
