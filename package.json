@@ -15,7 +15,7 @@
     "electron:rebuild": "electron-rebuild -f -w better-sqlite3",
     "electron:dev": "concurrently -n next,electron -c blue,green \"next dev\" \"wait-on http://localhost:3000/api/health && electron .\"",
     "electron:build:mac": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --mac --arm64",
-    "electron:build:win": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --win --x64 --ia32 --arm64",
+    "electron:build:win": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --win --x64 --arm64",
     "electron:prepare": "node scripts/prepare-electron.js"
   },
   "dependencies": {
