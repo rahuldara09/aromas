@@ -10,7 +10,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "electron-builder install-app-deps",
     "electron:compile": "tsc -p tsconfig.electron.json && node -e \"require('fs').copyFileSync('electron/splash.html','dist-electron/splash.html')\"",
     "electron:rebuild": "electron-rebuild -f -w better-sqlite3",
     "electron:dev": "concurrently -n next,electron -c blue,green \"next dev\" \"wait-on http://localhost:3000/api/health && electron .\"",
