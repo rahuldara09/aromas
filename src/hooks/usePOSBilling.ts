@@ -1,29 +1,6 @@
 'use client';
 
-/**
- * usePOSBilling
- *
- * Local-first POS billing hook for the desktop app.
- *
- * Flow in Electron (desktop):
- *   1. Generate a local UUID for the bill
- *   2. Save to SQLite immediately (instant, no network)
- *   3. Print the receipt immediately via native IPC
- *   4. Attempt Firebase sync in the background (usePOSSync handles retries)
- *
- * Flow in browser (web):
- *   Falls back to the original HTTP API call — behaviour unchanged.
- *
- * Usage: drop-in inside POSDrawer or wherever createPOSOrder is called.
- */
-
 import { useCallback, useState } from 'react';
-import {
-  desktopGetBillCount,
-  desktopPrint,
-  desktopSaveBill,
-  isElectron,
-} from '@/lib/electron-bridge';
 import type { Order, OrderItem } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,18 +15,7 @@ interface POSBillInput {
 interface POSBillResult {
   localId: string;
   posToken: string;
-  /** True when the receipt was sent to the printer (even if printing is async) */
   printed: boolean;
-}
-
-// ─── Token generation ─────────────────────────────────────────────────────────
-// Simple daily counter stored in memory — reset on app restart (acceptable for POS)
-let _sessionCounter = 0;
-
-function buildPosToken(count: number): string {
-  const now = new Date();
-  const hhmm = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '');
-  return `P${String(count).padStart(3, '0')}-${hhmm}`;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -63,11 +29,7 @@ export function usePOSBilling() {
     setError(null);
 
     try {
-      if (isElectron()) {
-        return await createBillDesktop(input);
-      } else {
-        return await createBillWeb(input);
-      }
+      return await createBillWeb(input);
     } catch (err: unknown) {
       const msg = (err as Error).message ?? 'Failed to create bill';
       setError(msg);
@@ -80,39 +42,7 @@ export function usePOSBilling() {
   return { createBill, isCreating, error };
 }
 
-// ─── Desktop path ─────────────────────────────────────────────────────────────
-
-async function createBillDesktop(input: POSBillInput): Promise<POSBillResult> {
-  const localId = crypto.randomUUID();
-  const now = Date.now();
-
-  // Derive counter from SQLite total so it's persistent across restarts
-  const totalBills = await desktopGetBillCount();
-  _sessionCounter = totalBills + 1;
-  const posToken = buildPosToken(_sessionCounter);
-
-  const order = buildOrderObject(localId, input, posToken, now);
-
-  // 1. Persist locally (sync, instant)
-  await desktopSaveBill({
-    id: localId,
-    vendorId: input.vendorId,
-    orderData: JSON.stringify(order),
-    posToken,
-    createdAt: now,
-  });
-
-  // 2. Print immediately (async queue in main process — returns before paper exits)
-  const printResult = await desktopPrint(order, posToken);
-
-  return {
-    localId,
-    posToken,
-    printed: printResult?.printed ?? false,
-  };
-}
-
-// ─── Web path (unchanged behaviour) ──────────────────────────────────────────
+// ─── Web path ─────────────────────────────────────────────────────────────────
 
 async function createBillWeb(input: POSBillInput): Promise<POSBillResult> {
   const res = await fetch('/api/vendor/orders/pos', {
@@ -139,9 +69,9 @@ async function createBillWeb(input: POSBillInput): Promise<POSBillResult> {
   };
 }
 
-// ─── Helper: build an Order-shaped object for SQLite + receipt formatter ─────
+// ─── Helper kept for any callers that build Order objects locally ─────────────
 
-function buildOrderObject(
+export function buildOrderObject(
   id: string,
   input: POSBillInput,
   posToken: string,
