@@ -5,6 +5,7 @@ import { Product } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { useState, useEffect } from 'react';
 import CldImage from '@/components/products/CldImage';
+import Link from 'next/link';
 
 interface ProductCardProps {
     product: Product;
@@ -91,6 +92,7 @@ export default function ProductCard({ product, categoryName }: ProductCardProps)
             className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 h-full
                 ${isOut ? 'opacity-60 grayscale-[0.5] pointer-events-none' : 'hover:translate-y-[-2px]'}`}
         >
+            <Link href={`/product/${product.id}`} className="contents">
             {/* ── Visual Container for Image (Gray bg, High rounding) ──────────────── */}
             <div className="relative group bg-[#F5F6F8] rounded-[32px] p-4 aspect-square flex items-center justify-center overflow-hidden mb-3 border border-gray-100/50 shadow-sm">
                 <div className={`relative w-full h-full rounded-2xl overflow-hidden shadow-inner ${isOut ? 'grayscale opacity-75' : ''}`}>
@@ -129,10 +131,12 @@ export default function ProductCard({ product, categoryName }: ProductCardProps)
                 </h3>
 
                 {/* Unit: Regular, small, gray */}
-                <p className="text-[12px] text-gray-500 font-medium mb-3">1 unit</p>
+                <p className="text-[12px] text-gray-500 font-medium mb-3">{product.unit || '1 unit'}</p>
+            </div>
+            </Link>
 
-                {/* Footer: Price + Button (Functional section) */}
-                <div className="flex items-center justify-between mt-auto gap-2">
+                {/* Footer: Price + Button (Functional section) — outside the Link */}
+                <div className="flex items-center justify-between mt-auto gap-2 px-1">
                     {!isOut && (
                         <p className="text-[#1A1C1E] font-black text-sm sm:text-base italic">₹{displayPrice}</p>
                     )}
@@ -178,7 +182,6 @@ export default function ProductCard({ product, categoryName }: ProductCardProps)
                         )}
                     </div>
                 </div>
-            </div>
         </div>
     );
 }

@@ -28,6 +28,12 @@ export interface Product {
   isOnlineItem?: boolean;
   /** Sequential 1-based serial for the online menu (independent of POS serial). */
   onlineSerialNumber?: number;
+  /** List of ingredient names for the product detail page. */
+  ingredients?: string[];
+  /** Display unit, e.g. "1 plate", "250ml", "2 pieces". */
+  unit?: string;
+  /** Net weight/volume string, e.g. "350g", "500ml". */
+  weight?: string;
 }
 
 export interface CartItem {

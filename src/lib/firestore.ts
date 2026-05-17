@@ -109,6 +109,100 @@ export async function getProductsByCategory(categoryId: string): Promise<Product
     }
 }
 
+/**
+ * Fetch a single product by its Firestore document ID.
+ */
+export async function getProductById(productId: string): Promise<Product | null> {
+    if (!isFirebaseConfigured()) {
+        return MOCK_PRODUCTS.find((p) => p.id === productId) ?? null;
+    }
+    try {
+        const snap = await getDoc(doc(db, 'products', productId));
+        if (!snap.exists()) return null;
+        const data = snap.data();
+        return {
+            id: snap.id,
+            ...data,
+            imageURL: sanitizeImageURL(data.imageURL),
+        } as Product;
+    } catch {
+        return MOCK_PRODUCTS.find((p) => p.id === productId) ?? null;
+    }
+}
+
+/**
+ * Fetch products in the same category, excluding a specific product.
+ * Used for the "Similar Products" section on the product detail page.
+ */
+export async function getSimilarProducts(
+    categoryId: string,
+    excludeId: string,
+    limit: number = 10
+): Promise<Product[]> {
+    if (!isFirebaseConfigured()) {
+        return MOCK_PRODUCTS
+            .filter((p) => p.categoryId === categoryId && p.id !== excludeId)
+            .slice(0, limit);
+    }
+    try {
+        const q = query(collection(db, 'products'), where('categoryId', '==', categoryId));
+        const snap = await getDocs(q);
+        return snap.docs
+            .map((d) => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    ...data,
+                    imageURL: sanitizeImageURL(data.imageURL),
+                } as Product;
+            })
+            .filter((p) => p.id !== excludeId)
+            .slice(0, limit);
+    } catch {
+        return MOCK_PRODUCTS
+            .filter((p) => p.categoryId === categoryId && p.id !== excludeId)
+            .slice(0, limit);
+    }
+}
+
+/**
+ * Fetch a random set of products from categories OTHER than the given one.
+ * Used for the "You May Also Like" / recommended section.
+ */
+export async function getRecommendedProducts(
+    excludeCategoryId: string,
+    excludeProductId: string,
+    limit: number = 10
+): Promise<Product[]> {
+    if (!isFirebaseConfigured()) {
+        const filtered = MOCK_PRODUCTS.filter(
+            (p) => p.categoryId !== excludeCategoryId && p.id !== excludeProductId
+        );
+        // Shuffle and take `limit`
+        return filtered.sort(() => Math.random() - 0.5).slice(0, limit);
+    }
+    try {
+        const snap = await getDocs(collection(db, 'products'));
+        const all = snap.docs
+            .map((d) => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    ...data,
+                    imageURL: sanitizeImageURL(data.imageURL),
+                } as Product;
+            })
+            .filter((p) => p.categoryId !== excludeCategoryId && p.id !== excludeProductId);
+        // Shuffle and take `limit`
+        return all.sort(() => Math.random() - 0.5).slice(0, limit);
+    } catch {
+        return MOCK_PRODUCTS
+            .filter((p) => p.categoryId !== excludeCategoryId && p.id !== excludeProductId)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, limit);
+    }
+}
+
 // ─── Addresses ─────────────────────────────────────────────────────────────────
 
 // Functions moved to Users section below

@@ -16,7 +16,17 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-    const categories = await getCategories();
+    const allCategories = await getCategories();
+
+    // Filter: only show categories with ≥3 products, valid names, no test data
+    const categories = allCategories.filter((cat) => {
+        const count = cat.productCount ?? 0;
+        if (count < 3) return false;
+        const name = (cat.name ?? '').trim().toLowerCase();
+        if (!name || name.length < 2) return false;
+        if (name.includes('test') || name.includes('tmp') || name.includes('debug')) return false;
+        return true;
+    });
 
     return (
         <div className="min-h-screen bg-gray-50">
