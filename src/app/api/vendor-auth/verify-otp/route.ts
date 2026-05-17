@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
-import { adminAuth } from '@/lib/firebaseAdmin';
+import { getAdminAuth } from '@/lib/firebaseAdmin';
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis { return (_redis ??= Redis.fromEnv()); }
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
         // Upstash Redis deserializes values via JSON.parse — a numeric-looking
         // string like "804227" comes back as the number 804227 at runtime.
         // Use String() on both sides to ensure a safe comparison regardless of type.
-        const storedOtpRaw = await redis.get(redisKey);
+        const storedOtpRaw = await getRedis().get(redisKey);
 
         if (storedOtpRaw === null || storedOtpRaw === undefined) {
             return NextResponse.json({ error: 'OTP expired. Please request a new one.' }, { status: 401 });
@@ -29,16 +30,17 @@ export async function POST(request: NextRequest) {
         }
 
         // OTP matched — delete it immediately (single-use)
-        await redis.del(redisKey);
+        await getRedis().del(redisKey);
 
         // Issue a Firebase custom token for this vendor email
         // UID is derived from email for uniqueness
         const uid = `vendor_${normalizedEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        const customToken = await adminAuth.createCustomToken(uid, { vendorEmail: normalizedEmail, isVendor: true });
+        const customToken = await getAdminAuth().createCustomToken(uid, { vendorEmail: normalizedEmail, isVendor: true });
 
         return NextResponse.json({ success: true, token: customToken, email: normalizedEmail });
     } catch (err) {
-        console.error('verify-otp error:', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[verify-otp] error:', msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }

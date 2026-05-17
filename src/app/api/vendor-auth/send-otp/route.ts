@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
-import { adminDb } from '@/lib/firebaseAdmin';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 
-const redis = Redis.fromEnv();
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Diagnostic: this runs when the module is first loaded by Next.js.
+// If this line appears in server.log the module loaded successfully.
+// If it does NOT appear, the module crashed during import.
+console.error('[send-otp] MODULE LOADED OK');
+
+let _redis: Redis | null = null;
+let _resend: Resend | null = null;
+function getRedis(): Redis { return (_redis ??= Redis.fromEnv()); }
+function getResend(): Resend { return (_resend ??= new Resend(process.env.RESEND_API_KEY)); }
 
 function generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export async function POST(request: NextRequest) {
+    console.error('[send-otp] HANDLER CALLED');
     try {
         const { email } = await request.json();
 
@@ -22,7 +30,7 @@ export async function POST(request: NextRequest) {
 
         // Check if vendor email is registered in the existing `vendors` collection
         // Vendors are keyed by phone but have an `email` field + `isVendor: true`
-        const vendorSnap = await adminDb
+        const vendorSnap = await getAdminDb()
             .collection('vendors')
             .where('email', '==', normalizedEmail)
             .where('isVendor', '==', true)
@@ -36,10 +44,10 @@ export async function POST(request: NextRequest) {
         // Generate OTP and store in Redis with 5-min TTL
         const otp = generateOTP();
         const redisKey = `vendor-otp:${normalizedEmail}`;
-        await redis.set(redisKey, otp, { ex: 300 }); // 5 minutes
+        await getRedis().set(redisKey, otp, { ex: 300 }); // 5 minutes
 
         // Send email via Resend
-        const { error } = await resend.emails.send({
+        const { error } = await getResend().emails.send({
             from: 'Aroma Ops <noreply@aromadhaba.in>',
             to: [normalizedEmail],
             subject: `Your Aroma Ops login code: ${otp}`,
@@ -73,7 +81,8 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error('send-otp error:', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[send-otp] error:', msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
