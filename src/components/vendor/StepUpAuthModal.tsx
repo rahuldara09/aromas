@@ -83,10 +83,18 @@ export function VendorLoginModal({ onSuccess, onSignOut }: VendorLoginModalProps
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim().toLowerCase() }),
             });
-            const data = await res.json();
+            // Guard res.json() — a server crash may return plain-text HTML, not JSON.
+            // Capture raw text first so we can show it if JSON parse fails.
+            const raw = await res.text();
+            let data: Record<string, string> = {};
+            try { data = JSON.parse(raw); } catch { /* non-JSON — data stays {} */ }
 
             if (!res.ok) {
-                setEmailError(data.error || 'Failed to send OTP. Try again.');
+                // data.error  = our route's error format
+                // data.message = Next.js internal error format (route module crashed)
+                const msg = data.error || data.message
+                    || `Server error (HTTP ${res.status}). Please try again.`;
+                setEmailError(msg);
                 return;
             }
 
@@ -96,7 +104,7 @@ export function VendorLoginModal({ onSuccess, onSignOut }: VendorLoginModalProps
             startCooldown();
             setTimeout(() => inputRefs.current[0]?.focus(), 100);
         } catch {
-            setEmailError('Network error. Please try again.');
+            setEmailError('Cannot reach server. Please try again.');
         } finally {
             setEmailLoading(false);
         }
@@ -159,13 +167,13 @@ export function VendorLoginModal({ onSuccess, onSignOut }: VendorLoginModalProps
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim().toLowerCase(), otp: otpString }),
             });
-            const data = await res.json();
+            const raw = await res.text();
+            let data: Record<string, string> = {};
+            try { data = JSON.parse(raw); } catch { /* non-JSON body */ }
 
             if (!res.ok) {
-                setOtpError(data.error || 'Verification failed. Please try again.');
-                if (data.error?.includes('expired')) {
-                    // Reset to allow resend
-                }
+                setOtpError(data.error || data.message
+                    || `Verification failed (HTTP ${res.status}). Please try again.`);
                 return;
             }
 
@@ -177,7 +185,7 @@ export function VendorLoginModal({ onSuccess, onSignOut }: VendorLoginModalProps
             localStorage.setItem('vendorSessionExpiry', String(expiresAt));
             onSuccess(data.email);
         } catch {
-            setOtpError('Network error. Please try again.');
+            setOtpError('Cannot reach server. Please try again.');
         } finally {
             setOtpLoading(false);
         }

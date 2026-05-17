@@ -15,7 +15,7 @@ import type { NextRequest } from 'next/server';
  *    Pass through to let vendor/layout.tsx handle auth enforcement.
  *    No route blocking — full site is accessible.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // ── Electron / desktop POS mode ──────────────────────────────────────────

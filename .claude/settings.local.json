@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Head -30)",
+      "PowerShell(Get-Content \"c:\\\\Users\\\\Hemang\\\\Documents\\\\aromas\\\\.env.local\" | ForEach-Object { if \\($_ -match '^\\([A-Z_]+\\)='\\) { \"KEY: $\\($Matches[1]\\)\" } })"
+    ]
+  }
+}

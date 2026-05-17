@@ -11,11 +11,11 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "electron-builder install-app-deps",
-    "electron:compile": "tsc -p tsconfig.electron.json",
+    "electron:compile": "tsc -p tsconfig.electron.json && node -e \"require('fs').copyFileSync('electron/splash.html','dist-electron/splash.html')\"",
     "electron:rebuild": "electron-rebuild -f -w better-sqlite3",
     "electron:dev": "concurrently -n next,electron -c blue,green \"next dev\" \"wait-on http://localhost:3000/api/health && electron .\"",
     "electron:build:mac": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --mac --arm64",
-    "electron:build:win": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --win --x64 --arm64",
+    "electron:build:win": "next build && npm run electron:prepare && npm run electron:compile && electron-builder --win --x64",
     "electron:prepare": "node scripts/prepare-electron.js"
   },
   "dependencies": {
@@ -55,8 +55,6 @@
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.1.2",
     "dotenv": "^17.3.1",
-    "electron": "^36.3.2",
-    "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
